@@ -13,6 +13,22 @@
 int Is_MInv_calculated;
 M33 M_Inv;
 
+int upload_image(string path, Mat &image) {
+	Mat image_temp;
+	string path_temp = path;
+	image_temp = imread(path_temp.c_str(), IMREAD_COLOR);
+	if (!image_temp.data)                              // Check for invalid input
+	{
+		cout << "Could not open or find the image" << std::endl;
+		return -1;
+	}
+
+	image = image_temp;
+
+
+	return 0;
+}
+
 int ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC camera1) {
 
 
@@ -49,20 +65,21 @@ int Conv2ERI(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC ca
 		{
 					
 			V3 pp;			
-			V3 p= camera1.UnprojectPixel(i,j,1);
+			V3 p= camera1.UnprojectPixel(j,i,100);
 			//cout << "I,J: " << i << ","<<j<<" "<<"p:"<<p<<endl;   // there may be some issue here with i and j
 			int Inew=eri_image.Lat2PixI(eri_image.GetXYZ2Latitude(p));
+			
 			int Jnew=eri_image.Lon2PixJ(eri_image.GetXYZ2Longitude(p));
 			
 			
 
-			if (Jnew < camera1.w && Jnew >= 0 && Inew >= 0 && Inew < camera1.h)
+			//if (Jnew < camera1.w && Jnew >= 0 && Inew >= 0 && Inew < camera1.h)
 			{
 				output_image_mat.at<cv::Vec3b>(Inew,Jnew) = source_image_mat.at<cv::Vec3b>(i, j);
-				source_image_mat.at<cv::Vec3b>(i, j) = 0;
+				//source_image_mat.at<cv::Vec3b>(i, j) = 0;
 			}
 		}
-		//cout << "row: " << i << "     \r";
+		cout << "row2: " << i << "     \r";
 	}
 
 	return 0;
@@ -70,20 +87,34 @@ int Conv2ERI(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC ca
 }
 
 
+int EachPixelConv2ERI(ERI eri_image, PPC camera1,int x, int y, int &pixelX,int &pixelY)
+{			
+			V3 p = camera1.UnprojectPixel(y, x, 100);			
+			pixelX = eri_image.Lat2PixI(eri_image.GetXYZ2Latitude(p));
+			pixelY = eri_image.Lon2PixJ(eri_image.GetXYZ2Longitude(p));
+			cout << "x,y->" << x << "," << y << " pixX,Y->" << pixelX << "," << pixelY << endl;
 
+			return 0;
+}
 
-int upload_image(string path, Mat &image) {
-	Mat image_temp;
-	string path_temp = path;
-	image_temp = imread(path_temp.c_str(), IMREAD_COLOR);
-	if (!image_temp.data)                              // Check for invalid input
+int ERI2Conv_back_mapped(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC camera1) 
+{
+
+	int pixelX, pixelY = 0;
+
+	for (int i = 0; i < output_image_mat.rows; ++i)
 	{
-		cout << "Could not open or find the image" << std::endl;
-		return -1;
+		for (int j = 0; j < output_image_mat.cols; ++j)
+		{
+			cout << "(I,J->)" << i << "," << j << endl;
+			EachPixelConv2ERI(eri_image, camera1, i, j, pixelX, pixelY);
+			output_image_mat.at<cv::Vec3b>(i, j) = source_image_mat.at<cv::Vec3b>(pixelX, pixelY);  //pp[0]=column
+			source_image_mat.at<cv::Vec3b>(pixelX, pixelY) = 0;
+			
+		}
+		
 	}
-
-	image = image_temp;
-
 
 	return 0;
 }
+

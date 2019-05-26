@@ -14,8 +14,11 @@ using namespace std;
 #define YES 1
 #define PI  3.1416
 
+extern int Is_MInv_calculated;
+extern M33 M_Inv;
+
 int ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC camera1);
 int Conv2ERI(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC camera1);
 int upload_image(string path, Mat &image);  
-extern int Is_MInv_calculated;
-extern M33 M_Inv;
+int EachPixelConv2ERI(ERI eri_image, PPC camera1, int x, int y, int &pixelX, int &pixelY);
+int ERI2Conv_back_mapped(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC camera1);

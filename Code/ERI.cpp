@@ -113,22 +113,16 @@ float ERI::TestXYZ2LatLong(V3 p)
 }
 int ERI::Lat2PixI(float lat)
 {
-	int pixI = lat * (float)h / 180.0f - 0.5f;
 
-		if (pixI < 0 || pixI > h - 1)
-			return FLT_MAX;
-	
+	int pixI = lat * (float)h / 180.0f - 0.5f;	
 	return pixI;
 
 }
 
 int ERI::Lon2PixJ(float lon)
-{
+{  
+	
 	int pixJ = lon * (float)w/360.0f - 0.5f;
-
-	if (pixJ < 0 || pixJ > w - 1)
-		return FLT_MAX;
-
 	return pixJ;
 
 }
