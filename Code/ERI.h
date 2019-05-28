@@ -30,7 +30,7 @@ public:
 	float TestXYZ2LatLong(V3 p);
 	int Lat2PixI(float lat);
 	int Lon2PixJ(float lon);
-	int TestLatLon2Pixel(float lat, float lon);
+	int TestLatLon2Pixel(float lat, float lon, int source_H, int source_W);
 };
 
 	/*

@@ -12,10 +12,10 @@ using namespace cv;
 
 ERI::ERI(int _w, float _fps, int _framesN) {
 
-  w = _w;
-  fps = _fps;
-  framesN = _framesN;
-  h = w/2;
+	w = _w;
+	fps = _fps;
+	framesN = _framesN;
+	h = w / 2;
 
 }
 
@@ -23,114 +23,136 @@ ERI::ERI(int _w, float _fps, int _framesN) {
 // pixel (0, 0) has a center at (.5, .5)
 float ERI::GetLongitude(int j) {
 
-  if (j < 0 || j > w-1)
-    return FLT_MAX;
+	if (j < 0 || j > w - 1)
+		return FLT_MAX;
 
-  float ret = ((float) j + 0.5f) / (float) w * 360.0f;
+	float ret = ((float)j + 0.5f) / (float)w * 360.0f;
 
-  return ret;
-  
+	return ret;
+
 }
 
 float ERI::GetLatitude(int i) {
 
-  if (i < 0 || i > h-1)
-    return FLT_MAX;
+	if (i < 0 || i > h - 1)
+		return FLT_MAX;
 
-  float ret = ((float) i + 0.5f) / (float) h * 180.0f;
+	float ret = ((float)i + 0.5f) / (float)h * 180.0f;
 
-  return ret;
+	return ret;
 
 
 }
 
 V3 ERI::Unproject(int i, int j) {
 
-  // convert pixel index to angles
-  float lt = GetLatitude(i);
-  float lg = GetLongitude(j);
+	// convert pixel index to angles
+	float lt = GetLatitude(i);
+	float lg = GetLongitude(j);
 
-  // define 3D point B on equator with given lt
-  V3 A(0.0f, 0.0f, 1.0f);
-  V3 O(0.0f, 0.0f, 0.0f);
-  V3 y(0.0f, 1.0f, 0.0f);
-  V3 B = A.RotateThisPointAboutArbitraryAxis(O, y, lg);
+	// define 3D point B on equator with given lt
+	V3 A(0.0f, 0.0f, 1.0f);
+	V3 O(0.0f, 0.0f, 0.0f);
+	V3 y(0.0f, 1.0f, 0.0f);
+	V3 B = A.RotateThisPointAboutArbitraryAxis(O, y, lg);
 
-  // define output 3D point by rotating B up (paning) to lat;
-  V3 rotAxis = ((B-O) ^ y).UnitVector();
-  V3 ret = B.RotateThisPointAboutArbitraryAxis(O, rotAxis, 90.0f-lt);
+	// define output 3D point by rotating B up (paning) to lat;
+	V3 rotAxis = ((B - O) ^ y).UnitVector();
+	V3 ret = B.RotateThisPointAboutArbitraryAxis(O, rotAxis, 90.0f - lt);
 
-  return ret;
+	return ret;
 
-  // ERI pixel coordinates  of A are (h/2, 0)
-  //                        of N are (0, 0), (0, 1), ... , (0, w-1)
-  //                        of S are (h-1, 0), (h-1, 1), ... , (h-1, w-1)
+	// ERI pixel coordinates  of A are (h/2, 0)
+	//                        of N are (0, 0), (0, 1), ... , (0, w-1)
+	//                        of S are (h-1, 0), (h-1, 1), ... , (h-1, w-1)
 
 }
 
-float ERI::GetXYZ2Latitude(V3 p) 
+float ERI::GetXYZ2Latitude(V3 p)
 {
-	float sqrt_P = sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
-	float x = p[0]/sqrt_P;
-	float y = -p[1]/sqrt_P;
-	float z = p[2]/sqrt_P;
-	float lat = acos(y)* 180.0 / PI;
+	float sqrt_P = p.Length();
+	float x = p[0] / sqrt_P;
+	float y = p[1] / sqrt_P;
+	float z = p[2] / sqrt_P;
+	float lat =90.0f- asin(y)* 180.0f / PI;
 	return lat;
 
 }
 
 float ERI::GetXYZ2Longitude(V3 p)
 {
-	float sqrt_P = sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+	float sqrt_P = p.Length();
 	float x = p[0] / sqrt_P;
-	float y = -p[1] / sqrt_P;
+	float y = p[1] / sqrt_P;
 	float z = p[2] / sqrt_P;
 	float lon;
 	if (x >= 0 && z >= 0) {
-		lon = (asin(x))* 180.0 / PI;
+		lon = (atan(x / z))* 180.0f / PI;
 	}
+	else if (x < 0 && z >= 0) {
+
+		lon = 360.0f + (atan(x / z))* 180.0f / PI;
+
+	}	
 	else if (x >= 0 && z < 0) {
-		lon = (asin(x))* 180.0 / PI;
-		lon = 180 - lon;
-	}
-	else if (x  <0 && z < 0) {
-		lon = (asin(abs(x)))* 180.0 / PI;
+		lon = (atan(x/z))* 180.0f / PI;
 		lon = 180+lon;
 	}
+	
+	else if (x < 0 && z < 0) {
+		lon = (atan(x/z))* 180.0f / PI;
+		lon = 180.0f+lon;
+	}
+	
 	else {
-		lon = (asin(abs(x)))* 180.0 / PI;
-		lon = 360-lon;
+		cout << "this not handled yet" << endl;
+		exit(0);
 	}
 	return lon;
 }
 
 float ERI::TestXYZ2LatLong(V3 p)
 {
-	
-	cout <<"lat and long:"<< GetXYZ2Latitude(p) << ","<<GetXYZ2Longitude(p) << endl;
+
+	cout << "lat and long:" << GetXYZ2Latitude(p) << "," << GetXYZ2Longitude(p) << endl;
 	return 0;
 
 }
 int ERI::Lat2PixI(float lat)
 {
+	int pixI = (int)(lat * (float)h / 180.0f);
 
-	int pixI = lat * (float)h / 180.0f - 0.5f;	
+	if (pixI > h - 1)
+	{
+		pixI = h - 1;
+
+	}
+	else if (pixI < 0)
+		pixI = 0;
+
 	return pixI;
 
 }
 
 int ERI::Lon2PixJ(float lon)
-{  
-	
-	int pixJ = lon * (float)w/360.0f - 0.5f;
-	return pixJ;
+{
+	int pixJ = (int)(lon * (float)w/ 360.0f);
 
+	if (pixJ > w - 1)
+	{
+		pixJ = w - 1;
+
+	}
+	else if (pixJ < 0)
+		pixJ = 0;
+
+	return pixJ;
 }
 
-int ERI::TestLatLon2Pixel(float lat, float lon)
+int ERI::TestLatLon2Pixel(float lat, float lon, int source_H, int source_W)
 {
-	
-	cout << "Pixel I and J:" << Lat2PixI(lat) << "," << Lon2PixJ(lon) << endl;
+
+	//cout << "Pixel I and J:" << Lat2PixI(lat, source_H) << "," << Lon2PixJ(lon, source_W) << endl;
 	return 0;
 
 }
