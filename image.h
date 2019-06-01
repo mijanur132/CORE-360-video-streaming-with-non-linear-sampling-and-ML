@@ -1,11 +1,16 @@
 #pragma once
 #include"ERI.h"
 #include "v3.h"
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
-#include <C:\opencv\build\include\opencv2\core\core.hpp>
-#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 #include "ppc.h"
 #include"m33.h"
+#include"path.h"
+#include<string.h>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include<vector>
+
+
 
 using namespace cv;
 using namespace std;
@@ -25,3 +30,5 @@ int ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC ca
 void mouse_control(Mat source_image_mat, Mat output_image_mat, ERI eri_image, PPC camera1);
 void forward_backward(Mat source_image_mat, Mat output_image_mat, Mat output_image_mat_reverse, ERI eri_image, PPC camera1);
 void img_write(const char *s1, cv::InputArray s2);
+void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path_given);
+void read_file(Path &path1);

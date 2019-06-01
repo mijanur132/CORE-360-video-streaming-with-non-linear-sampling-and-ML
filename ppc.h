@@ -1,5 +1,4 @@
 #pragma once
-
 #include "v3.h"
 #include <C:\opencv\build\include\opencv2/opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>

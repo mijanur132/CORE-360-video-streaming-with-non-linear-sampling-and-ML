@@ -1,12 +1,5 @@
-#pragma once
 #include"image.h"
-#include "v3.h"
-#include "ppc.h"
-#include"m33.h"
-#include"ERI.h"
 #include<conio.h>
-#include<string.h>
-
 #include <C:\opencv\build\include\opencv2/opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
@@ -169,3 +162,76 @@ void img_write(const char *s1, cv::InputArray s2) {
 
 
 
+void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path_given)
+{
+	for (int i = 0; i < path_given.cam_array_size(); i++)
+	{
+		path_given.cams[i].Pan(i * 30);
+		ERI2Conv(source_image_mat, output_image_mat, eri_image, path_given.cams[i]);
+		imshow("CONV_image", output_image_mat);
+		waitKey(100);
+
+	}
+}
+//*/
+
+void read_file(Path &path1) {
+
+	
+
+	cout << "hukka" << endl;
+	vector<vector<double> >     data;
+	ifstream  file("1.txt");
+	if (!file)
+	{
+		cout << "error" << endl;
+		system("pause");
+	}
+	string   line;
+	while (getline(file, line))
+	{
+		vector<double>   lineData;
+		stringstream  lineStream(line);
+
+		double value;
+		// Read an integer at a time from the line
+		while (lineStream >> value)
+		{
+			
+			// Add the integers from a line to a 1D array (vector)
+			lineData.push_back(value);
+		}
+		// When all the integers have been read, add the 1D array
+		// into a 2D array (as one line in the 2D array)
+		float theta, v1, v2, v3;
+		for (int i = 0; i < lineData.size(); i++)
+		{
+
+			//cout << lineData[i]<<" ";
+			if (i == 2) {
+				theta =  acosf(lineData[i])*180.0f/PI;
+			}
+			else if (i == 3) {
+				v1 = lineData[i] / sin(theta);
+			}
+			else if (i == 4) {
+				v2 = lineData[i] / sin(theta);
+			}
+			else if (i == 5) {
+				v3 = lineData[i] / sin(theta);
+			}
+		}
+		PPC camera1(120.0f, 320, 240);
+		V3 v(v1, v2, v3);
+		camera1.RotateAboutAxisThroughEye(v, theta);
+		path1.AppendCamera(camera1,10);
+		//cout << endl;
+		//cout << theta << v1 << v2 << v3<<endl;
+
+		data.push_back(lineData);
+	}
+
+
+		//system("pause");
+	
+}

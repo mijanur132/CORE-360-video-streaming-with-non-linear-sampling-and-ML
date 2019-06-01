@@ -1,13 +1,6 @@
-#include "ppc.h"
-#include "m33.h"
-#include"Image.h"
+
 #include"path.h"
 
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
-#include <C:\opencv\build\include\opencv2\core\core.hpp>
-#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
-#include<math.h>
-#include<string.h>
 
 using namespace cv;
 
@@ -22,6 +15,14 @@ Path::Path(int camsN) {
 
 }
 
+
+
+int Path::cam_array_size() {
+	return cams.size();
+}
+
+
+
 void Path::AppendCamera(PPC newCam, int framesN)
 {
 	cams.push_back(newCam);
@@ -31,10 +32,10 @@ void Path::AppendCamera(PPC newCam, int framesN)
 
 PPC* Path::GetView(int segi, int framei) {
 
-	//PPC interPPC;
-	//interPPC.SetInterpolated(cams[segi], cams[segi + 1], framei, segmentFramesN[segi]);
+	PPC interPPC;
+	interPPC.SetInterpolated(&cams[segi], &cams[segi + 1], framei, segmentFramesN[segi]);
 
-	return 0;
+	return &interPPC;
 }
 
 void Path::LoadIMT(char *fileName) {
