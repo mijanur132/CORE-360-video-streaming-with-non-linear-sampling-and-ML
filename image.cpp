@@ -105,6 +105,8 @@ int ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC ca
 					
 		}
 	}
+	
+
 	return 0;
 }
 
@@ -146,9 +148,10 @@ void forward_backward(Mat source_image_mat, Mat output_image_mat, Mat output_ima
 {
 	ERI2Conv(source_image_mat, output_image_mat, eri_image, camera1);
 	imshow("CONV_image", output_image_mat);
+	img_write("./Image/CONV_image.png", output_image_mat);// write an image
 	Conv2ERI(output_image_mat, output_image_mat_reverse, source_image_mat, eri_image, camera1);
 	imshow("ERI_image_reverse", output_image_mat_reverse);
-
+	img_write("./Image/reverse_image.png", output_image_mat_reverse);// write an image
 	waitKey(0);
 	system("pause");
 	
@@ -163,4 +166,6 @@ void img_write(const char *s1, cv::InputArray s2) {
 	imwrite(s1, s2, compression_params);
 	waitKey(1);
 }
+
+
 

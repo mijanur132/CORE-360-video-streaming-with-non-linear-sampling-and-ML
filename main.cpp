@@ -9,6 +9,7 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 #include <chrono> 
 #include <cstdlib>
+#include"path.h"
 
 
 using namespace cv;
@@ -21,27 +22,39 @@ int main()
 
 	Mat source_image_mat;
 	upload_image("./Image/360_equirectangular_800_400.jpg", source_image_mat);  //this function upload image of equirect form
-	//upload_image("./Image/rectlin.jpg", source_image_mat);  //this function upload image or conv form
-
+	
 	ERI eri_image(source_image_mat.cols, 1, 1);
 	int cameraW = 800;
 	int cameraH = 400;
-	PPC camera1(90.0f, cameraW, cameraH);
+	PPC camera1(120.0f, cameraW, cameraH);
 	Mat output_image_mat = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
 	Mat output_image_mat_reverse = cv::Mat::zeros(source_image_mat.rows, source_image_mat.cols, source_image_mat.type());
 	
-	camera1.Pan(0.0f);
-	camera1.Tilt(0.0f);
+	camera1.Pan(-90.0f);
+	camera1.Tilt(-45.0f);
 
-	mouse_control(source_image_mat, output_image_mat, eri_image, camera1);  //show mouse control of ERI to CONV image conversion
+	//mouse_control(source_image_mat, output_image_mat, eri_image, camera1);  //show mouse control of ERI to CONV image conversion
 
-	forward_backward(source_image_mat, output_image_mat, output_image_mat_reverse, eri_image, camera1); // show ERI to conv and inverse mapping
+	//forward_backward(source_image_mat, output_image_mat, output_image_mat_reverse, eri_image, camera1); // show ERI to conv and inverse mapping
 		
 	img_write("./Image/source_image.png", source_image_mat);// write an image
 	
+	int camNum = 10;
+	Path path1(camNum);
+	for (int i = 0; i < camNum; i++)
+	{
+		path1.cams[i].Pan(i*30);
+		ERI2Conv(source_image_mat, output_image_mat, eri_image, path1.cams[i]);
+		imshow("CONV_image", output_image_mat);
+		waitKey(1000);
+	}
 	
 	
-
+	//path1.AppendCamera(camera1,100);
+	//cout << path1.segmentFramesN[2] << endl;
+	//ERI2Conv(source_image_mat, output_image_mat, eri_image, path1.cams[0]);
+	//path1.GetView(&path1.cams[0], &path1.cams[1], 50, 100);
+	ERI2Conv(source_image_mat, output_image_mat, eri_image, path1.cams[0]);
 	return 0;
 
 }

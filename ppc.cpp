@@ -13,6 +13,16 @@ using namespace cv;
 
 //#include "framebuffer.h"
 
+PPC::PPC():a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
+C(0.0f, 0.0f, 0.0f) {
+	float hfov = 60;
+	int w = 320;
+	int h = 240;
+	float hfovr = hfov * 3.14159f / 180.0f;
+	float f = -(float)w / (2.0f *tanf(hfovr / 2.0f));
+	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);
+}
+
 PPC::PPC(float hfov, int _w, int _h): a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 	C(0.0f, 0.0f, 0.0f), w(_w), h(_h) {
 
@@ -211,5 +221,15 @@ void PPC::SetInterpolated(PPC *ppc0, PPC *ppc1, int stepi, int stepsN) {
 	PositionAndOrient(Ci, Li, vpvi);
 
 }
+
+
+void PPC::RotateAboutAxisThroughEye(V3 v, float theta) {
+
+	a = a.RotateThisVectorAboutDirection(v, theta);
+	b = b.RotateThisVectorAboutDirection(v, theta);
+	c = c.RotateThisVectorAboutDirection(v, theta);
+	
+}
+
 
 
