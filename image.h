@@ -31,4 +31,5 @@ void mouse_control(Mat source_image_mat, Mat output_image_mat, ERI eri_image, PP
 void forward_backward(Mat source_image_mat, Mat output_image_mat, Mat output_image_mat_reverse, ERI eri_image, PPC camera1);
 void img_write(const char *s1, cv::InputArray s2);
 void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path_given);
-void read_file(Path &path1);
+void read_path_file(Path &path1);
+int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1);

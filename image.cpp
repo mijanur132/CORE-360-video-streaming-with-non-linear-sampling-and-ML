@@ -1,6 +1,6 @@
 #include"image.h"
 #include<conio.h>
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
@@ -175,13 +175,10 @@ void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path
 }
 //*/
 
-void read_file(Path &path1) {
+void read_path_file(Path &path1) {
 
-	
-
-	cout << "hukka" << endl;
 	vector<vector<double> >     data;
-	ifstream  file("1.txt");
+	ifstream  file("roller.txt");
 	if (!file)
 	{
 		cout << "error" << endl;
@@ -221,10 +218,10 @@ void read_file(Path &path1) {
 				v3 = lineData[i] / sin(theta);
 			}
 		}
-		PPC camera1(120.0f, 320, 240);
-		V3 v(v1, v2, v3);
+		PPC camera1(90.0f,800, 400);
+		V3 v(v2, v3, v1);
 		camera1.RotateAboutAxisThroughEye(v, theta);
-		path1.AppendCamera(camera1,10);
+		path1.AppendCamera(camera1,2);
 		//cout << endl;
 		//cout << theta << v1 << v2 << v3<<endl;
 
@@ -234,4 +231,43 @@ void read_file(Path &path1) {
 
 		//system("pause");
 	
+}
+
+
+int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
+{
+
+	VideoCapture cap("roller_2000_1000.mp4");
+	if (!cap.isOpened()) {
+		cout << "Cannot open the video file" << endl;
+		system("pause");
+
+	}
+	//double count = cap.get(CAP_PROP_FRAME_COUNT);
+	//cap.set(CAP_PROP_POS_FRAMES, count - 1); //Set index to last frame
+	namedWindow("MyVideo", WINDOW_NORMAL);
+
+	int fi = 1;
+	while (1)
+	{
+		Mat frame;		
+		cap >> frame;
+		
+		if (frame.empty())
+		{
+			cout << "empty" << endl;
+			break;
+		}
+
+		
+		ERI2Conv(frame, output_image_mat, eri_image, path1.cams[fi]);		
+		imshow("MyVideo", output_image_mat);
+		fi++;
+		if (waitKey(10) >= 0) break;		
+		char c = (char)waitKey(5);
+		if (c == 27)
+			break;
+	}
+	cout << "finish" << endl;	
+	return 0;
 }

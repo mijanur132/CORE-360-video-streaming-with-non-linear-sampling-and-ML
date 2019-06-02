@@ -8,7 +8,7 @@ Path::Path(int camsN) {
 
 	for (int i = 0; i < camsN; i++) 
 	{
-		cams.push_back(PPC(60, 320, 240));
+		cams.push_back(PPC(90, 1200, 800));
 		segmentFramesN.push_back(10);
 	}
 
