@@ -1,5 +1,6 @@
 #include"image.h"
 #include<conio.h>
+#include "config.h"
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
@@ -175,10 +176,13 @@ void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path
 }
 //*/
 
+// read the hmd data file line by line and convert each line to a new possition. Then add a camera at that position and append with the  
+// path file pah1.
+
 void read_path_file(Path &path1) {
 
 	vector<vector<double> >     data;
-	ifstream  file("roller.txt");
+	ifstream  file(HMD_DATA);
 	if (!file)
 	{
 		cout << "error" << endl;
@@ -221,7 +225,7 @@ void read_path_file(Path &path1) {
 		PPC camera1(90.0f,800, 400);
 		V3 v(v2, v3, v1);
 		camera1.RotateAboutAxisThroughEye(v, theta);
-		path1.AppendCamera(camera1,2);
+		path1.AppendCamera(camera1,100);
 		//cout << endl;
 		//cout << theta << v1 << v2 << v3<<endl;
 
@@ -233,20 +237,20 @@ void read_path_file(Path &path1) {
 	
 }
 
+// load  one frame and load one camera from path file and display that frame 
 
 int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
 {
 
-	VideoCapture cap("roller_2000_1000.mp4");
+	VideoCapture cap(VIDEO);
 	if (!cap.isOpened()) {
 		cout << "Cannot open the video file" << endl;
 		system("pause");
 
 	}
-	//double count = cap.get(CAP_PROP_FRAME_COUNT);
-	//cap.set(CAP_PROP_POS_FRAMES, count - 1); //Set index to last frame
+	
 	namedWindow("MyVideo", WINDOW_NORMAL);
-
+	
 	int fi = 1;
 	while (1)
 	{
@@ -258,16 +262,126 @@ int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
 			cout << "empty" << endl;
 			break;
 		}
-
 		
-		ERI2Conv(frame, output_image_mat, eri_image, path1.cams[fi]);		
+		ERI2Conv(frame, output_image_mat, eri_image, path1.cams[fi]);
 		imshow("MyVideo", output_image_mat);
 		fi++;
-		if (waitKey(10) >= 0) break;		
-		char c = (char)waitKey(5);
+		
+		if (waitKey(1) >= 0)
+			break;		
+		char c = (char)waitKey(10);
 		if (c == 27)
 			break;
 	}
 	cout << "finish" << endl;	
+	return 0;
+}
+
+//check wether interpolation works between two position of a still image. 
+
+void check_interpolation() {
+	
+	PPC camera1(cFoV, cameraW, cameraH);
+	PPC camera2(cFoV, cameraW, cameraH);
+	camera1.Pan(90.0f);
+
+	Mat source_image_mat;
+	upload_image(IMAGE, source_image_mat);  //this function upload image of equirect form
+
+	Mat output_image_mat = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
+	Mat output_image_mat_1 = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
+	ERI eri_image(source_image_mat.cols, 1, 1);
+	ERI2Conv(source_image_mat, output_image_mat, eri_image, camera1);
+	imshow("CONV_image", output_image_mat);
+	waitKey(100);
+	ERI2Conv(source_image_mat, output_image_mat_1, eri_image, camera2);
+	imshow("CONV_image1", output_image_mat_1);
+	waitKey(100);
+
+	for (int i = 0; i < NUM_INTERP_frameN; i++)
+	{
+		
+		cout << i << endl;
+		PPC interPPC;
+		interPPC.SetInterpolated(&camera1,&camera2, i, NUM_INTERP_frameN);		
+		ERI2Conv(source_image_mat, output_image_mat, eri_image, interPPC);
+		imshow("CONV_imagex", output_image_mat);
+		waitKey(10);
+		
+	}
+	
+}
+
+
+int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1)
+{
+
+	VideoCapture cap(VIDEO);
+	if (!cap.isOpened()) {
+		cout << "Cannot open the video file" << endl;
+		system("pause");
+
+	}
+
+	namedWindow("MyVideo", WINDOW_NORMAL);
+
+	vector<Mat> all_frame;
+
+	int camera_i = 500;
+	int whilei = 0;
+	while (whilei< NUM_FRAME_LOAD)
+	{
+		Mat frame;
+		cap >> frame;
+		whilei++;
+		if (frame.empty())
+		{
+			cout << "empty" << endl;
+			break;
+		}
+		all_frame.push_back(frame);
+
+	}
+
+	int fps = cap.get(CAP_PROP_FPS);
+
+	
+
+	while(camera_i < all_frame.size()){
+
+		if (NUM_INTERP_frameN == 0) {
+			ERI2Conv(all_frame[camera_i], output_image_mat, eri_image, path1.cams[camera_i]);
+			imshow("MyVideo", output_image_mat);
+			waitKey(1000/fps);
+
+		
+		}
+		else
+		{
+
+			for (int frame_i = 0; frame_i < NUM_INTERP_frameN; frame_i++)
+			{
+				//cout << frame_i << endl;
+				PPC interPPC;
+				interPPC.SetInterpolated(&path1.cams[camera_i], &path1.cams[camera_i + 1], frame_i, NUM_INTERP_frameN);
+				ERI2Conv(all_frame[camera_i], output_image_mat, eri_image, interPPC);
+				imshow("MyVideo", output_image_mat);
+				waitKey(1000/(fps*NUM_INTERP_frameN));
+
+			}
+		}
+
+		camera_i = camera_i + 1;
+		
+
+		if (waitKey(1000/fps) >= 0)
+			break;
+		char c = (char)waitKey(10);
+		if (c == 27)
+			break;
+	}
+
+
+	cout << "finish" << endl;
 	return 0;
 }
