@@ -21,9 +21,6 @@ void Path::AppendCamera(PPC newCam, int framesN)
 
 
 
-
-
-
 void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels) 
 {
 	//to play back every camera for one frame segmentFramesN[segi] needs to be 2
@@ -31,8 +28,7 @@ void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels)
 	int gfi = 0;
 	int gfn = 100;
 
-	cout << cams.size() - 1 << endl;
-	
+	cout << cams.size() - 1 << endl;	
 	for (int segi = 0; segi < cams.size()-1; segi++)
 	{
 		for (int fi = 0; fi < segmentFramesN[segi]-1; fi++) 
@@ -41,7 +37,7 @@ void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels)
 			PPC ppcR(cams[segi +1]);
 			PPC interPPC;
 			interPPC.SetInterpolated(&ppcL, &ppcR, fi, segmentFramesN[segi]);
-			ERI2Conv(eriPixels, convPixels,eri,interPPC);
+			eri.ERI2Conv(eriPixels, convPixels,interPPC);
 			string line;
 			stringstream strs(line);
 			strs << "frame: " << gfi << "out of: " << gfn << ends;
@@ -109,7 +105,7 @@ void Path::PlayBackPathVideo(ERI erivideoimage, Mat convPixels)
 			PPC ppcR(cams[segi + 1]);
 			PPC interPPC;
 			interPPC.SetInterpolated(&ppcL, &ppcR, fi, segmentFramesN[segi]);			
-			ERI2Conv(allinputframe[segi], convPixels, erivideoimage, interPPC);
+			erivideoimage.ERI2Conv(allinputframe[100], convPixels, interPPC);//segi instead of 100 for video
 			string line;
 			stringstream strs(line);
 			strs << "frame: " << gfi << "out of: " << gfn << ends;

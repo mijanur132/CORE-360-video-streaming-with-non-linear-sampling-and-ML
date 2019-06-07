@@ -20,7 +20,10 @@ using namespace std::chrono;
 
 int main()
 {
-	ERI_INIT;
+
+	//testMousecontrol();
+	//testforwardbackward();
+	//ERI_INIT;
 	
 	//playstillmanually();
 	

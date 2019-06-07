@@ -156,4 +156,86 @@ int ERI::TestLatLon2Pixel(float lat, float lon, int source_H, int source_W)
 }
 
 
+int ERI:: EachPixelConv2ERI(PPC camera1, int u, int v, int &pixelI, int &pixelJ)
+{
+	V3 p = camera1.GetUnitRay(0.5f + u, 0.5f + v);	//this focul length needs to go way	
+	//p = p.UnitVector();
+	pixelI = Lat2PixI(GetXYZ2Latitude(p));
+	pixelJ = Lon2PixJ(GetXYZ2Longitude(p));
+
+	return 0;
+}
+
+
+
+
+
+int ERI::ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
+{
+	int pixelI, pixelJ = 0;
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(v, u) = source_image_mat.at<cv::Vec3b>(pixelI, pixelJ);
+
+		}
+	}
+
+
+	return 0;
+}
+
+
+
+int ERI:: Conv2ERI(Mat conv_image, Mat &output_eri_image, Mat source_eri_image, PPC camera1)
+{	// two ERI image: source one is in Mat format blank one is ERI format.... this is done to use function unproject and vec3b operation. One type is suited for each one.
+	for (int i = 0; i <h; ++i)
+	{
+		for (int j = 0; j <w; ++j)
+		{
+			V3 p = Unproject(i, j);
+			V3 pp;
+			if (!camera1.Project(p, pp))
+				continue;
+
+			if (pp[0] < conv_image.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < conv_image.rows)
+			{
+				output_eri_image.at<cv::Vec3b>(i, j) = conv_image.at<cv::Vec3b>(pp[1], pp[0]);  //pp[0]=column				
+			}
+
+		}
+	}
+
+	return 0;
+
+}
+
+int ERI::ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, PPC camera1) {
+
+	for (int i = 0; i < source_image_mat.rows; ++i)
+	{
+		for (int j = 0; j < source_image_mat.cols; ++j)
+		{
+
+			V3 p = Unproject(i, j);
+			V3 pp;
+			if (!camera1.Project(p, pp))
+				continue;
+
+			if (pp[0] < camera1.w && pp[0] >= 0 && pp[1] >= 0 && pp[1] < camera1.h)
+			{
+				output_image_mat.at<cv::Vec3b>((int)pp[1], (int)pp[0]) = source_image_mat.at<cv::Vec3b>(i, j);  //pp[0]=column				
+			}
+		}
+
+	}
+	return 0;
+}
+
+
+
 ;

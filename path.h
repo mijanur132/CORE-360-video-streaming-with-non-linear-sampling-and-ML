@@ -18,7 +18,7 @@ public:
 	void AppendCamera(PPC newCam, int framesN); // appends camera to cams array, connected by segment with framesN frames to the previously last camera; has to reallocate array of cams to have size increased by one, copy old data, append new data
 		
 	void PlayBackPathStillImage(Mat ERI_image, ERI eri, Mat conv_image);
-	void PlayBackPathVideo(ERI eri, Mat conv_image);
+	void PlayBackPathVideo(ERI erivideoimage, Mat conv_image);
 	void LoadHMDTrackingData(char* fileName, PPC ppc0);
 	void LoadVideoFile();
 }
