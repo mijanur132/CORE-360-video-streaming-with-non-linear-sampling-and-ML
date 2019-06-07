@@ -40,5 +40,6 @@ public:
 	//int upload_image(string path, Mat &image);  //palash
 
 	void RotateAboutAxisThroughEye(V3 v, float theta);
+	V3 GetUnitRay(float uf, float vf);
 
 };

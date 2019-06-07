@@ -74,8 +74,8 @@ int Conv2ERI(Mat conv_image, Mat &output_eri_image, Mat source_eri_image, ERI bl
 
 int EachPixelConv2ERI(ERI eri_image, PPC camera1,int u, int v, int &pixelI, int &pixelJ)
 {						
-			V3 p = camera1.UnprojectPixel(0.5f+u,0.5f+v, camera1.GetFocalLength());		
-			p = p.UnitVector();
+			V3 p = camera1.GetUnitRay(0.5f+u,0.5f+v);	//this focul length needs to go way	
+			//p = p.UnitVector();
 			pixelI = eri_image.Lat2PixI(eri_image.GetXYZ2Latitude(p));
 			pixelJ = eri_image.Lon2PixJ(eri_image.GetXYZ2Longitude(p));
 
@@ -163,14 +163,15 @@ void img_write(const char *s1, cv::InputArray s2) {
 
 
 
-void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path_given)
+void playstillmanually()
 {
-	for (int i = 0; i < path_given.cam_array_size(); i++)
+	ERI_INIT;
+	for (int i = 0; i < 1500; i++)
 	{
-		path_given.cams[i].Pan(i * 30);
-		ERI2Conv(source_image_mat, output_image_mat, eri_image, path_given.cams[i]);
-		imshow("CONV_image", output_image_mat);
-		waitKey(100);
+		camera1.Pan(10);
+		ERI2Conv(eriPixels, convPixels, eri, camera1);
+		imshow("CONV_image", convPixels);
+		waitKey(1000);
 
 	}
 }
@@ -262,7 +263,7 @@ int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
 			cout << "empty" << endl;
 			break;
 		}
-		
+		path1.cams[fi].PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
 		ERI2Conv(frame, output_image_mat, eri_image, path1.cams[fi]);
 		imshow("MyVideo", output_image_mat);
 		fi++;
@@ -301,7 +302,7 @@ void check_interpolation() {
 	for (int i = 0; i < NUM_INTERP_frameN; i++)
 	{
 		
-		cout << i << endl;
+		//cout << i << endl;
 		PPC interPPC;
 		interPPC.SetInterpolated(&camera1,&camera2, i, NUM_INTERP_frameN);		
 		ERI2Conv(source_image_mat, output_image_mat, eri_image, interPPC);
@@ -327,7 +328,7 @@ int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1
 
 	vector<Mat> all_frame;
 
-	int camera_i = 500;
+	
 	int whilei = 0;
 	while (whilei< NUM_FRAME_LOAD)
 	{
@@ -346,13 +347,14 @@ int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1
 	int fps = cap.get(CAP_PROP_FPS);
 
 	
-
+	int camera_i = FRAME_START;
 	while(camera_i < all_frame.size()){
 
 		if (NUM_INTERP_frameN == 0) {
+			cout << camera_i << endl;
 			ERI2Conv(all_frame[camera_i], output_image_mat, eri_image, path1.cams[camera_i]);
 			imshow("MyVideo", output_image_mat);
-			waitKey(1000/fps);
+			waitKey(1);
 
 		
 		}
@@ -363,10 +365,10 @@ int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1
 			{
 				//cout << frame_i << endl;
 				PPC interPPC;
-				interPPC.SetInterpolated(&path1.cams[camera_i], &path1.cams[camera_i + 1], frame_i, NUM_INTERP_frameN);
+				interPPC.SetInterpolated(&path1.cams[camera_i], &path1.cams[camera_i+ 1], frame_i, NUM_INTERP_frameN);
 				ERI2Conv(all_frame[camera_i], output_image_mat, eri_image, interPPC);
 				imshow("MyVideo", output_image_mat);
-				waitKey(1000/(fps*NUM_INTERP_frameN));
+				waitKey(1);
 
 			}
 		}
@@ -384,4 +386,40 @@ int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1
 
 	cout << "finish" << endl;
 	return 0;
+}
+
+
+
+
+int testPlayBackHMDPathStillImage()
+{	
+	ERI_INIT;
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	path1.PlayBackPathStillImage(eriPixels, eri, convPixels);	
+	return 0;
+
+}
+
+
+int testPlayBackManualPathStillImage() {
+	ERI_INIT;
+
+	int framesN = 30;
+	path1.AppendCamera(camera1, framesN);
+	camera1.Pan(90);
+	path1.AppendCamera(camera1, framesN);
+	camera1.Pan(-90);
+	path1.AppendCamera(camera1, framesN);
+	path1.PlayBackPathStillImage(eriPixels, eri, convPixels);	
+	return 0;
+
+}
+
+int testPlayBackHMDPathVideo()
+{
+	ERI_INIT;
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	path1.PlayBackPathVideo(erivideoimage, convPixels);	
+	return 0;
+
 }

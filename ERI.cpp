@@ -70,23 +70,21 @@ V3 ERI::Unproject(int i, int j) {
 
 float ERI::GetXYZ2Latitude(V3 p)
 {
-	float sqrt_P = p.Length();
-	float x = p[0] / sqrt_P;
-	float y = p[1] / sqrt_P;
-	float z = p[2] / sqrt_P;
-	float lat =90.0f- asin(y)* 180.0f / PI;
+	//float sqrt_P = p.Length();
+	
+	float lat =90.0f- asin(p[1])* 180.0f / PI;
 	return lat;
 
 }
 
 float ERI::GetXYZ2Longitude(V3 p)
 {
-	float sqrt_P = p.Length();
-	float x = p[0] / sqrt_P;
-	float y = p[1] / sqrt_P;
-	float z = p[2] / sqrt_P;
+	//float sqrt_P = p.Length();
+	float x = p[0];
+	float y = p[1];
+	float z = p[2];
 	float lon;
-	if (x >= 0 && z >= 0) {
+	if (x >= 0 && z >= 0) {    // use nested if
 		lon = (atan(x / z))* 180.0f / PI;
 	}
 	else if (x < 0 && z >= 0) {
@@ -121,7 +119,7 @@ float ERI::TestXYZ2LatLong(V3 p)
 int ERI::Lat2PixI(float lat)
 {
 	int pixI = (int)(lat * (float)h / 180.0f);
-
+	/*
 	if (pixI > h - 1)
 	{
 		pixI = h - 1;
@@ -129,7 +127,7 @@ int ERI::Lat2PixI(float lat)
 	}
 	else if (pixI < 0)
 		pixI = 0;
-
+		*/
 	return pixI;
 
 }
@@ -137,7 +135,7 @@ int ERI::Lat2PixI(float lat)
 int ERI::Lon2PixJ(float lon)
 {
 	int pixJ = (int)(lon * (float)w/ 360.0f);
-
+	/*
 	if (pixJ > w - 1)
 	{
 		pixJ = w - 1;
@@ -145,7 +143,7 @@ int ERI::Lon2PixJ(float lon)
 	}
 	else if (pixJ < 0)
 		pixJ = 0;
-
+		*/
 	return pixJ;
 }
 

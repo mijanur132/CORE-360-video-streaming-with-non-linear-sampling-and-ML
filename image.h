@@ -30,6 +30,12 @@ int ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, PPC ca
 void mouse_control(Mat source_image_mat, Mat output_image_mat, ERI eri_image, PPC camera1);
 void forward_backward(Mat source_image_mat, Mat output_image_mat, Mat output_image_mat_reverse, ERI eri_image, PPC camera1);
 void img_write(const char *s1, cv::InputArray s2);
-void play(Mat &source_image_mat, Mat &output_image_mat, ERI eri_image, Path path_given);
+void playstillmanually();
 void read_path_file(Path &path1);
 int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1);
+void check_interpolation();
+int out_video_file_interpolated(Mat &output_image_mat, ERI eri_image, Path path1);
+int out_video_file_interpolated_temp(Mat &output_image_mat, ERI eri_image);
+int testPlayBackHMDPathStillImage();
+int testPlayBackManualPathStillImage();
+int testPlayBackHMDPathVideo();

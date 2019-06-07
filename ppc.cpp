@@ -232,4 +232,12 @@ void PPC::RotateAboutAxisThroughEye(V3 v, float theta) {
 }
 
 
+V3 PPC::GetUnitRay(float uf, float vf) {
+
+	V3 ray = a * uf + b * vf + c;
+	return ray.UnitVector();
+
+}
+
+
 
