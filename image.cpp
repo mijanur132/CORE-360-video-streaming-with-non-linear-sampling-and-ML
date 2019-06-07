@@ -6,6 +6,7 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
 
+
 int Is_MInv_calculated;
 M33 M_Inv;
 
@@ -154,7 +155,7 @@ void check_interpolation() {
 
 	Mat output_image_mat = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
 	Mat output_image_mat_1 = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
-	ERI eri_image(source_image_mat.cols, 1, 1);
+	ERI eri_image(source_image_mat.cols, source_image_mat.rows,1, 1);
 	eri_image.ERI2Conv(source_image_mat, output_image_mat, camera1);
 	imshow("CONV_image", output_image_mat);
 	waitKey(100);
@@ -180,7 +181,13 @@ void check_interpolation() {
 
 int testPlayBackHMDPathStillImage()
 {	
-	ERI_INIT;
+	Mat eriPixels; 
+	char fname[] = "./Image/RollerCoasterFrame3to1.jpg";
+	upload_image(fname, eriPixels);
+	ERI eri(eriPixels.cols, eriPixels.rows, 1, 1);
+	Path path1;
+	PPC camera1(cFoV, cameraW, cameraH);
+	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, eriPixels.type());
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
 	path1.PlayBackPathStillImage(eriPixels, eri, convPixels);	
 	return 0;
@@ -204,9 +211,15 @@ int testPlayBackManualPathStillImage() {
 
 int testPlayBackHMDPathVideo()
 {
-	ERI_INIT;
+	PPC camera1(cFoV, cameraW, cameraH);
+	Mat eriPixels;
+	upload_image(IMAGE, eriPixels);  
+	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, eriPixels.type());
+
+	Path path1;
+	int lastframe = 1000;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	path1.PlayBackPathVideo(erivideoimage, convPixels);	
+	path1.PlayBackPathVideo("./Video/roller.mkv", convPixels,lastframe);
 	return 0;
 
 }

@@ -3,6 +3,7 @@
 #include"image.h"
 #include<stdio.h>
 #include"config.h"
+#include "ERI.h"
 
 using namespace std;
 using namespace cv;
@@ -64,6 +65,7 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 		stringstream  linestream(line);
 		float timestamp;
 		linestream >> timestamp;
+		tstamps.push_back(timestamp);
 		int frameindex;
 		linestream >> frameindex;
 		float q[4];
@@ -88,35 +90,60 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 		
 }
 
-void Path::PlayBackPathVideo(ERI erivideoimage, Mat convPixels)
+void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 {	
-	LoadVideoFile();
+	VideoCapture cap(fname);
+	if (!cap.isOpened()) {
+		cout << "Cannot open the video file: " <<fname<< endl;
+		waitKey(100000);
+		return;
 
-	int gfi = 0;
-	int gfn = 100;
-
-	cout << cams.size() - 1 << endl;
-
-	for (int segi = 0; segi < cams.size() - 1; segi++)
-	{
-		for (int fi = 0; fi < segmentFramesN[segi] - 1; fi++)
+	}	
+	ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT), 1, 1);
+	int fps = cap.get(CAP_PROP_FPS);
+	
+	float tstep = 0;
+	int segi = 0;
+	for (int fi=0; fi<=lastFrame; fi++)
+	{  
+		Mat frame;
+		cap >> frame;		
+		if (frame.empty())
 		{
-			PPC ppcL(cams[segi]);
-			PPC ppcR(cams[segi + 1]);
-			PPC interPPC;
-			interPPC.SetInterpolated(&ppcL, &ppcR, fi, segmentFramesN[segi]);			
-			erivideoimage.ERI2Conv(allinputframe[100], convPixels, interPPC);//segi instead of 100 for video
-			string line;
-			stringstream strs(line);
-			strs << "frame: " << gfi << "out of: " << gfn << ends;
-			imshow(line.data(), convPixels);
-			waitKey(1);
-			gfi++;
+			cout << "Can not read video frame: "<<fname<< endl;
+			waitKey(100000);
+			return;
+		}	
+		segi = GetCamIndex(fi, fps, segi);
+		eri.ERI2Conv(frame, convPixels, cams[segi]);
+		imshow("outputImage", convPixels);
+		waitKey(1);
+	}	   	
+
+	//destruct ERI here
+}
+
+int Path::GetCamIndex(int fi, int fps, int segi) {
+
+	int ret = segi;
+	while (tstamps[ret] <= (float)(fi)/(float)(fps))
+	{
+		ret++;
+		if (ret >= tstamps.size())
+		{
+			cerr<<"Reached the end of the path without finding HMD pos for frame"<<endl;
+			waitKey(10000);
+			exit(0);
+
 		}
+
 	}
+
+	return ret - 1;
 
 }
 
+/*
 void Path::LoadVideoFile() {
 
 	VideoCapture cap(VIDEO);
@@ -125,7 +152,7 @@ void Path::LoadVideoFile() {
 		system("pause");
 
 	}
-
+	
 	int whilei = 0;
 	while (whilei < NUM_FRAME_LOAD)
 	{
@@ -140,4 +167,13 @@ void Path::LoadVideoFile() {
 		allinputframe.push_back(frame);
 
 	}
+
+	vector<int> compression_params;
+	compression_params.push_back(IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9);	
+	
+	imwrite("Image.png", allinputframe[1]);
+	waitKey(1);
+
 }
+//*/

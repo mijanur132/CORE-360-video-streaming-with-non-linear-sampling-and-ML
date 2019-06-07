@@ -11,7 +11,7 @@ using namespace cv;
 class ERI 
 {
 public:
-	ERI(int _w, float _fps, int _framesN);
+	ERI(int _w, int _h, float _fps, int _framesN);
 	int w, h;
 	float fps;
 	int framesN;

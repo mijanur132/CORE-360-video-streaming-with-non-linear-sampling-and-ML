@@ -19,14 +19,17 @@ using namespace std::chrono;
 
 
 int main()
-{
+{/*
+	Mat eriPixels; 
+	//upload_image(IMAGE, eriPixels);  
+	//ERI eri(eriPixels.cols, 1, 1); 
+	//ERI erivideoimage(eriVw, 1, 1); 
+	PPC camera1(cFoV, cameraW, cameraH); 
+	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, eriPixels.type()); \
+	Mat convPixelsreverse = cv::Mat::zeros(cameraH, cameraW, eriPixels.type()); \
+	Path path1;
+	path1.LoadVideoFile(); //*/
 
-	//testMousecontrol();
-	//testforwardbackward();
-	//ERI_INIT;
-	
-	//playstillmanually();
-	
 	//testPlayBackHMDPathStillImage(); //playone still image 
 	testPlayBackHMDPathVideo();   //play only one frame of the video
 

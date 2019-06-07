@@ -10,12 +10,13 @@
 
 using namespace cv;
 
-ERI::ERI(int _w, float _fps, int _framesN) {
+ERI::ERI(int _w, int _h, float _fps, int _framesN) {
 
 	w = _w;
+	h = _h;
 	fps = _fps;
 	framesN = _framesN;
-	h = w / 2;
+	
 
 }
 
