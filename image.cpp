@@ -155,7 +155,7 @@ void check_interpolation() {
 
 	Mat output_image_mat = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
 	Mat output_image_mat_1 = cv::Mat::zeros(cameraH, cameraW, source_image_mat.type());
-	ERI eri_image(source_image_mat.cols, source_image_mat.rows,1, 1);
+	ERI eri_image(source_image_mat.cols, source_image_mat.rows);
 	eri_image.ERI2Conv(source_image_mat, output_image_mat, camera1);
 	imshow("CONV_image", output_image_mat);
 	waitKey(100);
@@ -184,7 +184,7 @@ int testPlayBackHMDPathStillImage()
 	Mat eriPixels; 
 	char fname[] = "./Image/RollerCoasterFrame3to1.jpg";
 	upload_image(fname, eriPixels);
-	ERI eri(eriPixels.cols, eriPixels.rows, 1, 1);
+	ERI eri(eriPixels.cols, eriPixels.rows);
 	Path path1;
 	PPC camera1(cFoV, cameraW, cameraH);
 	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, eriPixels.type());
@@ -197,7 +197,7 @@ int testPlayBackHMDPathStillImage()
 
 int testPlayBackManualPathStillImage() {
 	ERI_INIT;
-
+	
 	int framesN = 30;
 	path1.AppendCamera(camera1, framesN);
 	camera1.Pan(90);
@@ -211,15 +211,12 @@ int testPlayBackManualPathStillImage() {
 
 int testPlayBackHMDPathVideo()
 {
-	PPC camera1(cFoV, cameraW, cameraH);
-	Mat eriPixels;
-	upload_image(IMAGE, eriPixels);  
-	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, eriPixels.type());
-
+	PPC camera1(cFoV, cameraW, cameraH);	  
+	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, IMAGE_TYPE);	
 	Path path1;
-	int lastframe = 1000;
+	int lastframe = NUM_FRAME_LOAD;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	path1.PlayBackPathVideo("./Video/roller.mkv", convPixels,lastframe);
+	path1.PlayBackPathVideo("./Video/roller_2000_1000.mp4", convPixels,lastframe);
 	return 0;
 
 }

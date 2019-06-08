@@ -13,11 +13,13 @@ class PPC {
 public:
 	V3 a, b, c, C; // eye is 3D point C
 	int w, h; // image resolution
+	int updateInv; //this needs to be set 1 everytime the camera changes
 
   // horizontal field of view and image resolution
   // this constructor places the eye at (0, 0, 0), view direction is (0, 0, -1), and the up vector is (0, 1, 0)
 	PPC(float hfov, int _w, int _h);
 	PPC();
+	~PPC();
   // takes a 3D point and projects it on the image plane
   // return 0 if the point is behind the head
   // the image pixel coordinates of the projected point are in pp[0] (pixel column) and pp[1] (pixel row)

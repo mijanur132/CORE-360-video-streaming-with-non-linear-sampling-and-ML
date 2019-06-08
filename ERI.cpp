@@ -10,14 +10,19 @@
 
 using namespace cv;
 
-ERI::ERI(int _w, int _h, float _fps, int _framesN) {
+ERI::ERI(int _w, int _h) {
 
 	w = _w;
 	h = _h;
-	fps = _fps;
-	framesN = _framesN;
-	
+	//cout << "One ERI created" << endl;
 
+}
+
+
+ERI::~ERI() {
+
+	//cout << "One ERI deleteted" << endl;
+	//looks at the vector class
 }
 
 // pixel centers are at (a.5, b.5)
@@ -27,7 +32,7 @@ float ERI::GetLongitude(int j) {
 	if (j < 0 || j > w - 1)
 		return FLT_MAX;
 
-	float ret = ((float)j + 0.5f) / (float)w * 360.0f;
+	float ret = ((float)(w-1-j) + 0.5f) / (float)w * 360.0f;
 
 	return ret;
 
@@ -136,6 +141,7 @@ int ERI::Lat2PixI(float lat)
 int ERI::Lon2PixJ(float lon)
 {
 	int pixJ = (int)(lon * (float)w/ 360.0f);
+	pixJ = w - 1 - pixJ;
 	/*
 	if (pixJ > w - 1)
 	{
@@ -229,7 +235,7 @@ int ERI::ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, P
 
 			if (pp[0] < camera1.w && pp[0] >= 0 && pp[1] >= 0 && pp[1] < camera1.h)
 			{
-				output_image_mat.at<cv::Vec3b>((int)pp[1], (int)pp[0]) = source_image_mat.at<cv::Vec3b>(i, j);  //pp[0]=column				
+				output_image_mat.at<Vec3b>((int)pp[1], (int)pp[0]) = source_image_mat.at<Vec3b>(i, j);  //pp[0]=column				
 			}
 		}
 
@@ -237,6 +243,46 @@ int ERI::ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, P
 	return 0;
 }
 
+void ERI::VisualizeNeededPixels(Mat &erivis, PPC *ppc) {
+	Vec3b insidecolor(255, 0, 0);
+	Vec3b outsidecolor(0, 0, 0);
+	int wscalefactor = w / erivis.cols;
+	int hscalefactor = h / erivis.rows;
+	for (int row = 0; row < erivis.rows; row++)
+	{
+		for (int col = 0; col < erivis.cols; col++)
+		{
+			int erow = row * hscalefactor;
+			int ecol = col * wscalefactor;
+			cout << erivis.type() << endl;
+			if (ERIPixelInsidePPC(erow, ecol, ppc))
+			{
+				erivis.at<Vec3b>(row, col) = insidecolor;
 
+			}
+			else {
+				erivis.at<Vec3b>(row, col) = outsidecolor;
+			}
+			
 
-;
+		}
+	}
+	
+}
+
+int ERI::ERIPixelInsidePPC(int row, int col, PPC* ppc) 
+{
+	V3 p = Unproject(row, col);
+	V3 pp;
+
+	if (!ppc->Project(p, pp))
+	{
+		return 0;
+	}
+	if (pp[0] < 0 || pp[0] >= ppc->w || pp[1]<0 || pp[1]> ppc->h)
+	{
+		return 0;
+	}
+	return 1;
+
+}

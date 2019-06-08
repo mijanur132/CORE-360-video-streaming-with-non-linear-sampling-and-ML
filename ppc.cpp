@@ -21,6 +21,12 @@ C(0.0f, 0.0f, 0.0f) {
 	float hfovr = hfov * 3.14159f / 180.0f;
 	float f = -(float)w / (2.0f *tanf(hfovr / 2.0f));
 	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);
+	updateInv = 1;
+	
+}
+
+PPC::~PPC() {
+	
 }
 
 PPC::PPC(float hfov, int _w, int _h): a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
@@ -28,14 +34,15 @@ PPC::PPC(float hfov, int _w, int _h): a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 
 	float hfovr = hfov * 3.14159f / 180.0f;
 	float f = -(float)w / (2.0f *tanf(hfovr / 2.0f));
-	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);
+	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);	
+	updateInv = 1;
 
 }
 
 
 int PPC::Project(V3 p, V3& pp) {
 	
-	if (Is_MInv_calculated == NO)
+	if (updateInv)
 	{		
 		M33 M;		
 		M.SetColumn(0, a);
@@ -43,7 +50,7 @@ int PPC::Project(V3 p, V3& pp) {
 		M.SetColumn(2, c);
 		pp[0] = FLT_MAX;
 		M_Inv = M.Inverted();
-		Is_MInv_calculated = YES;
+		updateInv=0;
 
 	}
 		V3 q =M_Inv *(p - C);
@@ -71,6 +78,7 @@ float PPC::GetFocalLength() {
 void PPC::ChangeFocalLength(float scf) {
 
 	c = c + GetVD()*(GetFocalLength()*(scf - 1.0f));
+	updateInv = 1;
 
 }
 
@@ -86,6 +94,7 @@ void PPC::PositionAndOrient(V3 C1, V3 L1, V3 vpv) {
 	a = a1;
 	b = b1;
 	c = c1;
+	updateInv = 1;
 
 }
 
@@ -96,6 +105,7 @@ void PPC::Pan(float angled) {
 	V3 dv = (b * -1.0f).UnitVector();
 	a = a.RotateThisVectorAboutDirection(dv, angled);
 	c = c.RotateThisVectorAboutDirection(dv, angled);
+	updateInv = 1;
 
 }
 
@@ -108,6 +118,7 @@ void PPC::Tilt(float angled) {
 	V3 dv = a.UnitVector();
 	b = b.RotateThisVectorAboutDirection(dv, angled);
 	c = c.RotateThisVectorAboutDirection(dv, angled);
+	updateInv = 1;
 
 }
 
@@ -118,6 +129,7 @@ void PPC::Roll(float angled) {
 	a = a.RotateThisVectorAboutDirection(dv, angled);
 	b = b.RotateThisVectorAboutDirection(dv, angled);
 	c = c.RotateThisVectorAboutDirection(dv, angled);
+	updateInv = 1;
 
 }
 
@@ -219,6 +231,7 @@ void PPC::SetInterpolated(PPC *ppc0, PPC *ppc1, int stepi, int stepsN) {
 	V3 vpvi = vpv0 + (vpv1 - vpv0)*f;
 
 	PositionAndOrient(Ci, Li, vpvi);
+	updateInv = 1;
 
 }
 
@@ -228,6 +241,7 @@ void PPC::RotateAboutAxisThroughEye(V3 v, float theta) {
 	a = a.RotateThisVectorAboutDirection(v, theta);
 	b = b.RotateThisVectorAboutDirection(v, theta);
 	c = c.RotateThisVectorAboutDirection(v, theta);
+	updateInv = 1;
 	
 }
 

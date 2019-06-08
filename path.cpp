@@ -9,7 +9,11 @@ using namespace std;
 using namespace cv;
 
 Path::Path() {
-	   	 
+	cout << "One Path created" << endl;
+}
+
+Path::~Path() {
+	cout << "One Path deleted" << endl;
 }
 
 
@@ -26,9 +30,7 @@ void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels)
 {
 	//to play back every camera for one frame segmentFramesN[segi] needs to be 2
 	//it does not reach last frame
-	int gfi = 0;
-	int gfn = 100;
-
+	Mat erivis = cv::Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
 	cout << cams.size() - 1 << endl;	
 	for (int segi = 0; segi < cams.size()-1; segi++)
 	{
@@ -39,15 +41,14 @@ void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels)
 			PPC interPPC;
 			interPPC.SetInterpolated(&ppcL, &ppcR, fi, segmentFramesN[segi]);
 			eri.ERI2Conv(eriPixels, convPixels,interPPC);
-			string line;
-			stringstream strs(line);
-			strs << "frame: " << gfi << "out of: " << gfn << ends;
-			imshow(line.data(), convPixels);
+			eri.VisualizeNeededPixels(erivis, &interPPC);						
+			imshow("ERIpixelsNeeded", erivis);
+			imshow("outimage", convPixels);
 			waitKey(1);
-			gfi++;
+			
 		}
 	}   	 
-
+	
 }
 
 void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
@@ -90,6 +91,8 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 		
 }
 
+
+
 void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 {	
 	VideoCapture cap(fname);
@@ -99,7 +102,8 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 		return;
 
 	}	
-	ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT), 1, 1);
+	ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+	Mat erivis = Mat::zeros(eri.h/5,eri.w/5, IMAGE_TYPE);
 	int fps = cap.get(CAP_PROP_FPS);
 	
 	float tstep = 0;
@@ -115,10 +119,19 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 			return;
 		}	
 		segi = GetCamIndex(fi, fps, segi);
-		eri.ERI2Conv(frame, convPixels, cams[segi]);
-		imshow("outputImage", convPixels);
+		eri.ERI2Conv(frame, convPixels, cams[segi]);	
+		//cout << fi << " " << segi << "; ";
+		//imshow("outputImage", convPixels);
+		eri.VisualizeNeededPixels(erivis, &(cams[segi]));
+		//cout << "done visualisation" << endl;
+		imshow("ERIpixelsNeeded", erivis);
 		waitKey(1);
+	
+	
 	}	   	
+
+
+	
 
 	//destruct ERI here
 }

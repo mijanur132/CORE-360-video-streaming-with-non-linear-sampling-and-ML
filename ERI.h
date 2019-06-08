@@ -11,7 +11,8 @@ using namespace cv;
 class ERI 
 {
 public:
-	ERI(int _w, int _h, float _fps, int _framesN);
+	ERI(int _w, int _h);
+	~ERI();
 	int w, h;
 	float fps;
 	int framesN;
@@ -35,6 +36,10 @@ public:
 	int EachPixelConv2ERI(PPC camera1, int u, int v, int &pixelI, int &pixelJ);
 	int Conv2ERI(Mat conv_image, Mat &output_eri_image, Mat source_eri_image, PPC camera1);
 	int ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, PPC camera1);
+	void VisualizeNeededPixels(Mat &erivis, PPC *ppc);
+	int ERIPixelInsidePPC(int row, int col, PPC* ppc);
+
+	
 };
 
 

@@ -18,7 +18,7 @@ public:
 	void SetFromColor(unsigned int color);
 	unsigned int GetColor();
 	float Length();
-	V3() {};
+	V3() {};	
 	V3(float x, float y, float z);
 	V3 RotateThisPointAboutArbitraryAxis(V3 O, V3 a, float angled);
 	V3 RotateThisVectorAboutDirection(V3 a, float angled);
