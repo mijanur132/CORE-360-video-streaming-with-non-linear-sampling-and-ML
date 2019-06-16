@@ -220,3 +220,15 @@ int testPlayBackHMDPathVideo()
 	return 0;
 
 }
+
+int testPlayBackHMDPathVideoPixelInterval()
+{
+	PPC camera1(cFoV, cameraW, cameraH);
+	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, IMAGE_TYPE);
+	Path path1;
+	int lastframe = NUM_FRAME_LOAD;
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	path1.PlayBackPathVideoPixelInterval("./Video/roller_2000_1000.mp4", convPixels, lastframe);
+	return 0;
+
+}

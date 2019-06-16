@@ -21,6 +21,7 @@ public:
 		
 	void PlayBackPathStillImage(Mat ERI_image, ERI eri, Mat conv_image);
 	void PlayBackPathVideo(char* frame, Mat convPixels, int lastFrame);
+	void PlayBackPathVideoPixelInterval(char* frame, Mat convPixels, int lastFrame);
 	void LoadHMDTrackingData(char* fileName, PPC ppc0);
 	//void LoadVideoFile();
 };

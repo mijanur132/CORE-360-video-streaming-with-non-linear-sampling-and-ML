@@ -254,7 +254,6 @@ void ERI::VisualizeNeededPixels(Mat &erivis, PPC *ppc) {
 		{
 			int erow = row * hscalefactor;
 			int ecol = col * wscalefactor;
-			cout << erivis.type() << endl;
 			if (ERIPixelInsidePPC(erow, ecol, ppc))
 			{
 				erivis.at<Vec3b>(row, col) = insidecolor;
@@ -286,3 +285,4 @@ int ERI::ERIPixelInsidePPC(int row, int col, PPC* ppc)
 	return 1;
 
 }
+					

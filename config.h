@@ -13,7 +13,7 @@
 
 
 // function out_video_file_interpolated
-#define NUM_FRAME_LOAD	100
+#define NUM_FRAME_LOAD	10
 #define FRAME_START		0
 
 //main

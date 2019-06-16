@@ -4,6 +4,7 @@
 #include<stdio.h>
 #include"config.h"
 #include "ERI.h"
+#include "pixelCalculation.h"
 
 using namespace std;
 using namespace cv;
@@ -119,22 +120,63 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 			return;
 		}	
 		segi = GetCamIndex(fi, fps, segi);
-		eri.ERI2Conv(frame, convPixels, cams[segi]);	
+		//eri.ERI2Conv(frame, convPixels, cams[segi]);	
 		//cout << fi << " " << segi << "; ";
 		//imshow("outputImage", convPixels);
 		eri.VisualizeNeededPixels(erivis, &(cams[segi]));
-		//cout << "done visualisation" << endl;
+		cout << "done visualisation" << endl;
 		imshow("ERIpixelsNeeded", erivis);
 		waitKey(1);
 	
-	
 	}	   	
-
-
 	
 
 	//destruct ERI here
 }
+
+void Path::PlayBackPathVideoPixelInterval(char* fname, Mat convPixels, int lastFrame)
+{
+
+	VideoCapture cap(fname);
+	if (!cap.isOpened()) {
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+	
+	ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+	Mat erivis = Mat::zeros(eri.h / 5, eri.w / 5, IMAGE_TYPE);
+	int fps = cap.get(CAP_PROP_FPS);
+	int totalpixelnumber = eri.h*eri.w;
+	PIXELCALCULATION pixelcalc(totalpixelnumber);
+
+	float tstep = 0;
+	int segi = 0;
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+		segi = GetCamIndex(fi, fps, segi);	
+		pixelcalc.GetFramePixelInterval(eri, erivis, &(cams[segi]));		
+		cout << "done visualisation" << endl;		
+		waitKey(1);
+
+	}
+
+	//pixelcalc.PrintPixelInterval();
+	pixelcalc.SaveIntervalTxt();
+	cout << "done Interval saving" << endl;
+}//most outer loop of playbackpathvideoopixelinterval
+
+
+
 
 int Path::GetCamIndex(int fi, int fps, int segi) {
 
@@ -155,38 +197,3 @@ int Path::GetCamIndex(int fi, int fps, int segi) {
 	return ret - 1;
 
 }
-
-/*
-void Path::LoadVideoFile() {
-
-	VideoCapture cap(VIDEO);
-	if (!cap.isOpened()) {
-		cout << "Cannot open the video file" << endl;
-		system("pause");
-
-	}
-	
-	int whilei = 0;
-	while (whilei < NUM_FRAME_LOAD)
-	{
-		Mat frame;
-		cap >> frame;
-		whilei++;
-		if (frame.empty())
-		{
-			cout << "empty" << endl;
-			break;
-		}
-		allinputframe.push_back(frame);
-
-	}
-
-	vector<int> compression_params;
-	compression_params.push_back(IMWRITE_PNG_COMPRESSION);
-	compression_params.push_back(9);	
-	
-	imwrite("Image.png", allinputframe[1]);
-	waitKey(1);
-
-}
-//*/

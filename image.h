@@ -33,3 +33,4 @@ void check_interpolation();
 int testPlayBackHMDPathStillImage();
 int testPlayBackManualPathStillImage();
 int testPlayBackHMDPathVideo();
+int testPlayBackHMDPathVideoPixelInterval();

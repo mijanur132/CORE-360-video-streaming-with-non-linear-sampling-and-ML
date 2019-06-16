@@ -22,7 +22,7 @@ int main()
 {
 	//testPlayBackManualPathStillImage();
 	//testPlayBackHMDPathStillImage(); //playone still image 
-	testPlayBackHMDPathVideo();   //play only one frame of the video
+	testPlayBackHMDPathVideoPixelInterval();   //play only one frame of the video
 	system("pause");
 	return 0;
 }
