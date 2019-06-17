@@ -260,13 +260,32 @@ void ERI::VisualizeNeededPixels(Mat &erivis, PPC *ppc) {
 
 			}
 			else {
-				erivis.at<Vec3b>(row, col) = outsidecolor;
+				//erivis.at<Vec3b>(row, col) = outsidecolor;
 			}
 			
 
 		}
 	}
 	
+}
+
+void ERI::getERIPixelsCount(Mat &erivis, PPC *ppc, long int &totalEriPixel) {
+	Vec3b insidecolor(255, 0, 0);		
+	for (int row = 0; row < erivis.rows; row++)
+	{
+		for (int col = 0; col < erivis.cols; col++)
+		{
+			int erow = row;
+			int ecol = col;
+			if (ERIPixelInsidePPC(row, col, ppc))
+			{				
+				totalEriPixel++;
+			}
+			
+		}
+	}
+	//cout << "Total ERI pixel=" << totaleriPixel << endl;
+
 }
 
 int ERI::ERIPixelInsidePPC(int row, int col, PPC* ppc) 
@@ -285,4 +304,5 @@ int ERI::ERIPixelInsidePPC(int row, int col, PPC* ppc)
 	return 1;
 
 }
-					
+
+				

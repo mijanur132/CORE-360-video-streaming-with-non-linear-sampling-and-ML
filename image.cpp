@@ -232,3 +232,16 @@ int testPlayBackHMDPathVideoPixelInterval()
 	return 0;
 
 }
+
+int testTiling() {
+	PPC camera1(cFoV, cameraW, cameraH);
+	Path path1;
+	int lastframe = 290;
+	path1.LoadHMDTrackingData("./Video/diving.txt", camera1);
+	int m = 6;
+	int n = 6;
+	int t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	return 0;
+}

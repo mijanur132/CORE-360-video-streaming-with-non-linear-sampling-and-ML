@@ -8,6 +8,7 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 #include<math.h>
 #include<string.h>
+#include"config.h"
 
 using namespace cv;
 
@@ -15,7 +16,7 @@ using namespace cv;
 
 PPC::PPC():a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 C(0.0f, 0.0f, 0.0f) {
-	float hfov = 60;
+	float hfov = 110;
 	int w = 320;
 	int h = 240;
 	float hfovr = hfov * 3.14159f / 180.0f;

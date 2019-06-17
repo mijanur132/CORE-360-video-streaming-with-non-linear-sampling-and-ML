@@ -2,6 +2,7 @@
 #include"path.h"
 #include"image.h"
 #include<stdio.h>
+#include <stdlib.h>
 #include"config.h"
 #include "ERI.h"
 #include "pixelCalculation.h"
@@ -195,5 +196,107 @@ int Path::GetCamIndex(int fi, int fps, int segi) {
 	}
 
 	return ret - 1;
+
+}
+
+void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
+{
+	VideoCapture cap(fname);
+	if (!cap.isOpened())
+	{
+		cout << "Can not open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+	}
+	int scale = 5;
+	ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+	Mat erivis = Mat::zeros(eri.h / scale, eri.w / scale, IMAGE_TYPE);
+	Mat erivis_noscale = Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
+	vector <int> Tilebitmap;
+	
+	for (int i = 0; i < m*n; i++)
+	{
+		Tilebitmap.push_back(0);
+	}
+	int fps = cap.get(CAP_PROP_FPS);
+
+	int segi = 0;
+	int totaltiles = 0;
+	long int ERItotal = 0;
+	 
+	for (int fi = 1; fi < lastFrame+1; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		
+		if (frame.empty())
+		{
+			cout << "Can not read the frame" << endl;
+			waitKey(100000);
+			return;
+		}
+		segi = GetCamIndex(fi, fps, segi);
+		int pixelI, pixelJ = 0;
+		for (int v = 0; v < cams[segi].h; v++) 
+		{
+			for (int u = 0; u < cams[segi].w; u++) 
+			{
+				eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+				int Xtile = floor(pixelJ*m / eri.w); //m*n row and column
+				int Ytile = floor(pixelI*n / eri.h);
+				int vectorindex = (Ytile)*m + Xtile;
+				Tilebitmap.at(vectorindex) = 1;
+
+			}				
+		
+		}
+		
+		for (int row = 0; row < erivis.rows; row++)
+		{
+			for (int col = 0; col < erivis.cols; col++)
+			{
+				int Xtile = floor(col*m*scale / eri.w); //m*n row and column
+				int Ytile = floor(row*n*scale / eri.h);				
+				Vec3b insidecolor(25 * (Xtile + 1)*(Ytile + 1), 0, 0);
+				erivis.at<Vec3b>(row, col) = insidecolor;
+
+				
+			}
+		}
+		//eri.VisualizeNeededPixels(erivis, &(cams[segi]));
+		if (fi == 1) {
+			eri.getERIPixelsCount(erivis_noscale, &(cams[segi]), ERItotal);
+		}
+		//cout << "eritotal:"<<ERItotal << endl;
+		imshow("ERIpixelsNeeded", erivis);
+		waitKey(10);
+
+		//cout << fi <<" "<< fi % (fps*t)<<" "<<fps<< endl;
+
+		if (fi%(fps*t) == 0) 
+		{
+			cout <<"frame No: "<< fi << "chunk no: " << fi / (fps*t) << endl;
+			for (int i = 0; i < m*n; i++)
+			{
+				
+				if (Tilebitmap[i]==1)
+				{
+					totaltiles++;
+				}
+				//cout << "tile: " << Tilebitmap[i] <<", Total-"<<totaltiles<< endl;
+				Tilebitmap.at(i)=0;
+			}
+			waitKey(10);
+		}
+
+		
+	}//outer for loop for all frame
+	cout << eri.h<<" "<< eri.w<<" "<<m<<" "<<n<<" "<<fps<<" "<<t<<totaltiles<< endl;
+	long int total_tile_pixel = eri.h*eri.w*fps*t / (m*n);
+	total_tile_pixel = totaltiles * total_tile_pixel;
+	float result = (ERItotal*lastFrame * 100 /total_tile_pixel) ;
+	cout << "total_tile_pixel: " << total_tile_pixel << endl;
+	cout << "total requierd ERI pixel: " << ERItotal*lastFrame << endl;
+	cout << "required and supplied %: " << result << endl;
 
 }

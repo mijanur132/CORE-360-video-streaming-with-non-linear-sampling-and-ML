@@ -24,5 +24,6 @@ public:
 	void PlayBackPathVideoPixelInterval(char* frame, Mat convPixels, int lastFrame);
 	void LoadHMDTrackingData(char* fileName, PPC ppc0);
 	//void LoadVideoFile();
+	void ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t);
 };
 

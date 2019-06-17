@@ -34,3 +34,4 @@ int testPlayBackHMDPathStillImage();
 int testPlayBackManualPathStillImage();
 int testPlayBackHMDPathVideo();
 int testPlayBackHMDPathVideoPixelInterval();
+int testTiling();
