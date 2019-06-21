@@ -233,15 +233,792 @@ int testPlayBackHMDPathVideoPixelInterval()
 
 }
 
+int testViewDirectionAvgRotation() 
+{
+		PPC camera1(cFoV, cameraW, cameraH);
+		Path path1;
+		path1.LoadHMDTrackingData("./Video/diving.txt", camera1);
+		path1.VDrotationAvg();
+		return 0;
+}
+
+
+int testWriteh264() {
+	Path path1;
+	int lastframe = 1000;
+	path1.WriteH264("./Video/roller.mkv", lastframe);
+	return 0;
+
+}
+
+
+
+int testWriteh264tilestemp() {
+	Path path1;
+	int lastframe = 1000;
+	path1.WriteH264tilestemp("./Video/roller.mkv", lastframe, 2,2);
+	return 0;
+
+}
+
+
+int testtilevideo() {
+	Path path1;
+	int lastframe = 200;
+	path1.Playtilevideo("./Video/rollerh264output1.avi", lastframe);
+	return 0;
+
+}
+
+
+
 int testTiling() {
 	PPC camera1(cFoV, cameraW, cameraH);
+	PPC camera2(cFoV, cameraW, cameraH);
+	PPC camera3(cFoV, cameraW, cameraH);
+	PPC camera4(cFoV, cameraW, cameraH);
+	PPC camera5(cFoV, cameraW, cameraH);
 	Path path1;
-	int lastframe = 290;
+	Path path2;
+	Path path3;
+	Path path4;
+	Path path5;
+	int lastframe = 900;
+
 	path1.LoadHMDTrackingData("./Video/diving.txt", camera1);
+
 	int m = 6;
-	int n = 6;
-	int t = 2;
+	int n = 4;
+	int t = 3;
 	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
 
+	m = 2;
+	n = 1;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	
+	m = 4;
+	n = 4;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 1;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+
+	m = 1;
+	n = 1;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 2;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	
+	m = 1;
+	n = 1;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+	
+
+	m = 30;
+	n = 30;
+	t = 3;
+	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
+
+	//////// path 2................
+
+
+	path2.LoadHMDTrackingData("./Video/italy.txt", camera2);
+
+	m = 1;
+	n = 1;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 1;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 1;
+	n = 1;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 2;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	//
+	m = 1;
+	n = 1;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+
+	m = 30;
+	n = 30;
+	t = 3;
+	path2.ConvPixel2ERITile("./Video/italy.mkv", lastframe, m, n, t);
+	
+	/////////////////// path 3............................
+
+	path3.LoadHMDTrackingData("./Video/ny.txt", camera3);
+
+	m = 1;
+    n = 1;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 1;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 1;
+	n = 1;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 2;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	//
+	m = 1;
+	n = 1;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+	m = 30;
+	n = 30;
+	t = 3;
+	path3.ConvPixel2ERITile("./Video/ny.mkv", lastframe, m, n, t);
+
+
+	////////// path 4...............
+	/*
+
+	path4.LoadHMDTrackingData("./Video/paris.txt", camera4);
+
+	m = 1;
+	n = 1;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 1;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 1;
+	n = 1;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 2;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	//
+	m = 1;
+	n = 1;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	m = 30;
+	n = 30;
+	t = 3;
+	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
+
+	//*/////////////////////// path 5..............
+
+
+
+	path5.LoadHMDTrackingData("./Video/roller.txt", camera5);
+
+	m = 1;
+	n = 1;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 1;
+	n = 1;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 30;
+	n = 30;
+	t = 2;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	//
+	m = 1;
+	n = 1;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 1;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+	m = 4;
+	n = 4;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 6;
+	n = 6;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 20;
+	n = 20;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 30;
+	n = 30;
+	t = 3;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
 	return 0;
+
 }

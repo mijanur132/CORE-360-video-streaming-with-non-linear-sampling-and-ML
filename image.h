@@ -35,3 +35,7 @@ int testPlayBackManualPathStillImage();
 int testPlayBackHMDPathVideo();
 int testPlayBackHMDPathVideoPixelInterval();
 int testTiling();
+int testViewDirectionAvgRotation();
+int testWriteh264();
+int testWriteh264tilestemp();
+int testtilevideo();

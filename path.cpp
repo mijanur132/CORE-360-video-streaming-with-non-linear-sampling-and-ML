@@ -6,6 +6,10 @@
 #include"config.h"
 #include "ERI.h"
 #include "pixelCalculation.h"
+#include <C:\opencv\build\include\opencv2\videoio.hpp>
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
+#include <C:\opencv\build\include\opencv2\core\core.hpp>
+#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
 using namespace std;
 using namespace cv;
@@ -222,7 +226,7 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 
 	int segi = 0;
 	int totaltiles = 0;
-	long int ERItotal = 0;
+	uint64 ERItotal = 0;
 	 
 	for (int fi = 1; fi < lastFrame+1; fi++)
 	{
@@ -268,14 +272,14 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 			eri.getERIPixelsCount(erivis_noscale, &(cams[segi]), ERItotal);
 		}
 		//cout << "eritotal:"<<ERItotal << endl;
-		imshow("ERIpixelsNeeded", erivis);
-		waitKey(10);
+		//imshow("ERIpixelsNeeded", erivis);
+		//waitKey(10);
 
 		//cout << fi <<" "<< fi % (fps*t)<<" "<<fps<< endl;
 
 		if (fi%(fps*t) == 0) 
 		{
-			cout <<"frame No: "<< fi << "chunk no: " << fi / (fps*t) << endl;
+			//cout <<"frame No: "<< fi << "chunk no: " << fi / (fps*t) << endl;
 			for (int i = 0; i < m*n; i++)
 			{
 				
@@ -291,12 +295,425 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 
 		
 	}//outer for loop for all frame
-	cout << eri.h<<" "<< eri.w<<" "<<m<<" "<<n<<" "<<fps<<" "<<t<<totaltiles<< endl;
-	long int total_tile_pixel = eri.h*eri.w*fps*t / (m*n);
-	total_tile_pixel = totaltiles * total_tile_pixel;
-	float result = (ERItotal*lastFrame * 100 /total_tile_pixel) ;
-	cout << "total_tile_pixel: " << total_tile_pixel << endl;
-	cout << "total requierd ERI pixel: " << ERItotal*lastFrame << endl;
-	cout << "required and supplied %: " << result << endl;
+	cout <<"H: "<< eri.h<<" W: "<< eri.w<<" M: "<<m<<" N: "<<n<<" FPS: "<<fps<<" "<<" T: "<<t<<" Total Tiles: "<<totaltiles<< endl;
+	double total_tile_pixel = eri.h*eri.w*fps*t*1UL / (m*n);
+	total_tile_pixel = totaltiles * total_tile_pixel*1UL;
+	double result = (ERItotal*lastFrame * 100UL /total_tile_pixel) ;
+	//cout << "Total_tile_pixel: " << total_tile_pixel << endl;
+	//cout << "Total requierd ERI pixel: " << ERItotal*lastFrame << endl;
+	cout << "Required and supplied %: " << result << endl;
 
+}
+
+void Path::VDrotationAvg()
+{	
+	double total_angle=0;
+	float angle=0;
+	for (int i = 0; i < cams.size(); i++)
+	{
+		V3 cam1 = cams[i].GetVD();
+		V3 cam2 = cams[i + 1].GetVD();
+		cout << cam1 <<"; " <<cam2<< endl;
+		double angleproduct = cam1 * cam2;
+		if (angleproduct <= -1.0) {
+			angle=180;
+		}
+		else if (angleproduct >= 1.0) {
+			angle= 0;
+		}
+		else {
+			angle = acos(cam1*cam2)* 180.0f / PI;
+		}
+		
+		total_angle = total_angle + angle;
+		cout << "Angle: " << angle << " Total angle: " << total_angle << endl;
+	
+	}
+	
+	cout << "No of camera: " << cams.size() << "; Total Angle: " << total_angle << endl;
+}
+
+void Path::WriteH264(char* fname, int lastFrame)
+{
+
+	VideoCapture cap(fname);
+	if (!cap.isOpened()) 
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}	
+
+	int frame_width = cap.get(CAP_PROP_FRAME_WIDTH);
+	int frame_height = cap.get(CAP_PROP_FRAME_HEIGHT);
+	int fps = cap.get(CAP_PROP_FPS);
+	string filename = "./Video/rollerh264.avi";
+	VideoWriter writer;
+
+	int codec = VideoWriter::fourcc('X','2','6','4');
+	writer.set(VIDEOWRITER_PROP_QUALITY, 2000);
+	writer.open(filename, codec, fps,Size(frame_width,frame_height), true);
+	
+	cout<<writer.get(VIDEOWRITER_PROP_QUALITY)<<endl;
+
+	if (!writer.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+
+	cout << "Writing videofile: " << filename << endl;
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+		
+		writer.write(frame);		
+	}
+}
+
+
+void Path::WriteH264tiles(char* fname, int lastFrame, int m, int n)
+{
+
+	VideoCapture cap(fname);
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+
+	int frame_width = cap.get(CAP_PROP_FRAME_WIDTH);
+	int frame_height = cap.get(CAP_PROP_FRAME_HEIGHT);
+	int fps = cap.get(CAP_PROP_FPS);	
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+
+	vector<vector <Mat>> tileframes;
+	for (int i = 0; i < m*n; i++)
+	{		
+		tileframes.push_back(vector<Mat>());
+
+	}
+
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+
+		int Npx = frame_width / m;
+		int Npy = frame_height / n;
+		int tilesi = 0;
+		
+
+		for (int i = 0; i < frame.rows; i += Npy)
+		{		
+			for (int j = 0; j < frame.cols; j += Npx)
+			{
+				Mat tile = frame(Range(i, min(i + Npy, frame.rows)),
+					Range(j, min(j + Npx, frame.cols)));
+				tileframes[tilesi].push_back(tile);
+				tilesi++;
+			}
+			
+		}		
+		/*
+		namedWindow("Display frame", WINDOW_NORMAL);
+		resizeWindow("Display frame", 500, 500);
+		imshow("Display frame", tileframes[0][fi]); //left top
+		waitKey(10000);
+		imshow("Display frame", tileframes[1][fi]); //right top
+		waitKey(10000);
+		imshow("Display frame", tileframes[2][fi]); //left bottom
+		waitKey(10000);
+		imshow("Display frame", tileframes[3][fi]);
+		waitKey(10000);
+
+		*/		
+		
+	}
+
+
+	for (int i = 0; i < 1; i++)
+	{
+		cout << "Writing videotile: " << i << endl;
+		std::ostringstream oss;
+		oss << "./Video/rollerh264output" << i << ".avi";
+		//string filename = oss.str();
+		string filename = "./Video/rollerh264output.avi";
+		VideoWriter writer;
+
+		writer.open(filename, codec, fps, Size(tileframes[1][1].rows, tileframes[1][1].cols), true);
+		if (!writer.isOpened())
+		{
+			cerr << "Could not open the output video file for write\n";
+			return;
+		}
+		for (int j = 0; j < lastFrame; j++)
+		{				
+			writer.write(tileframes[i][j]);
+			namedWindow("Display frame", WINDOW_NORMAL);
+			resizeWindow("Display frame", 500, 500);
+			imshow("Display frame", tileframes[i][j]); //left top
+			waitKey(100);
+		}
+
+		writer.release();
+
+	}
+
+	return;
+}
+
+
+
+
+void Path::Playtilevideo(char* fname, int lastFrame)
+{
+	VideoCapture cap(fname);
+	if (!cap.isOpened()) {
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+	
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+		
+		imshow("outputImage", frame);		
+		waitKey(10);
+
+	}
+	
+}
+
+
+void Path::WriteH264tilestemp(char* fname, int lastFrame, int m, int n)
+{
+
+	VideoCapture cap(fname);
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+
+	int frame_width = cap.get(CAP_PROP_FRAME_WIDTH);
+	int frame_height = cap.get(CAP_PROP_FRAME_HEIGHT);
+	int fps = cap.get(CAP_PROP_FPS);
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+
+	int Npx = frame_width / m;
+	int Npy = frame_height / n;
+
+	string filename = "./Video/rollerh264output0.avi";
+	VideoWriter writer1;
+	writer1.open(filename, codec, fps, Size(Npx, Npy), true);
+	Mat frame;
+	Mat tile;
+	cout << "first tile" << endl;
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+
+		if (!writer1.isOpened())
+		{
+			cerr << "Could not open the output video file for write\n";
+			return;
+		}
+
+	
+		tile = frame(Range(0,Npy),Range(0,Npx));
+		writer1.write(tile);
+		namedWindow("Display frame", WINDOW_NORMAL);
+		resizeWindow("Display frame", 500, 500);
+		//imshow("Display frame", tile); //left top
+		//waitKey(10);			
+
+	} // end fi loop for all frame// end fi loop for all frame
+
+	writer1.release();
+	////////////////////////////////////////////////////////////////////////////////////////
+	VideoCapture cap1(fname);
+	if (!cap1.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+
+	filename = "./Video/rollerh264output1.avi";
+	VideoWriter writer2;
+	writer2.open(filename, codec, fps, Size(Npx, Npy), true);
+
+	cout << "second tile" << endl;
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		
+		cap1 >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+
+		if (!writer2.isOpened())
+		{
+			cerr << "Could not open the output video file for write\n";
+			return;
+		}
+		
+
+
+		tile = frame(Range(Npy, 2*Npy), Range(0, Npx));
+		writer2.write(tile);
+		namedWindow("Display frame", WINDOW_NORMAL);
+		resizeWindow("Display frame", 500, 500);
+		//imshow("Display frame", tile); //left top
+		//waitKey(10);
+
+	} // end fi loop for all frame// end fi loop for all frame
+
+	writer2.release();
+//////////////////////////////////////////////////////////////////////////////////
+	cout << "3rdtile" << endl;
+	VideoCapture cap2(fname);
+	if (!cap2.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+
+	filename = "./Video/rollerh264output2.avi";
+	VideoWriter writer3;
+	writer3.open(filename, codec, fps, Size(Npx, Npy), true);
+
+
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		frame;
+		cap2 >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+
+		if (!writer3.isOpened())
+		{
+			cerr << "Could not open the output video file for write\n";
+			return;
+		}
+
+
+
+		tile = frame(Range(Npy, 2*Npy), Range(Npx, 2*Npx));
+		writer3.write(tile);
+		namedWindow("Display frame", WINDOW_NORMAL);
+		resizeWindow("Display frame", 500, 500);
+		//imshow("Display frame", tile); //left top
+		//waitKey(10);
+
+	} // end fi loop for all frame// end fi loop for all frame
+
+	writer3.release();
+///////////////////////////////////////////////////////////////////
+
+	VideoCapture cap3(fname);
+	if (!cap3.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return;
+
+	}
+
+	filename = "./Video/rollerh264output3.avi";
+	VideoWriter writer4;
+	writer4.open(filename, codec, fps, Size(Npx, Npy), true);
+
+
+
+	for (int fi = 0; fi <= lastFrame; fi++)
+	{
+		frame;
+		cap3 >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			waitKey(100000);
+			return;
+		}
+
+		if (!writer4.isOpened())
+		{
+			cerr << "Could not open the output video file for write\n";
+			return;
+		}
+
+
+		tile = frame(Range(0,Npy), Range(Npx, 2*Npx));
+		writer4.write(tile);
+		namedWindow("Display frame", WINDOW_NORMAL);
+		resizeWindow("Display frame", 500, 500);
+		//imshow("Display frame", tile); //left top
+		//waitKey(10);
+
+	} // end fi loop for all frame// end fi loop for all frame
+
+	writer4.release();
+
+
+
+	   	 
+	return;
 }

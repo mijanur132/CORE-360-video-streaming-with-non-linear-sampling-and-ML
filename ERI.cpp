@@ -269,7 +269,7 @@ void ERI::VisualizeNeededPixels(Mat &erivis, PPC *ppc) {
 	
 }
 
-void ERI::getERIPixelsCount(Mat &erivis, PPC *ppc, long int &totalEriPixel) {
+void ERI::getERIPixelsCount(Mat &erivis, PPC *ppc, uint64 &totalEriPixel) {
 	Vec3b insidecolor(255, 0, 0);		
 	for (int row = 0; row < erivis.rows; row++)
 	{

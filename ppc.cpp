@@ -3,7 +3,7 @@
 #include "m33.h"
 #include"Image.h"
 
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 #include<math.h>
@@ -16,7 +16,7 @@ using namespace cv;
 
 PPC::PPC():a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 C(0.0f, 0.0f, 0.0f) {
-	float hfov = 110;
+	float hfov = 130;
 	int w = 320;
 	int h = 240;
 	float hfovr = hfov * 3.14159f / 180.0f;

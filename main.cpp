@@ -23,7 +23,11 @@ int main()
 	//testPlayBackManualPathStillImage();
 	//testPlayBackHMDPathStillImage(); //playone still image 
 	//testPlayBackHMDPathVideoPixelInterval();   //play only one frame of the video
-	testTiling();
+	//testTiling();
+	//testViewDirectionAvgRotation();
+	testWriteh264();
+	testWriteh264tilestemp();
+	//testtilevideo();
 	system("pause");
 	return 0;
 }

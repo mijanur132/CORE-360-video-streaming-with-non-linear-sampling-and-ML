@@ -38,7 +38,7 @@ public:
 	int ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, PPC camera1);
 	void VisualizeNeededPixels(Mat &erivis, PPC *ppc);
 	int ERIPixelInsidePPC(int row, int col, PPC* ppc);
-	void getERIPixelsCount(Mat &erivis, PPC *ppc, long int &totalEriPixel);
+	void getERIPixelsCount(Mat &erivis, PPC *ppc, uint64 &totalEriPixel);
 
 	
 };
