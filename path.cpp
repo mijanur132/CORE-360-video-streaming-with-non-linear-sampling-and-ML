@@ -130,10 +130,10 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 		segi = GetCamIndex(fi, fps, segi);
 		eri.ERI2Conv(frame, convPixels, cams[segi]);	
 		cout << fi << " " << segi << "; ";
-		imshow("outputImage", convPixels);
-		//eri.VisualizeNeededPixels(erivis, &(cams[segi]));
-		//cout << "done visualisation" << endl;
-		//imshow("ERIpixelsNeeded", erivis);
+		//imshow("outputImage", convPixels);
+		eri.VisualizeNeededPixels(erivis, &(cams[segi]));
+		cout << "done visualisation" << endl;
+		imshow("ERIpixelsNeeded", erivis);
 		waitKey(10);
 	
 	}	   	
@@ -501,8 +501,9 @@ void Path::WriteH264tiles(char* fname, int lastFrame, int m, int n, int codec)
 
 }
 
+
 void Path::DrawBoundinigBox(char* fname, int lastFrame)
-{
+{	
 	VideoCapture cap(fname);
 	if (!cap.isOpened())
 	{
@@ -510,138 +511,139 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 		return;
 	}
 
+
 	for (int fi = 1; fi < lastFrame; fi++)
 	{
+		
 		Mat frame;
 		cap >> frame;
 		if (frame.empty())
 		{
-			cout << "Reached beyond last frame. Fi="<<fi <<"; LastFrame="<<lastFrame<< endl;
+			cout << "Reached beyond last frame. Fi=" << fi << "; LastFrame=" << lastFrame << endl;
 			break;
 		}
+	
 		Mat dualframe;
-		hconcat(frame, frame ,dualframe);
-		int segi = 0;
-		int fps= cap.get(CAP_PROP_FPS);		
-		int scale = 5;
-		ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
-		Mat erivis = Mat::zeros(eri.h / scale, eri.w / scale, IMAGE_TYPE);
-		Mat erivis_noscale = Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
-		int pixelI, pixelJ= 0;
-		int mnPxL = eri.w;
-		int mxPxR = 0;
-		int mnPxU = eri.h;
-		int mxPxD = 0;
-		segi = GetCamIndex(fi, fps, segi);
-		//cams[segi].Tilt(100);
-		//cams[segi].Pan(180);
+		Mat tripleframe;
+		hconcat(frame, frame, dualframe);
+	
 		
+		ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+		ERI eritriple(tripleframe.cols, tripleframe.rows);
+		Mat erivis_noscale = Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
+		int pixelI, pixelJ = 0;
+		int PxL = eri.w;
+		int PxR = 0;
+		int PxU = eri.h;
+		int PxD = 0;
+		int segi = 0;
+		int fps = cap.get(CAP_PROP_FPS);
+		segi = GetCamIndex(fi, fps, segi);
+		cams[segi].Pan(180);
+
 		for (int v = 0; v < cams[segi].h; v++)
 		{
 			int u = 0;
 			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
-			if (pixelJ < mnPxL)
-				mnPxL = pixelJ;
-			//cout << "uvIJ:" << u << ";" << v << ";" << pixelI << ";" << pixelJ << ";" << mnPxL << ";" << mxPxR << endl;;
-			u = cams[segi].w -1;
-			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
-			if (pixelJ > mxPxR)
-				mxPxR = pixelJ;
-
-			//cout << "uvIJ:" << u << ";" << v << ";" << pixelI << ";" << pixelJ << ";" << mnPxL << ";" << mxPxR << endl;;
+			if (pixelJ < PxL)
+				PxL = pixelJ;
 			
+			u = cams[segi].w - 1;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelJ > PxR)
+				PxR = pixelJ;			
+
 		}
-		
+
 
 		for (int u = 0; u < cams[segi].w; u++)
 		{
 			int v = 0;
 			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
-			if (pixelI<mnPxU)			
-				mnPxU = pixelI;
-			
+			if (pixelI < PxU)
+				PxU = pixelI;
+
 			v = cams[segi].h - 1;
 			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
-			if (pixelI > mxPxD)
-				mxPxD = pixelI;
+			if (pixelI > PxD)
+				PxD = pixelI;
 
 		}
+		int half;
+		int midPx;
+		int ret=eri.ERIPixelInsidePPC((int)(PxU + PxD) / 2,(int)(PxL+PxR)/2, &cams[segi]);
 
-		if (mxPxR > mnPxL)
+		if (ret)
 		{
-			for (int u = mnPxL; u < mxPxR; u++)
+			midPx = eri.w + (PxR + PxL) / 2;
+			
+			for (int u = PxL; u < PxR; u++)
 			{
-				for (int v = mnPxU; v < mxPxD; v++)
+				for (int v = PxU; v < PxD; v++)
 				{
 					Vec3b insidecolor(255, 0, 0);
 					dualframe.at<Vec3b>(v, u) = insidecolor;
-					erivis_noscale.at<Vec3b>(v, u) = insidecolor;
+					frame.at<Vec3b>(v, u) = insidecolor;
 				}
-			}		
+			}
 		}
 
-		if (mxPxR < mnPxL)
+		if (!ret)
 		{
-			for (int u = mnPxL; u < eri.w; u++)
+			
+			midPx = eri.w + (eri.w + PxR + PxL) / 2;
+			for (int u = max(PxR,PxL); u < eri.w; u++)
 			{
-				for (int v = mnPxU; v < mxPxD; v++)
+				for (int v = PxU; v < PxD; v++)
 				{
 					Vec3b insidecolor(255, 0, 0);
 					dualframe.at<Vec3b>(v, u) = insidecolor;
-					erivis_noscale.at<Vec3b>(v, u) = insidecolor;
+					frame.at<Vec3b>(v, u) = insidecolor;
 				}
 
 			}
-			for (int u = 0; u < mxPxR; u++)
+			for (int u = 0; u < min(PxL,PxR); u++)
 			{
-				for (int v = mnPxU; v < mxPxD; v++)
+				for (int v = PxU; v < PxD; v++)
 				{
 					Vec3b insidecolor(255, 0, 0);
-					dualframe.at<Vec3b>(v, u+eri.w) = insidecolor;
-					erivis_noscale.at<Vec3b>(v, u) = insidecolor;
-					
+					dualframe.at<Vec3b>(v, u + eri.w) = insidecolor;
+					frame.at<Vec3b>(v, u) = insidecolor;
+
 				}
 
-			}	
+			}
 		}
 
-		int midPx;		
+		
 		Mat midcorrectedmat;
 		Mat mat1;
 		Mat mat2;
-		hconcat(frame, dualframe, dualframe);
 
-		if (mxPxR > mnPxL)
-		{
-			midPx =eri.w+ (mxPxR + mnPxL) / 2;
-		}
+		hconcat(frame, dualframe, tripleframe);;
 
-		else
-		{
-			midPx=(eri.w+mxPxR + mnPxL) / 2;
-
-		}
-
-	
-		int half = eri.w / 2;
-		mat1 = dualframe.colRange((midPx - half), midPx);
-		mat2 = dualframe.colRange(midPx,(midPx + half));
+		half = eri.w / 2;
+		
+		mat1 = tripleframe.colRange((midPx - half), midPx);
+		mat2 = tripleframe.colRange(midPx, (midPx + half));
 		hconcat(mat1, mat2, midcorrectedmat);
-		//eri.VisualizeNeededPixels(dualframe, &(cams[segi]));
-	
+		
 
+		eri.VisualizeNeededPixels(frame, &cams[segi]);
 		namedWindow("sample", WINDOW_NORMAL);
-		resizeWindow("sample",600,400);
-		//imshow("sample", erivis_noscale);
-		//waitKey(100);
+		resizeWindow("sample", 600, 400);
+		imshow("sample", frame);
+		//waitKey(1000);
 		//imshow("sample", dualframe);
-		//waitKey(100);
+		waitKey(10000);
 		imshow("sample", midcorrectedmat);
-		waitKey(100);
+		waitKey(10000);
 
 
 	}//end of fi loop
-	
+
 }
+
+
 
 

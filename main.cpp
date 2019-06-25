@@ -20,14 +20,17 @@ using namespace std::chrono;
 
 int main()
 {
+	//testforwardbackward();
 	//testPlayBackManualPathStillImage();
 	//testPlayBackHMDPathStillImage(); //playone still image 
 	//testPlayBackHMDPathVideoPixelInterval();   //play only one frame of the video
 	//testTiling();
 	//testViewDirectionAvgRotation();
-	testWriteh264();
-	testWriteh264tilestemp();
+	//testWriteh264();
+	//testWriteh264tiles();
 	//testtilevideo();
+	//testPlayBackHMDPathVideo();
+	testBoundingBox();
 	system("pause");
 	return 0;
 }

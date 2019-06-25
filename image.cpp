@@ -65,6 +65,7 @@ void testMousecontrol()
 void testforwardbackward()
 {
 	ERI_INIT;
+	//camera1.Tilt(120);
 	eri.ERI2Conv(eriPixels, convPixels, camera1);
 	imshow("CONV_image", convPixels);
 	//img_write("./Image/CONV_image.png", output_image_mat);// write an image
@@ -214,9 +215,9 @@ int testPlayBackHMDPathVideo()
 	PPC camera1(cFoV, cameraW, cameraH);	  
 	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, IMAGE_TYPE);	
 	Path path1;
-	int lastframe = NUM_FRAME_LOAD;
+	int lastframe =1500;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	path1.PlayBackPathVideo("./Video/roller_2000_1000.mp4", convPixels,lastframe);
+	path1.PlayBackPathVideo("./Video/roller.mkv", convPixels,lastframe);
 	return 0;
 
 }
@@ -226,7 +227,7 @@ int testPlayBackHMDPathVideoPixelInterval()
 	PPC camera1(cFoV, cameraW, cameraH);
 	Mat convPixels = cv::Mat::zeros(cameraH, cameraW, IMAGE_TYPE);
 	Path path1;
-	int lastframe = NUM_FRAME_LOAD;
+	int lastframe = 1500;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
 	path1.PlayBackPathVideoPixelInterval("./Video/roller_2000_1000.mp4", convPixels, lastframe);
 	return 0;
@@ -246,30 +247,46 @@ int testViewDirectionAvgRotation()
 int testWriteh264() {
 	Path path1;
 	int lastframe = 1000;
-	path1.WriteH264("./Video/roller.mkv", lastframe);
-	return 0;
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	path1.WriteH264("./Video/roller.mkv", lastframe, codec);
+	path1.WriteH264("./Video/paris.mkv", lastframe,codec);
+	path1.WriteH264("./Video/ny.mkv", lastframe, codec);
+	path1.WriteH264("./Video/diving_original.mkv", lastframe, codec);
 
+	return 0;
 }
 
 
 
-int testWriteh264tilestemp() {
+int testWriteh264tiles() {
 	Path path1;
-	int lastframe = 1000;
-	path1.WriteH264tilestemp("./Video/roller.mkv", lastframe, 2,2);
+	int lastframe = 1000;	
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	path1.WriteH264tiles("./Video/roller.mkv", lastframe, 6, 4, codec);	
+	path1.WriteH264tiles("./Video/paris.mkv", lastframe, 6, 4, codec);
+	path1.WriteH264tiles("./Video/ny.mkv", lastframe, 6, 4, codec);
+	path1.WriteH264tiles("./Video/diving_original.mkv", lastframe, 6, 4, codec);
+
+	
+	path1.WriteH264tiles("./Video/roller.mkv", lastframe, 30, 30, codec);
+	path1.WriteH264tiles("./Video/paris.mkv", lastframe, 30, 30, codec);
+	path1.WriteH264tiles("./Video/ny.mkv", lastframe,30, 30, codec);
+	path1.WriteH264tiles("./Video/diving_original.mkv", lastframe, 30, 30, codec);
+	
+	
 	return 0;
 
 }
 
-
-int testtilevideo() {
+void testBoundingBox()
+{
 	Path path1;
-	int lastframe = 200;
-	path1.Playtilevideo("./Video/rollerh264output1.avi", lastframe);
-	return 0;
+	int lastFrame = 1500;
+	PPC camera1(cFoV, cameraW, cameraH);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	path1.DrawBoundinigBox("./video/roller.mkv", lastFrame);
 
 }
-
 
 
 int testTiling() {

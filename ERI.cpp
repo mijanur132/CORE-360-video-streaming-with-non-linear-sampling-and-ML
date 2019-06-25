@@ -244,7 +244,7 @@ int ERI::ERI2Conv_forward_mapped(Mat &source_image_mat, Mat &output_image_mat, P
 }
 
 void ERI::VisualizeNeededPixels(Mat &erivis, PPC *ppc) {
-	Vec3b insidecolor(255, 0, 0);
+	Vec3b insidecolor(0, 0, 255);
 	Vec3b outsidecolor(0, 0, 0);
 	int wscalefactor = w / erivis.cols;
 	int hscalefactor = h / erivis.rows;

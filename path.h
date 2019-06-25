@@ -26,9 +26,8 @@ public:
 	//void LoadVideoFile();
 	void ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t);
 	void VDrotationAvg();
-	void WriteH264(char* fname, int lastFrame);
-	void WriteH264tiles(char* fname, int lastFrame, int m, int n);
-	void Path::Playtilevideo(char* fname, int lastFrame);
-	void Path::WriteH264tilestemp(char* fname, int lastFrame, int m, int n);
+	void WriteH264(char* fname, int lastFrame, int codec);
+	void WriteH264tiles(char* fname, int lastFrame, int m, int n, int codec);
+	void DrawBoundinigBox(char* fname, int lastFrame);
 };
 
