@@ -30,7 +30,8 @@ int main()
 	//testWriteh264tiles();
 	//testtilevideo();
 	//testPlayBackHMDPathVideo();
-	testBoundingBox();
+	//testBoundingBox();
+	testDistortedERI();
 	system("pause");
 	return 0;
 }

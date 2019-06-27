@@ -288,6 +288,14 @@ void testBoundingBox()
 
 }
 
+void testDistortedERI()
+{
+	Path path1;	
+	PPC camera1(cFoV, cameraW, cameraH);	
+	path1.GetDistoredERI(camera1, 5);
+
+}
+
 
 int testTiling() {
 	PPC camera1(cFoV, cameraW, cameraH);

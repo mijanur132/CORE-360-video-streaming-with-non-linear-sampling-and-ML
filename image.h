@@ -40,3 +40,4 @@ int testWriteh264();
 int testWriteh264tiles();
 void testBoundingBox();
 int upload_image(string path, Mat &image);
+void testDistortedERI();

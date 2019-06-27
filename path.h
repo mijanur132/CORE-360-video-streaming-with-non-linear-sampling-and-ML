@@ -29,5 +29,7 @@ public:
 	void WriteH264(char* fname, int lastFrame, int codec);
 	void WriteH264tiles(char* fname, int lastFrame, int m, int n, int codec);
 	void DrawBoundinigBox(char* fname, int lastFrame);
+	void GetDistoredERI(PPC camera1, int compressionfactor);
+
 };
 

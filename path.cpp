@@ -525,12 +525,10 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 	
 		Mat dualframe;
 		Mat tripleframe;
-		hconcat(frame, frame, dualframe);
-	
+		hconcat(frame, frame, dualframe);	
 		
 		ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
-		ERI eritriple(tripleframe.cols, tripleframe.rows);
-		Mat erivis_noscale = Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
+		ERI eritriple(tripleframe.cols, tripleframe.rows);		
 		int pixelI, pixelJ = 0;
 		int PxL = eri.w;
 		int PxR = 0;
@@ -540,6 +538,7 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 		int fps = cap.get(CAP_PROP_FPS);
 		segi = GetCamIndex(fi, fps, segi);
 		cams[segi].Pan(180);
+		
 
 		for (int v = 0; v < cams[segi].h; v++)
 		{
@@ -572,6 +571,11 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 		int half;
 		int midPx;
 		int ret=eri.ERIPixelInsidePPC((int)(PxU + PxD) / 2,(int)(PxL+PxR)/2, &cams[segi]);
+		
+		int pxudmn = min(PxU, PxD);
+		int pxudmx = max(PxU, PxD);
+		Vec3b insidecolor(255, 0, 0);
+		//cout << PxL << " " << PxR << " " << PxU << " " << PxD <<" "<<pxudmn<<" "<<pxudmx<< endl;;
 
 		if (ret)
 		{
@@ -579,9 +583,8 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 			
 			for (int u = PxL; u < PxR; u++)
 			{
-				for (int v = PxU; v < PxD; v++)
-				{
-					Vec3b insidecolor(255, 0, 0);
+				for (int v = pxudmn; v <pxudmx; v++)
+				{					
 					dualframe.at<Vec3b>(v, u) = insidecolor;
 					frame.at<Vec3b>(v, u) = insidecolor;
 				}
@@ -594,9 +597,8 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 			midPx = eri.w + (eri.w + PxR + PxL) / 2;
 			for (int u = max(PxR,PxL); u < eri.w; u++)
 			{
-				for (int v = PxU; v < PxD; v++)
-				{
-					Vec3b insidecolor(255, 0, 0);
+				for (int v = pxudmn; v < pxudmx; v++)
+				{					
 					dualframe.at<Vec3b>(v, u) = insidecolor;
 					frame.at<Vec3b>(v, u) = insidecolor;
 				}
@@ -604,12 +606,10 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 			}
 			for (int u = 0; u < min(PxL,PxR); u++)
 			{
-				for (int v = PxU; v < PxD; v++)
-				{
-					Vec3b insidecolor(255, 0, 0);
+				for (int v =pxudmn; v < pxudmx; v++)
+				{					
 					dualframe.at<Vec3b>(v, u + eri.w) = insidecolor;
 					frame.at<Vec3b>(v, u) = insidecolor;
-
 				}
 
 			}
@@ -621,29 +621,292 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 		Mat mat2;
 
 		hconcat(frame, dualframe, tripleframe);;
-
-		half = eri.w / 2;
-		
+		half = eri.w / 2;		
 		mat1 = tripleframe.colRange((midPx - half), midPx);
 		mat2 = tripleframe.colRange(midPx, (midPx + half));
 		hconcat(mat1, mat2, midcorrectedmat);
 		
 
-		eri.VisualizeNeededPixels(frame, &cams[segi]);
+		//eri.VisualizeNeededPixels(frame, &cams[segi]);
 		namedWindow("sample", WINDOW_NORMAL);
 		resizeWindow("sample", 600, 400);
 		imshow("sample", frame);
-		//waitKey(1000);
+		waitKey(1000);
 		//imshow("sample", dualframe);
-		waitKey(10000);
+		//waitKey(1000);
 		imshow("sample", midcorrectedmat);
-		waitKey(10000);
+		waitKey(1000);
 
 
 	}//end of fi loop
 
 }
 
+void Path::GetDistoredERI(PPC camera1, int compressionfactor)
+{
 
+	Mat frame;
+	upload_image("./Image/source_image.PNG", frame);
+	
+	if (frame.empty())
+	{
+		cout << "Error loading image"<< endl;
+		
+	}
+
+	Mat dualframe;
+	Mat tripleframe;
+	hconcat(frame, frame, dualframe);
+
+	ERI eri(frame.cols, frame.rows);
+	ERI eritriple(tripleframe.cols, tripleframe.rows);
+	int pixelI, pixelJ = 0;
+	int PxL = eri.w;
+	int PxR = 0;
+	int PxU = eri.h;
+	int PxD = 0;
+	int segi = 0;
+	//int fps = cap.get(CAP_PROP_FPS);
+	//segi = GetCamIndex(fi, fps, segi);
+	camera1.Pan(50);
+	
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		int u = 0;
+		eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+		if (pixelJ < PxL)
+			PxL = pixelJ;
+
+		u = camera1.w - 1;
+		eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+		if (pixelJ > PxR)
+			PxR = pixelJ;
+
+	}
+
+
+	for (int u = 0; u < camera1.w; u++)
+	{
+		int v = 0;
+		eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+		if (pixelI < PxU)
+			PxU = pixelI;
+
+		v = camera1.h - 1;
+		eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+		if (pixelI > PxD)
+			PxD = pixelI;
+
+	}
+	int half;
+	int midPx;
+	int boundingboxlength;
+	int ret = eri.ERIPixelInsidePPC((int)(PxU + PxD) / 2, (int)(PxL + PxR) / 2, &camera1);
+
+	int pxudmn = min(PxU, PxD);
+	int pxudmx = max(PxU, PxD);
+	Vec3b insidecolor(255, 0, 0);
+	Vec3b insidecolor1(255, 255, 0);
+	Vec3b insidecolor2(255, 255, 255);
+	Vec3b insidecolor3(255, 0, 255);	//cout << PxL << " " << PxR << " " << PxU << " " << PxD <<" "<<pxudmn<<" "<<pxudmx<< endl;;
+
+	if (ret)
+	{
+		midPx = eri.w + (PxR + PxL) / 2;
+		boundingboxlength = PxR - PxL;
+		for (int u = PxL; u < PxR; u++)
+		{
+			for (int v = pxudmn; v < pxudmx; v++)
+			{
+				//dualframe.at<Vec3b>(v, u) = insidecolor;
+				//frame.at<Vec3b>(v, u) = insidecolor;
+			}
+		}
+	}
+
+	if (!ret)
+	{
+		boundingboxlength = eri.w+PxR - PxL;
+		midPx = eri.w + (eri.w + PxR + PxL) / 2;
+		for (int u = max(PxR, PxL); u < eri.w; u++)
+		{
+			for (int v = pxudmn; v < pxudmx; v++)
+			{
+				//dualframe.at<Vec3b>(v, u) = insidecolor;
+				//frame.at<Vec3b>(v, u) = insidecolor;
+			}
+
+		}
+		for (int u = 0; u < min(PxL, PxR); u++)
+		{
+			for (int v = pxudmn; v < pxudmx; v++)
+			{
+				//dualframe.at<Vec3b>(v, u + eri.w) = insidecolor;
+				//frame.at<Vec3b>(v, u) = insidecolor;
+			}
+
+		}
+	}
+
+	half = eri.w / 2;
+	Mat midcorrectedmat;
+	Mat mat1;
+	Mat mat2;
+	float R0x = (eri.w/2 - boundingboxlength/2);
+	float R0y=pxudmn;
+	int Q0x = 0;
+	int Q0y = eri.h;
+	int R0R1 = pxudmx - pxudmn;
+	int R0R4 = boundingboxlength;	
+	float We = (eri.w - boundingboxlength) / (2 * compressionfactor);
+	float Het =R0y/compressionfactor;
+	float Heb = (eri.h - (R0y + R0R1))/compressionfactor;
+
+	hconcat(frame, dualframe, tripleframe);;
+	
+	mat1 = tripleframe.colRange((midPx - half), midPx);
+	mat2 = tripleframe.colRange(midPx, (midPx + half));
+	hconcat(mat1, mat2, midcorrectedmat);
+	
+	
+	Mat distortedframemat= Mat::zeros((Het+R0R1+Heb), (2*We+R0R4) , frame.type());
+	Mat tmp = midcorrectedmat(Rect(R0x, R0y, R0R4, R0R1));
+	tmp.copyTo(distortedframemat(Rect(We, Het, R0R4, R0R1)));
+
+	for (int col = 1; col < We; col++)	
+	{
+		for (int row = 1; row < distortedframemat.rows; row++)
+		{
+			float xx = (float)col / (float)row;
+			float yy = (float)We / (float)Het;
+			if (xx < yy && col < (float)(We*(float)(distortedframemat.rows - row) / (float)(Heb)))
+			{
+				//region L
+				//find top point on the line (Ad)
+				float Ay = col * Het / We;  //ady==Ay
+				
+				//bottom point
+				
+				float By = distortedframemat.rows - Heb * col / We;
+
+				//R0Racorresponding point in distorteed
+
+				
+				float R0dy = Het;			
+				
+				float R1dy = distortedframemat.rows - Heb;
+
+				//end point of distoreted				
+				
+				float Md1y = distortedframemat.rows;
+
+				float Rpy=((row - Ay)*(R1dy - R0dy)) / (By - Ay) + R0dy;
+				float Rpx = We;
+
+				float m = (Rpy - row) / (Rpx - col);
+				float distance = sqrt((Rpy - row)*(Rpy - row) + (Rpx - col)*(Rpx - col));
+				
+				int Roriginaly = (R0y-Het)+Rpy- m*distance * compressionfactor*sqrt(1/(1+m*m));
+				int Roriginalx = (R0x-We)+Rpx - distance * compressionfactor*sqrt(1 / (1 + m * m));				
+				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Roriginaly,Roriginalx);
+
+			}
+		}
+	}
+
+	/*
+	Q0											Q4											
+	\--------------------------------------------/ original boundary
+		C\	############..D..############	/E		 line to converted
+	M(0,0)\------------------------------/ N (distortedframemat.cols,0)		 distorted boundary
+			A\*********...d..**********./ B			line being converted
+			 Rd0\------------------/Rd4
+		(We,Het)|					|(we+R0R4, Het)
+				|					|
+			Rd1	|------------------	|
+	
+	*/
+	
+	for (int row = 1; row < Het; row++)
+	{
+		for (int col = 1; col < distortedframemat.cols; col++)
+		{			
+			float xx = (float)col / (float)row;
+			float yy = (float)We / (float)Het;
+			if (xx > yy && row <= (float)(Het*(float)(distortedframemat.cols-col) / (float)(We)))
+			{
+				float d = Het-row;
+				float Dy = R0y - compressionfactor * d;
+				float Cx = Dy*(float)R0x / ((float)R0y);  //cy==dy
+				float Mx=((R0y-Het)+ row) * (float)R0x / ((float)R0y);
+				float Nx= midcorrectedmat.cols + ((R0y - Het) + row) * (float)(R0x + R0R4 - midcorrectedmat.cols) / (float)R0y;
+				float Ex = midcorrectedmat.cols + Dy*(float)(R0x + R0R4 - midcorrectedmat.cols) /(float) R0y;
+				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);		
+				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
+
+			}
+		}
+	}
+
+	for (int col = distortedframemat.cols - We; col < distortedframemat.cols; col++)	
+	{
+		for (int row = 1; row < distortedframemat.rows; row++)		
+		{
+			float xx=Heb*((float)(col-distortedframemat.cols)/(float)We)+distortedframemat.rows;
+
+			if((row<xx) && (row > (float)(Het*(float)(distortedframemat.cols - col) / (float)(We))))
+			{
+				//3rd region
+
+				float d = col - distortedframemat.cols + We;
+				float Dx = R0x + R0R4 + compressionfactor * d;
+				float Cy = R0y * (float)(midcorrectedmat.cols - Dx) / (float)(midcorrectedmat.cols - R0x - R0R4);
+				float My= R0y * (float)(midcorrectedmat.cols - (R0x-We+col)) / (float)(midcorrectedmat.cols - R0x - R0R4);
+				float Ey = midcorrectedmat.rows + (Dx - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
+				float Ny= midcorrectedmat.rows + ((R0x - We + col) - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
+				float Dy = Cy + (Ey - Cy)*(float)(row+R0y-Het-My) / (float)(Ny-My);
+				
+				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
+
+
+			}
+		}
+	}
+
+	for (int row = distortedframemat.rows-Heb; row < distortedframemat.rows; row++)
+	{
+		for (int col = 1; col < distortedframemat.cols; col++)
+		{
+			float xx = Heb * ((float)(col - distortedframemat.cols) / (float)We) + distortedframemat.rows;
+			if (row > xx && col > (float)(We*(float)(distortedframemat.rows - row) / (float)(Heb)))
+			{
+			//4th region				
+				float d = row-(distortedframemat.rows - Heb);
+				float Dy = (R0y + R0R1) + compressionfactor * d;
+				float Cx =  R0x * ((float)(Dy -midcorrectedmat.rows) /(float)(R0y + R0R1 - midcorrectedmat.rows));
+				float Mx= R0x * ((float)(row+R0y-Het - midcorrectedmat.rows) / (float)(R0y + R0R1 - midcorrectedmat.rows));
+				float Nx= midcorrectedmat.cols + (midcorrectedmat.rows - (row + R0y - Het))*((float)(midcorrectedmat.cols - R0x - R0R4) / (float)(R0y + R0R1 - midcorrectedmat.rows));
+				float Ex = midcorrectedmat.cols+ (midcorrectedmat.rows- Dy)*((float)(midcorrectedmat.cols - R0x - R0R4) / (float)(R0y + R0R1 - midcorrectedmat.rows));
+				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);				
+				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
+			}
+		}
+	}
+
+
+	//eri.VisualizeNeededPixels(frame, &cams[segi]);
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 800, 600);
+	//imshow("sample", frame);
+	imshow("sample", distortedframemat);
+	waitKey(10000);
+	//imshow("sample", dualframe);
+	//waitKey(1000);
+	//imshow("sample", midcorrectedmat);
+	//waitKey(10000);
+	
+
+}//mainloop
 
 
