@@ -13,7 +13,7 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
 using namespace std;
-//using namespace cv;
+using namespace cv;
 using namespace std::chrono;
 
 
@@ -488,17 +488,8 @@ void Path::WriteH264tiles(char* fname, int lastFrame, int m, int n, int codec)
 	auto duration = duration_cast<microseconds>(t2 - t1).count();
 	cout << "time tiles for:" <<fname<<": "<< duration << endl;
 
-	return;
-	
-		/*
-		namedWindow("Display frame", WINDOW_NORMAL);
-		resizeWindow("Display frame", 500, 500);
-		imshow("Display frame", tileframes[0][fi]); //left top
-		waitKey(10000);		
-
-		*/		
-
-
+	return;	
+		
 }
 
 
@@ -642,6 +633,9 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 
 }
 
+
+//take a image and created a distorted image from it based on compression factor
+//reference Dr. Popescu GPC paper.
 void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 {
 
@@ -670,6 +664,7 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 	//segi = GetCamIndex(fi, fps, segi);
 	camera1.Pan(50);
 	
+	/****************Get left right most points of the convectional image from the ERI and the camera***************/
 
 	for (int v = 0; v < camera1.h; v++)
 	{
@@ -711,42 +706,19 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 	Vec3b insidecolor2(255, 255, 255);
 	Vec3b insidecolor3(255, 0, 255);	//cout << PxL << " " << PxR << " " << PxU << " " << PxD <<" "<<pxudmn<<" "<<pxudmx<< endl;;
 
+	/********************Get middle point and create create bounding box*******************/
+	/*****************Ret is used to check weather the image has right before left (In case of image splited between end and start of the ERI***********************/
+
 	if (ret)
 	{
 		midPx = eri.w + (PxR + PxL) / 2;
-		boundingboxlength = PxR - PxL;
-		for (int u = PxL; u < PxR; u++)
-		{
-			for (int v = pxudmn; v < pxudmx; v++)
-			{
-				//dualframe.at<Vec3b>(v, u) = insidecolor;
-				//frame.at<Vec3b>(v, u) = insidecolor;
-			}
-		}
+		boundingboxlength = PxR - PxL;		
 	}
 
 	if (!ret)
 	{
 		boundingboxlength = eri.w+PxR - PxL;
-		midPx = eri.w + (eri.w + PxR + PxL) / 2;
-		for (int u = max(PxR, PxL); u < eri.w; u++)
-		{
-			for (int v = pxudmn; v < pxudmx; v++)
-			{
-				//dualframe.at<Vec3b>(v, u) = insidecolor;
-				//frame.at<Vec3b>(v, u) = insidecolor;
-			}
-
-		}
-		for (int u = 0; u < min(PxL, PxR); u++)
-		{
-			for (int v = pxudmn; v < pxudmx; v++)
-			{
-				//dualframe.at<Vec3b>(v, u + eri.w) = insidecolor;
-				//frame.at<Vec3b>(v, u) = insidecolor;
-			}
-
-		}
+		midPx = eri.w + (eri.w + PxR + PxL) / 2;		
 	}
 
 	half = eri.w / 2;
@@ -767,12 +739,70 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 	
 	mat1 = tripleframe.colRange((midPx - half), midPx);
 	mat2 = tripleframe.colRange(midPx, (midPx + half));
-	hconcat(mat1, mat2, midcorrectedmat);
+	hconcat(mat1, mat2, midcorrectedmat);          ///Rotates ERI to put bounding box midle of the frame.
 	
 	
 	Mat distortedframemat= Mat::zeros((Het+R0R1+Heb), (2*We+R0R4) , frame.type());
 	Mat tmp = midcorrectedmat(Rect(R0x, R0y, R0R4, R0R1));
-	tmp.copyTo(distortedframemat(Rect(We, Het, R0R4, R0R1)));
+
+	/*********************** create a red outline********************************************/
+	Rect RectangleToDraw(0, 0, tmp.cols, tmp.rows);
+	rectangle(tmp, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
+	
+	tmp.copyTo(distortedframemat(Rect(We, Het, R0R4, R0R1)));     //copy the bounding box and paste in the distortedframemat image. 
+
+	/*
+	
+	
+		Q(0,0)
+			___________________________________________________________________________________________________
+			|\												/ \													|	
+			|	\	C										 |(R0y)												|
+			|		\		P()								 |													|
+			|		:	\	 ________________________________|_______________________________					|
+			|		:		|\								 |	   / \						|					|
+			|		:		|	\	M						 |		|Het					|					|
+			|		:		|		\						 |		|						|					|
+			|		:		|		.	\	R0(R0x,R0y)		 |		|	   R4(R0x+R4R1,R0y)    					|					|
+			|		:    	|		.		\_______________\_/____\_/_____										|					|
+			|	<------(R0x)-------------->	|								|				|					|
+			|		:		|		.		|								|				|					|
+			|		:		|<........We..>	|								|				|					|
+			|		:       |		.	    |								|				|					|
+			D(Dx,Dy):<------cfactor*d--->/	|								|				|					|
+			|		:		|		./		|								|				|					|
+			|		:		|	/	.<--d-->(R0x, Roy+R0R1)	     			|				|					|
+			|		:	  /	|		.	 R1 |______________________________	|									|					|
+			|		:/		|		.		/												|					|
+			|		:		|		.	/													|					|
+			|		:		|		/														|					|
+			|		:		|	/	N														|					|
+			|		:		|/______________________________________________________________|					|
+			|		:																							|
+			|		:	/																						|
+			|		/E																							|
+			|	/																								|
+			|/__________________________________________________________________________________________________|
+			
+	
+	
+	Q: original midcorreccted ERI image
+	P: distorted (compressed) ERI image
+	R: bounding box of the visualized ERI pixels
+	R0x=horizontal distance between original ERI and bounding box
+	R0y= same for vertical axis
+	We= thickness of padding in x axis (x distance between P and R)
+	Het=thickness of upper region
+	Heb=thickness of lower region
+	MN=line being transformed
+	EC=line which MN will be transfered
+	
+	
+	
+	*/
+
+/*****************Encode each of the four region: left, top, right, bottom********************/
+
 
 	for (int col = 1; col < We; col++)	
 	{
@@ -782,19 +812,13 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 			float yy = (float)We / (float)Het;
 			if (xx < yy && col < (float)(We*(float)(distortedframemat.rows - row) / (float)(Heb)))
 			{
-				//region L
-				//find top point on the line (Ad)
-				float Ay = col * Het / We;  //ady==Ay
+				//region L this one using the technique of using distance to find a point with a slope m//
 				
-				//bottom point
-				
-				float By = distortedframemat.rows - Heb * col / We;
+				float Ay = col * Het / We;  //ady==Ay		 //find top point on the line (Ad)								
+				float By = distortedframemat.rows - Heb * col / We;   //bottom point
 
-				//R0Racorresponding point in distorteed
-
-				
-				float R0dy = Het;			
-				
+				//R0Racorresponding point in distorteed				
+				float R0dy = Het;					
 				float R1dy = distortedframemat.rows - Heb;
 
 				//end point of distoreted				
@@ -815,18 +839,7 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 		}
 	}
 
-	/*
-	Q0											Q4											
-	\--------------------------------------------/ original boundary
-		C\	############..D..############	/E		 line to converted
-	M(0,0)\------------------------------/ N (distortedframemat.cols,0)		 distorted boundary
-			A\*********...d..**********./ B			line being converted
-			 Rd0\------------------/Rd4
-		(We,Het)|					|(we+R0R4, Het)
-				|					|
-			Rd1	|------------------	|
-	
-	*/
+
 	
 	for (int row = 1; row < Het; row++)
 	{
@@ -836,9 +849,12 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 			float yy = (float)We / (float)Het;
 			if (xx > yy && row <= (float)(Het*(float)(distortedframemat.cols-col) / (float)(We)))
 			{
-				float d = Het-row;
-				float Dy = R0y - compressionfactor * d;
-				float Cx = Dy*(float)R0x / ((float)R0y);  //cy==dy
+				float d = Het-row;  //get distance between current line with the base line
+				float Dy = R0y - compressionfactor * d;  //Get Dy by multiplying d with factor, this line in orig ERI represent line d of distorted ERI
+				float Cx = Dy*(float)R0x / ((float)R0y);  //Cy==Dy
+
+				//use equation to find E,C, M,N. We know their x distance, put that in line equation to find y distance//
+
 				float Mx=((R0y-Het)+ row) * (float)R0x / ((float)R0y);
 				float Nx= midcorrectedmat.cols + ((R0y - Het) + row) * (float)(R0x + R0R4 - midcorrectedmat.cols) / (float)R0y;
 				float Ex = midcorrectedmat.cols + Dy*(float)(R0x + R0R4 - midcorrectedmat.cols) /(float) R0y;
@@ -865,8 +881,7 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 				float My= R0y * (float)(midcorrectedmat.cols - (R0x-We+col)) / (float)(midcorrectedmat.cols - R0x - R0R4);
 				float Ey = midcorrectedmat.rows + (Dx - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
 				float Ny= midcorrectedmat.rows + ((R0x - We + col) - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
-				float Dy = Cy + (Ey - Cy)*(float)(row+R0y-Het-My) / (float)(Ny-My);
-				
+				float Dy = Cy + (Ey - Cy)*(float)(row+R0y-Het-My) / (float)(Ny-My);				
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
 
 
@@ -894,19 +909,154 @@ void Path::GetDistoredERI(PPC camera1, int compressionfactor)
 		}
 	}
 
-
+	float overallcompressionfactor =100* distortedframemat.rows*distortedframemat.cols / (midcorrectedmat.rows*midcorrectedmat.cols);
+	cout << overallcompressionfactor << endl;
+	//OverlayImage(&midcorrectedmat, &distortedframemat, Point((R0x-We), (R0y-Het)));
 	//eri.VisualizeNeededPixels(frame, &cams[segi]);
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 600);
+	//namedWindow("sample", WINDOW_NORMAL);
+	//resizeWindow("sample", 800, 400);
 	//imshow("sample", frame);
-	imshow("sample", distortedframemat);
-	waitKey(10000);
+	//imshow("sample", distortedframemat);
+	//waitKey(10000);
 	//imshow("sample", dualframe);
 	//waitKey(1000);
 	//imshow("sample", midcorrectedmat);
 	//waitKey(10000);
-	
+	Decode(distortedframemat, eri.w, eri.h, We, Het, Heb, R0x, R0y, compressionfactor);
 
-}//mainloop
+}//mainloop of Distorted ERI
 
 
+void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int Het, int Heb, int R0x, int R0y, int compressionfactor)
+{
+	int R0R4 = encoded_image.cols - 2 * We;
+	int R0R1 = encoded_image.rows - Het - Heb;
+	Mat decodedframe(original_h, original_w, encoded_image.type());	
+	Mat tmp = encoded_image(Rect(We, Het, R0R4, R0R1));
+
+	/*********************** create a red outline********************************************/
+	Rect RectangleToDraw(0, 0, tmp.cols, tmp.rows);
+	rectangle(tmp, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
+
+	tmp.copyTo(decodedframe(Rect(R0x, R0y, R0R4, R0R1)));     //copy the bounding box and paste in the distortedframemat image. 
+
+	/***************************Region 01: left *****************************************/
+	for (int col = 1; col < R0x; col++)
+	{for (int row = 2; row < decodedframe.rows; row++)
+		{
+			Vec3b insidecolor(255, 0, 0);
+			
+			float x1 = col *  (float)R0y/(float)R0x;
+			float x2 = decodedframe.rows- (float)col*(decodedframe.rows - (R0y + R0R1))/(float)R0x;
+			
+				if ((row > x1) && (row < x2-1))
+				{// decodedframe.at<Vec3b>(row, col) = insidecolor;
+					float d = R0x - col;
+					float dx = col;
+					float dy = row;
+					float Dx = R0x -d/compressionfactor;
+					float Cx = Dx;
+					float Ex = Dx;
+					float My = dx*(float)R0y / (float)R0x;
+					float Cy =  Cx*(float)R0y / (float)R0x;
+					float Ny = decodedframe.rows - (float)dx*(decodedframe.rows - R0y - R0R1) / (float)R0x;
+					float Ey = decodedframe.rows - (float)Ex*(decodedframe.rows - R0y - R0R1) / (float)R0x;
+					float Dy = Ey - (float)((Ey-Cy)*(Ny-dy)) /(float)(Ny-My);
+					int distx = Dx - (R0x - We);
+					int disty=Dy - (R0y - Het);
+					//cout << distx << " " << disty <<" "<<Ny<< endl;
+					decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty,distx );
+				}
+		}
+	}  //end region 1
+
+
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 800, 400);	
+	imshow("sample", decodedframe);
+	waitKey(10000);
+
+	/*
+
+
+		Q0(0,0)
+			___________________________________________________________________________________________________
+			|\												/ \													|
+			|	\	C										 |(R0y)												|
+			|		\		P()								 |													|
+			|		:	\	 ________________________________|_______________________________					|
+			|		:		|\								 |	   / \						|					|
+			|		:		|	\	M						 |		|Het					|					|
+			|		:		|		\						 |		|						|					|
+			|		:		|		.	\	R0(R0x,R0y)		 |		|	   R4(R0x+R4R1,R0y)    					|					|
+			|		:    	|		.		\_______________\_/____\_/_____										|					|
+			|	<------(R0x)-------------->	|								|				|					|
+			|		:		|		.		|								|				|					|
+			|		:		|<........We..>	|								|				|					|
+			|		:       |		.	    |								|				|					|
+			D(Dx,Dy):<------cfactor*d--->/	|								|				|					|
+			|		:		|		./		|								|				|					|
+			|		:		|	/	.<--d-->(R0x, Roy+R0R1)	     			|				|					|
+			|		:	  /	|		.	 R1 |______________________________	|									|					|
+			|		:/		|		.		/												|					|
+			|		:		|		.	/													|					|
+			|		:		|		/														|					|
+			|		:		|	/	N														|					|
+			|		:		|/______________________________________________________________|					|
+			|		:																							|
+			|		:	/																						|
+			|		/E																							|
+			|	/																								|
+			|/__________________________________________________________________________________________________|
+	Q1(0, eri.h)
+
+
+	Q: original midcorreccted ERI image
+	P: distorted (compressed) ERI image
+	R: bounding box of the visualized ERI pixels
+	R0x=horizontal distance between original ERI and bounding box
+	R0y= same for vertical axis
+	We= thickness of padding in x axis (x distance between P and R)
+	Het=thickness of upper region
+	Heb=thickness of lower region
+	MN=line being transformed
+	EC=line which MN will be transfered
+
+
+
+	*/
+
+
+
+}
+
+/*
+Overlay image: Put one image transparantely on top of other image
+*/
+void Path::OverlayImage(Mat* src, Mat* overlay, const Point& location)
+{
+	for (int y = max(location.y, 0); y < src->rows; ++y)
+	{
+		int fY = y - location.y;
+
+		if (fY >= overlay->rows)
+			break;
+
+		for (int x = max(location.x, 0); x < src->cols; ++x)
+		{
+			int fX = x - location.x;
+
+			if (fX >= overlay->cols)
+				break;
+
+			double opacity = ((double)overlay->data[fY * overlay->step + fX * overlay->channels() + 3]) / 255;
+
+			for (int c = 0; opacity > 0 && c < src->channels(); ++c)
+			{
+				unsigned char overlayPx = overlay->data[fY * overlay->step + fX * overlay->channels() + c];
+				unsigned char srcPx = src->data[y * src->step + x * src->channels() + c];
+				src->data[y * src->step + src->channels() * x + c] = srcPx * (1. - opacity) + overlayPx * opacity;
+			}
+		}
+	}
+}// End Overlay image
