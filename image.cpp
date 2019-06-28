@@ -287,12 +287,12 @@ void testBoundingBox()
 	path1.DrawBoundinigBox("./video/roller.mkv", lastFrame);
 
 }
-
+	
 void testDistortedERI()
 {
 	Path path1;	
 	PPC camera1(cFoV, cameraW, cameraH);	
-	path1.GetDistoredERI(camera1, 5);
+	path1.GetDistoredERI(camera1,3);
 
 }
 

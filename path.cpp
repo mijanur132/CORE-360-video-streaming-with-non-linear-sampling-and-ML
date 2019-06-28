@@ -937,19 +937,20 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 	/*********************** create a red outline********************************************/
 	Rect RectangleToDraw(0, 0, tmp.cols, tmp.rows);
 	rectangle(tmp, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
-
 	tmp.copyTo(decodedframe(Rect(R0x, R0y, R0R4, R0R1)));     //copy the bounding box and paste in the distortedframemat image. 
+	int mxrow = decodedframe.rows - 1;
+	int mxcol = decodedframe.cols - 1;
 
 	/***************************Region 01: left *****************************************/
 	for (int col = 1; col < R0x; col++)
-	{for (int row = 2; row < decodedframe.rows; row++)
+	{for (int row = 1; row < decodedframe.rows; row++)
 		{
 			Vec3b insidecolor(255, 0, 0);
 			
 			float x1 = col *  (float)R0y/(float)R0x;
-			float x2 = decodedframe.rows- (float)col*(decodedframe.rows - (R0y + R0R1))/(float)R0x;
+			float x2 = mxrow- (float)col*(mxrow - (R0y + R0R1))/(float)R0x;
 			
-				if ((row > x1) && (row < x2-1))
+				if ((row > x1) && (row < x2))
 				{// decodedframe.at<Vec3b>(row, col) = insidecolor;
 					float d = R0x - col;
 					float dx = col;
@@ -959,17 +960,120 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 					float Ex = Dx;
 					float My = dx*(float)R0y / (float)R0x;
 					float Cy =  Cx*(float)R0y / (float)R0x;
-					float Ny = decodedframe.rows - (float)dx*(decodedframe.rows - R0y - R0R1) / (float)R0x;
-					float Ey = decodedframe.rows - (float)Ex*(decodedframe.rows - R0y - R0R1) / (float)R0x;
+					float Ny = mxrow - (float)dx*(mxrow - R0y - R0R1) / (float)R0x;
+					float Ey = mxrow - (float)Ex*(mxrow - R0y - R0R1) / (float)R0x;
 					float Dy = Ey - (float)((Ey-Cy)*(Ny-dy)) /(float)(Ny-My);
 					int distx = Dx - (R0x - We);
 					int disty=Dy - (R0y - Het);
-					//cout << distx << " " << disty <<" "<<Ny<< endl;
+					if (disty >= encoded_image.rows)
+					{
+						cout << distx << " " << disty << " " << Ny << endl;
+						disty = encoded_image.rows - 1;
+					}
 					decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty,distx );
 				}
 		}
 	}  //end region 1
 
+
+	//region 3
+
+
+	for (int col = mxcol-R0x; col < mxcol; col++)
+	{
+		for (int row = 1; row < mxrow; row++)
+		{
+			Vec3b insidecolor(255, 0, 0);
+
+			float y1 = (float)R0y*(mxcol-col) /(float)(mxcol-R0x-R0R4);
+			float y2 = mxrow + (float)(col-mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol-(R0x+R0R4));
+
+			if ((row >= y1) && (row <= y2+1))
+			{
+				float d = col+R0x-mxcol;
+				float dx = col;
+				float dy = row;
+				float Dx = d / compressionfactor+mxcol - R0x;;
+				float Cx = Dx;
+				float Ex = Dx;
+				float My = (float)R0y*(mxcol - dx) / (float)(mxcol - R0x - R0R4);
+				float Cy = (float)R0y*(mxcol- Dx) / (float)(mxcol - R0x - R0R4);
+				float Ny = mxrow + (float)(dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+				float Ey = mxrow + (float)(Dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+				float Dy = Ey - (float)((Ey - Cy)*(Ny - dy)) / (float)(Ny - My);
+				int distx = Dx - (R0x - We);
+				int disty = Dy - (R0y - Het);				
+				decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty, distx);
+				
+			}
+		}
+	}  //end region 3
+
+	//region 2: top
+
+	for (int row = 1; row < R0y; row++)
+	{
+		for (int col = 1; col < decodedframe.cols; col++)
+		{
+			Vec3b insidecolor(255, 0, 0);
+
+			float y1 = col * (float)R0y / (float)R0x;
+			float y2 = (float)R0y*(decodedframe.cols - col) / (float)(decodedframe.cols - R0x - R0R4);
+
+			if ((row < y1) && (row <= y2))
+			{
+				float d = R0y-row;
+				float dx = col;
+				float dy = row;
+				float Dy = R0y - d / compressionfactor;
+				float Cy = Dy;
+				float Ey = Dy;
+				float Mx = dy * (float)R0x / (float)R0y;
+				float Cx = Dy * (float)R0x / (float)R0y;;
+				float Nx=  decodedframe.cols - dy*(float)(decodedframe.cols - R0x - R0R4)/(float)R0y;
+				float Ex = decodedframe.cols - Dy * (float)(decodedframe.cols - R0x - R0R4) / (float)R0y;
+				float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
+				int distx = Dx- (R0x - We);
+				int disty = Dy - (R0y - Het);
+				//cout<<encoded_image.size() << distx << " " << disty<<endl;
+				decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty, distx);
+				//decodedframe.at<Vec3b>(row, col) = insidecolor;
+			}
+		}
+	}  //end region 2
+
+	//region 4: top
+
+	for (int row = decodedframe.rows-R0y; row < decodedframe.rows; row++)
+	{
+		for (int col = 0; col <= decodedframe.cols; col++)
+		{
+			Vec3b insidecolor(255, 0, 0);
+
+			float x1=(decodedframe.rows-row)*(float)R0x / (decodedframe.rows - (R0y + R0R1));
+			float x2 =decodedframe.cols+(row - decodedframe.rows)*(float)(decodedframe.cols - (R0x + R0R4))/(decodedframe.rows - (R0y + R0R1));
+
+			if ((col >= x1-2) && (col <= x2))
+			{
+				float d = row-(R0y+R0R1);
+				float dx = col;
+				float dy = row;
+				float Dy =(float)d/(float)compressionfactor+ (R0y+R0R1);
+				float Cy = Dy;
+				float Ey = Dy;
+				float Mx = (decodedframe.rows - dy)*(float)R0x / (decodedframe.rows - (R0y + R0R1));
+				float Cx = (decodedframe.rows - Dy)*(float)R0x / (decodedframe.rows - (R0y + R0R1));
+				float Nx = decodedframe.cols + (dy - decodedframe.rows)*(float)(decodedframe.cols - (R0x + R0R4)) / (decodedframe.rows - (R0y + R0R1));
+				float Ex = decodedframe.cols + (Dy - decodedframe.rows)*(float)(decodedframe.cols - (R0x + R0R4)) / (decodedframe.rows - (R0y + R0R1));
+				float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
+				int distx = Dx - (R0x - We);
+				int disty = Dy - (R0y - Het)-1;
+				//cout<<encoded_image.size() << distx << " " << disty<<endl;
+				decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty, distx);
+				//decodedframe.at<Vec3b>(row, col) = insidecolor;
+			}
+		}
+	}  //end region 4
 
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 400);	
