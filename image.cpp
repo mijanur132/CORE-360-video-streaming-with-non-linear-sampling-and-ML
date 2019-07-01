@@ -280,6 +280,7 @@ int testWriteh264tiles() {
 
 void testBoundingBox()
 {
+	
 	Path path1;
 	int lastFrame = 1500;
 	PPC camera1(cFoV, cameraW, cameraH);
@@ -288,12 +289,71 @@ void testBoundingBox()
 
 }
 	
-void testDistortedERI()
+void testEncodingDecoding()
 {
-	Path path1;	
-	PPC camera1(cFoV, cameraW, cameraH);	
-	path1.GetDistoredERI(camera1,3);
+	int We;
+	int Het;
+	int Heb;
+	int R0x;
+	int R0y;
 
+	int compressionfactor = 5;
+	Path path1;	
+	Mat frame;
+	Mat retencode;
+	Mat retdecode;
+	upload_image("./Image/source_image.PNG", frame);
+	PPC camera1(cFoV, cameraW, cameraH);	
+	retencode=path1.Encode(camera1,compressionfactor, frame, We, Het, Heb, R0x, R0y);
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 800, 400);	
+	imshow("sample", retencode);
+	waitKey(100000);
+
+	retdecode = path1.Decode(retencode, frame.cols, frame.rows, We, Het, Heb, R0x, R0y, compressionfactor);
+			
+	imshow("sample", retdecode);
+	waitKey(100000);
+
+}
+
+
+int testvideoencodedecode() {
+	
+	int We;
+	int Het;
+	int Heb;
+	int R0x;
+	int R0y;
+	int compressionfactor = 5;
+	Path path1;
+	vector <Mat> encodedbuffer;
+	PPC camera1(cFoV, cameraW, cameraH);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	int lastframe = 300;	
+	encodedbuffer=path1.videoencode("./Video/roller.mkv", lastframe, We, Het, Heb, R0x, R0y, compressionfactor);
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 800, 400);
+	
+	for (int fi = 0; fi < encodedbuffer.size(); fi++)
+	{
+		imshow("sample", encodedbuffer[fi]);
+		waitKey(30);
+		
+	}
+
+	Mat retdecode;
+
+	for (int fi = 0; fi < encodedbuffer.size(); fi++)
+	{
+		retdecode = path1.Decode(encodedbuffer[fi],3840, 2048, We, Het, Heb, R0x, R0y, compressionfactor);
+		imshow("sample",retdecode);
+		waitKey(30);
+
+	}
+	
+	return 0;
+	
 }
 
 

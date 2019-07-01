@@ -31,7 +31,9 @@ int main()
 	//testtilevideo();
 	//testPlayBackHMDPathVideo();
 	//testBoundingBox();
-	testDistortedERI();
+	testEncodingDecoding();
+
+	//testvideoencodedecode();
 	system("pause");
 	return 0;
 }

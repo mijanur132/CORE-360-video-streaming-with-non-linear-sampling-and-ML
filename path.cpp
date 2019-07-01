@@ -18,11 +18,11 @@ using namespace std::chrono;
 
 
 Path::Path() {
-	cout << "One Path created" << endl;
+	print("One Path created" << endl);
 }
 
 Path::~Path() {
-	cout << "One Path deleted" << endl;
+	print("One Path deleted" << endl);
 }
 
 
@@ -40,7 +40,7 @@ void Path::PlayBackPathStillImage(Mat eriPixels, ERI eri, Mat convPixels)
 	//to play back every camera for one frame segmentFramesN[segi] needs to be 2
 	//it does not reach last frame
 	Mat erivis = cv::Mat::zeros(eri.h, eri.w, IMAGE_TYPE);
-	cout << cams.size() - 1 << endl;	
+	print(cams.size() - 1 << endl);	
 	for (int segi = 0; segi < cams.size()-1; segi++)
 	{
 		for (int fi = 0; fi < segmentFramesN[segi]-1; fi++) 
@@ -66,7 +66,7 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 	ifstream  file(filename);
 	if (!file)
 	{
-		cout << "error: can't open file: " <<filename<< endl;
+		print("error: can't open file: " <<filename<< endl);
 		system("pause");
 	}
 	string   line;
@@ -95,7 +95,7 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 		AppendCamera(camera1,2 );
 	}
 
-	cout << "read: " << cams.size() << " cameras from: " << filename << endl;
+	print("read: " << cams.size() << " cameras from: " << filename << endl);
 	
 		
 }
@@ -129,10 +129,10 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 		}	
 		segi = GetCamIndex(fi, fps, segi);
 		eri.ERI2Conv(frame, convPixels, cams[segi]);	
-		cout << fi << " " << segi << "; ";
+		print(fi << " " << segi << "; ");
 		//imshow("outputImage", convPixels);
 		eri.VisualizeNeededPixels(erivis, &(cams[segi]));
-		cout << "done visualisation" << endl;
+		print("done visualisation" << endl);
 		imshow("ERIpixelsNeeded", erivis);
 		waitKey(10);
 	
@@ -173,14 +173,14 @@ void Path::PlayBackPathVideoPixelInterval(char* fname, Mat convPixels, int lastF
 		}
 		segi = GetCamIndex(fi, fps, segi);	
 		pixelcalc.GetFramePixelInterval(eri, erivis, &(cams[segi]));		
-		cout << "done visualisation" << endl;		
+		print(cout << "done visualisation" << endl);
 		waitKey(1);
 
 	}
 
 	//pixelcalc.PrintPixelInterval();
 	pixelcalc.SaveIntervalTxt();
-	cout << "done Interval saving" << endl;
+	print("done Interval saving" << endl);
 }//most outer loop of playbackpathvideoopixelinterval
 
 
@@ -189,7 +189,7 @@ void Path::PlayBackPathVideoPixelInterval(char* fname, Mat convPixels, int lastF
 int Path::GetCamIndex(int fi, int fps, int segi) {
 
 	int ret = segi;
-	cout << fps <<""<<fi<< endl;
+	print(cout << fps <<""<<fi<< endl);
 	while (tstamps[ret] <= (float)(fi)/(float)(fps))
 	{
 		ret++;
@@ -279,7 +279,7 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 
 		if (fi%(fps*t) == 0) 
 		{
-			//cout <<"frame No: "<< fi << "chunk no: " << fi / (fps*t) << endl;
+			print("frame No: "<< fi << "chunk no: " << fi / (fps*t) << endl);
 			for (int i = 0; i < m*n; i++)
 			{
 				
@@ -287,7 +287,7 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 				{
 					totaltiles++;
 				}
-				//cout << "tile: " << Tilebitmap[i] <<", Total-"<<totaltiles<< endl;
+				print("tile: " << Tilebitmap[i] <<", Total-"<<totaltiles<< endl);
 				Tilebitmap.at(i)=0;
 			}
 			waitKey(10);
@@ -295,13 +295,13 @@ void Path::ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t)
 
 		
 	}//outer for loop for all frame
-	cout <<"H: "<< eri.h<<" W: "<< eri.w<<" M: "<<m<<" N: "<<n<<" FPS: "<<fps<<" "<<" T: "<<t<<" Total Tiles: "<<totaltiles<< endl;
+	print("H: "<< eri.h<<" W: "<< eri.w<<" M: "<<m<<" N: "<<n<<" FPS: "<<fps<<" "<<" T: "<<t<<" Total Tiles: "<<totaltiles<< endl);
 	double total_tile_pixel = eri.h*eri.w*fps*t*1UL / (m*n);
 	total_tile_pixel = totaltiles * total_tile_pixel*1UL;
 	double result = (ERItotal*lastFrame * 100UL /total_tile_pixel) ;
-	//cout << "Total_tile_pixel: " << total_tile_pixel << endl;
-	//cout << "Total requierd ERI pixel: " << ERItotal*lastFrame << endl;
-	cout << "Required and supplied %: " << result << endl;
+	//print("Total_tile_pixel: " << total_tile_pixel << endl);
+	//print("Total requierd ERI pixel: " << ERItotal*lastFrame << endl);
+	print("Required and supplied %: " << result << endl);
 
 }
 
@@ -313,7 +313,7 @@ void Path::VDrotationAvg()
 	{
 		V3 cam1 = cams[i].GetVD();
 		V3 cam2 = cams[i + 1].GetVD();
-		cout << cam1 <<"; " <<cam2<< endl;
+		print(cam1 <<"; " <<cam2<< endl);
 		double angleproduct = cam1 * cam2;
 		if (angleproduct <= -1.0) {
 			angle=180;
@@ -326,11 +326,11 @@ void Path::VDrotationAvg()
 		}
 		
 		total_angle = total_angle + angle;
-		cout << "Angle: " << angle << " Total angle: " << total_angle << endl;
+		print("Angle: " << angle << " Total angle: " << total_angle << endl);
 	
 	}
 	
-	cout << "No of camera: " << cams.size() << "; Total Angle: " << total_angle << endl;
+	print("No of camera: " << cams.size() << "; Total Angle: " << total_angle << endl);
 }
 
 void Path::WriteH264(char* fname, int lastFrame, int codec)
@@ -634,13 +634,17 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 }
 
 
+
+
+
+/*************************************************************************************************************/
+/**************************************************************************************************************/
 //take a image and created a distorted image from it based on compression factor
 //reference Dr. Popescu GPC paper.
-void Path::Encode(PPC camera1, int compressionfactor)
+Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, int& We1, int& Het1, int& Heb1, int& R0x1, int& R0y1)
 {
-
-	Mat frame;
-	upload_image("./Image/source_image.PNG", frame);
+	
+	//upload_image("./Image/source_image.PNG", frame);
 	
 	if (frame.empty())
 	{
@@ -802,7 +806,8 @@ void Path::Encode(PPC camera1, int compressionfactor)
 	*/
 
 /*****************Encode each of the four region: left, top, right, bottom********************/
-
+	int mxdrow = distortedframemat.rows - 1;
+	int mxdcol= distortedframemat.cols - 1;
 
 	for (int col = 0; col < We; col++)	
 	{
@@ -810,20 +815,20 @@ void Path::Encode(PPC camera1, int compressionfactor)
 		{
 			float xx = (float)col / (float)row;
 			float yy = (float)We / (float)Het;
-			if (xx <= yy && col < (float)(We*(float)(distortedframemat.rows - row) / (float)(Heb)))
+			if (xx < yy && col < (float)(We*(float)(mxdrow - row) / (float)(Heb)))
 			{
 				//region L this one using the technique of using distance to find a point with a slope m//
 				
 				float Ay = col * Het / We;  //ady==Ay		 //find top point on the line (Ad)								
-				float By = distortedframemat.rows - Heb * col / We;   //bottom point
+				float By = mxdrow - Heb * col / We;   //bottom point
 
 				//R0Racorresponding point in distorteed				
 				float R0dy = Het;					
-				float R1dy = distortedframemat.rows - Heb;
+				float R1dy = mxdrow - Heb;
 
 				//end point of distoreted				
 				
-				float Md1y = distortedframemat.rows;
+				float Md1y = mxdrow;
 
 				float Rpy=((row - Ay)*(R1dy - R0dy)) / (By - Ay) + R0dy;
 				float Rpx = We;
@@ -838,16 +843,18 @@ void Path::Encode(PPC camera1, int compressionfactor)
 			}
 		}
 	}
+	print("loop1" << endl);
 
-
+	int mxcrow = midcorrectedmat.rows - 1;
+	int mxccol = midcorrectedmat.cols - 1;
 	
 	for (int row = 0; row < Het; row++)
 	{
-		for (int col = 1; col < distortedframemat.cols; col++)
+		for (int col = 0; col < distortedframemat.cols; col++)
 		{			
 			float xx = (float)col / (float)row;
 			float yy = (float)We / (float)Het;
-			if (xx > yy && row <= (float)(Het*(float)(distortedframemat.cols-col) / (float)(We)))
+			if (xx > yy && row < (float)(Het*(float)(mxdcol-col) / (float)(We)))
 			{
 				float d = Het-row;  //get distance between current line with the base line
 				float Dy = R0y - compressionfactor * d;  //Get Dy by multiplying d with factor, this line in orig ERI represent line d of distorted ERI
@@ -856,8 +863,8 @@ void Path::Encode(PPC camera1, int compressionfactor)
 				//use equation to find E,C, M,N. We know their x distance, put that in line equation to find y distance//
 
 				float Mx=((R0y-Het)+ row) * (float)R0x / ((float)R0y);
-				float Nx= midcorrectedmat.cols + ((R0y - Het) + row) * (float)(R0x + R0R4 - midcorrectedmat.cols) / (float)R0y;
-				float Ex = midcorrectedmat.cols + Dy*(float)(R0x + R0R4 - midcorrectedmat.cols) /(float) R0y;
+				float Nx= mxccol + ((R0y - Het) + row) * (float)(R0x + R0R4 - mxccol) / (float)R0y;
+				float Ex = mxccol + Dy*(float)(R0x + R0R4 - mxccol) /(float) R0y;
 				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);		
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
 
@@ -865,22 +872,23 @@ void Path::Encode(PPC camera1, int compressionfactor)
 		}
 	}
 
-	for (int col = distortedframemat.cols - We; col < distortedframemat.cols; col++)	
+	print("loop2" << endl);
+	for (int col = We+R0R4; col < distortedframemat.cols; col++)	
 	{
 		for (int row = 0; row < distortedframemat.rows; row++)		
 		{
-			float xx=Heb*((float)(col-distortedframemat.cols)/(float)We)+distortedframemat.rows;
+			float xx=Heb*((float)(col-mxdcol)/(float)We)+mxdrow;
 
-			if((row<xx) && (row > (float)(Het*(float)(distortedframemat.cols - col) / (float)(We))))
+			if((row<xx) && (row > (float)(Het*(float)(mxdcol - col) / (float)(We))))
 			{
 				//3rd region
 
-				float d = col - distortedframemat.cols + We;
+				float d = col - We - R0R4;
 				float Dx = R0x + R0R4 + compressionfactor * d;
-				float Cy = R0y * (float)(midcorrectedmat.cols - Dx) / (float)(midcorrectedmat.cols - R0x - R0R4);
-				float My= R0y * (float)(midcorrectedmat.cols - (R0x-We+col)) / (float)(midcorrectedmat.cols - R0x - R0R4);
-				float Ey = midcorrectedmat.rows + (Dx - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
-				float Ny= midcorrectedmat.rows + ((R0x - We + col) - midcorrectedmat.cols)*(float)(midcorrectedmat.rows - R0y - R0R1) / (float)(midcorrectedmat.cols - R0x - R0R4);
+				float Cy = R0y * (float)(mxccol - Dx) / (float)(mxccol - R0x - R0R4);
+				float My= R0y * (float)(mxccol - (R0x-We+col)) / (float)(mxccol - R0x - R0R4);
+				float Ey = mxcrow + (Dx - mxccol)*(float)(mxcrow - R0y - R0R1) / (float)(mxccol - R0x - R0R4);
+				float Ny= mxcrow + ((R0x - We + col) - mxccol)*(float)(mxcrow - R0y - R0R1) / (float)(mxccol - R0x - R0R4);
 				float Dy = Cy + (Ey - Cy)*(float)(row+R0y-Het-My) / (float)(Ny-My);				
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
 
@@ -889,45 +897,48 @@ void Path::Encode(PPC camera1, int compressionfactor)
 		}
 	}
 
-	for (int row = distortedframemat.rows-Heb; row < distortedframemat.rows; row++)
+	print("loop3" << endl);
+	for (int row = Het+R0R1; row < distortedframemat.rows; row++)
 	{
-		for (int col = 1; col < distortedframemat.cols; col++)
+		for (int col = 0; col < distortedframemat.cols; col++)
 		{
-			float xx = Heb * ((float)(col - distortedframemat.cols) / (float)We) + distortedframemat.rows;
-			if (row > xx && col > (float)(We*(float)(distortedframemat.rows - row) / (float)(Heb)))
+			float xx = Heb * ((float)(col - mxdcol) / (float)We) + mxdrow;
+			if (row > xx && col > (float)(We*(float)(mxdrow - row) / (float)(Heb)))
 			{
 			//4th region				
-				float d = row-(distortedframemat.rows - Heb);
+				float d = row-(Het + R0R1);
 				float Dy = (R0y + R0R1) + compressionfactor * d;
-				float Cx =  R0x * ((float)(Dy -midcorrectedmat.rows) /(float)(R0y + R0R1 - midcorrectedmat.rows));
-				float Mx= R0x * ((float)(row+R0y-Het - midcorrectedmat.rows) / (float)(R0y + R0R1 - midcorrectedmat.rows));
-				float Nx= midcorrectedmat.cols + (midcorrectedmat.rows - (row + R0y - Het))*((float)(midcorrectedmat.cols - R0x - R0R4) / (float)(R0y + R0R1 - midcorrectedmat.rows));
-				float Ex = midcorrectedmat.cols+ (midcorrectedmat.rows- Dy)*((float)(midcorrectedmat.cols - R0x - R0R4) / (float)(R0y + R0R1 - midcorrectedmat.rows));
+				float Cx =  R0x * ((float)(Dy -mxcrow) /(float)(R0y + R0R1 - mxcrow));
+				float Mx= R0x * ((float)(row+R0y-Het - mxcrow) / (float)(R0y + R0R1 - mxcrow));
+				float Nx= mxccol + (mxcrow - (row + R0y - Het))*((float)(mxccol - R0x - R0R4) / (float)(R0y + R0R1 - mxcrow));
+				float Ex = mxccol+ (mxcrow- Dy)*((float)(mxccol - R0x - R0R4) / (float)(R0y + R0R1 - mxcrow));
 				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);				
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
 			}
 		}
 	}
-
+	print("loop4" << endl);
 	float overallcompressionfactor =100* distortedframemat.rows*distortedframemat.cols / (midcorrectedmat.rows*midcorrectedmat.cols);
-	cout << overallcompressionfactor << endl;
+
 	//OverlayImage(&midcorrectedmat, &distortedframemat, Point((R0x-We), (R0y-Het)));
 	//eri.VisualizeNeededPixels(frame, &cams[segi]);
-	//namedWindow("sample", WINDOW_NORMAL);
-	//resizeWindow("sample", 800, 400);
-	//imshow("sample", frame);
-	//imshow("sample", distortedframemat);
-	//waitKey(10000);
-	//imshow("sample", dualframe);
-	//waitKey(1000);
-	//imshow("sample", midcorrectedmat);
-	//waitKey(10000);
-	Decode(distortedframemat, eri.w, eri.h, We, Het, Heb, R0x, R0y, compressionfactor);
+	We1 = We;
+	Het1 = Het;
+	Heb1 = Heb;
+	R0x1 = R0x;
+	R0y1 = R0y;
+	return distortedframemat;
 
-}//mainloop of Distorted ERI
+}//mainloop of End of Encoding
 
 
-void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int Het, int Heb, int R0x, int R0y, int compressionfactor)
+
+
+
+
+
+
+Mat Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int Het, int Heb, int R0x, int R0y, int compressionfactor)
 {
 	int R0R4 = encoded_image.cols - 2 * We;
 	int R0R1 = encoded_image.rows - Het - Heb;
@@ -950,7 +961,7 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 			float x1 = col *  (float)R0y/(float)R0x;
 			float x2 = mxrow- (float)col*(mxrow - (R0y + R0R1))/(float)R0x;
 			
-				if ((row >= x1) && (row <= x2))
+				if ((row > x1) && (row < x2))
 				{// decodedframe.at<Vec3b>(row, col) = insidecolor;
 					float d = R0x - col;
 					float dx = col;
@@ -965,50 +976,52 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 					float Dy = Ey - (float)((Ey-Cy)*(Ny-dy)) /(float)(Ny-My);
 					int distx = Dx - (R0x - We);
 					int disty=Dy - (R0y - Het);
+					
 					if (disty >= encoded_image.rows)
 					{
-						cout << distx << " " << disty << " " << encoded_image.size() << endl;
+						//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 						disty = encoded_image.rows - 1;
 					}
 					if (distx >= encoded_image.cols)
 					{
-						cout << distx << " " << disty << " " << encoded_image.size() << endl;
+						//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 						distx = encoded_image.cols - 1;
 					}
 					if (disty < 0)
 					{
-						cout << distx << " " << disty << " " << encoded_image.size() << endl;
-						disty = encoded_image.rows + 1;
+						//cout << distx << " " << disty << " " << encoded_image.size() << endl;
+						disty = disty + 1;
 					}
 					if (distx < 0)
 					{
-						cout << distx << " " << disty << " " << encoded_image.size() << endl;
-						distx = encoded_image.cols + 1;
+						//cout << distx << " " << disty << " " << encoded_image.size() << endl;
+						distx =distx + 1;
 					}
+					//cout << distx << " " << disty << endl;
 					decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty,distx );
 				}
 		}
 	}  //end region 1
 
-
+	print("dloop1" << endl);
 	//region 3
 
 
-	for (int col = mxcol-R0x; col < mxcol; col++)
+	for (int col = R0x+R0R4; col < mxcol; col++)
 	{
-		for (int row = 1; row < mxrow; row++)
+		for (int row = 0; row < mxrow; row++)
 		{
 			Vec3b insidecolor(255, 0, 0);
 
 			float y1 = (float)R0y*(mxcol-col) /(float)(mxcol-R0x-R0R4);
 			float y2 = mxrow + (float)(col-mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol-(R0x+R0R4));
 
-			if ((row >= y1) && (row <= y2+1))
+			if ((row > y1) && (row < y2))
 			{
-				float d = col+R0x-mxcol;
+				float d = col-(R0x + R0R4);
 				float dx = col;
 				float dy = row;
-				float Dx = d / compressionfactor+mxcol - R0x;;
+				float Dx = d / compressionfactor+ (R0x + R0R4);;
 				float Cx = Dx;
 				float Ex = Dx;
 				float My = (float)R0y*(mxcol - dx) / (float)(mxcol - R0x - R0R4);
@@ -1020,32 +1033,46 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 				int disty = Dy - (R0y - Het);
 				if (disty >= encoded_image.rows)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					disty = encoded_image.rows - 1;
 				}
 				if (distx >= encoded_image.cols)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					distx = encoded_image.cols- 1;
 				}
+				if (disty < 0)
+				{
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					disty = encoded_image.rows + 1;
+				}
+				if (distx < 0)
+				{
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					distx = encoded_image.cols + 1;
+				}
+				//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 				decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty, distx);
 				
 			}
 		}
 	}  //end region 3
 
+
+	print("dloop2" << endl);
+
 	//region 2: top
 
 	for (int row = 0; row < R0y; row++)
 	{
-		for (int col = 1; col < decodedframe.cols; col++)
+		for (int col = 0; col < decodedframe.cols; col++)
 		{
 			Vec3b insidecolor(255, 0, 0);
 
 			float y1 = col * (float)R0y / (float)R0x;
 			float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
 
-			if ((row <= y1) && (row <= y2))
+			if ((row < y1) && (row < y2))
 			{
 				float d = R0y-row;
 				float dx = col;
@@ -1062,22 +1089,22 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 				int disty = Dy - (R0y - Het);
 				if (disty >= encoded_image.rows)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					disty = encoded_image.rows - 1;
 				}
 				if (distx >= encoded_image.cols)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					distx = encoded_image.cols - 1;
 				}
 				if (disty < 0)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					disty = encoded_image.rows + 1;
 				}
 				if (distx < 0)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					distx = encoded_image.cols + 1;
 				}
 				//cout<<encoded_image.size() << distx << " " << disty<<endl;
@@ -1087,20 +1114,21 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 		}
 	}  //end region 2
 
+	print("dloop3" << endl);
 	//region 4: top
 	
-	for (int row = decodedframe.rows-R0y; row < decodedframe.rows; row++)
+	for (int row = R0y+R0R1; row < decodedframe.rows; row++)
 	{
-		for (int col = 1; col < decodedframe.cols; col++)
+		for (int col =0; col < decodedframe.cols; col++)
 		{
 			Vec3b insidecolor(255, 0, 0);
 
 			float x1=(mxrow-row)*(float)R0x / (mxrow - (R0y + R0R1));
 			float x2 =mxcol+(row - mxrow)*(float)(mxcol - (R0x + R0R4))/(mxrow - (R0y + R0R1));
 
-			if ((col >= x1) && (col <= x2))
+			if ((col > x1) && (col < x2))
 			{
-				float d = row-(decodedframe.rows - R0y);
+				float d = row-(R0y + R0R1);
 				float dx = col;
 				float dy = row;
 				float Dy =(float)d/(float)compressionfactor+ (R0y+R0R1);
@@ -1115,22 +1143,22 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 				int disty = Dy - (R0y - Het)-1;
 				if (disty >= encoded_image.rows)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					disty = encoded_image.rows - 1;
 				}
 				if (distx >= encoded_image.cols)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					distx = encoded_image.cols - 1;
 				}
 				if (disty <0)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					disty = encoded_image.rows + 1;
 				}
 				if (distx <0)
 				{
-					cout << distx << " " << disty << " " << encoded_image.size() << endl;
+					//cout << distx << " " << disty << " " << encoded_image.size() << endl;
 					distx = encoded_image.cols + 1;
 				}
 				decodedframe.at<Vec3b>(row, col) = encoded_image.at<Vec3b>(disty, distx);
@@ -1138,13 +1166,8 @@ void Path::Decode(Mat encoded_image, int original_w, int original_h,int We, int 
 			}
 		}
 	}  //end region 4
-
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 400);	
-	imshow("sample", decodedframe);
-	waitKey(10000);
-	
-
+	print("dloop4" << endl);
+	return decodedframe;
 
 }
 
@@ -1178,3 +1201,52 @@ void Path::OverlayImage(Mat* src, Mat* overlay, const Point& location)
 		}
 	}
 }// End Overlay image
+
+
+//video encode function*************************************************************************/
+
+vector<Mat> Path::videoencode(char* fname, int lastFrame, int& We, int& Het, int& Heb, int& R0x, int& R0y, int compressionfactor)
+{
+	VideoCapture cap(fname);
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << fname << endl;
+		waitKey(100000);
+		return {};
+	}
+
+	int frame_width = cap.get(CAP_PROP_FRAME_WIDTH);
+	int frame_height = cap.get(CAP_PROP_FRAME_HEIGHT);
+	int fps = cap.get(CAP_PROP_FPS);
+	int segi = 0;
+	//int codec = VideoWriter::fourcc('X', 'V', 'I', 'D');
+
+	//cout << frame_width << frame_height << endl;
+
+	vector <Mat> framebuffer;
+	vector <Mat> retbuffer;
+
+	for (int fi = 0; fi < lastFrame; fi++)
+	{
+		//cout << fi << endl;
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << fname << endl;
+			break;
+		}
+		framebuffer.push_back(frame);
+	}
+
+	for (int fi = 0; fi<framebuffer.size() ; fi++)
+	{
+		Mat ret;
+		segi = GetCamIndex(fi, fps, segi);		
+		ret=Encode(cams[segi], 5, framebuffer[fi], We, Het, Heb, R0x, R0y);
+		retbuffer.push_back(ret);
+	}
+
+	return retbuffer;
+}

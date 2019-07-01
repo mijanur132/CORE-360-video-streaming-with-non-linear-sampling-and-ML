@@ -10,7 +10,13 @@
 #include <iostream>
 #include<vector>
 
+#define XTEST		0
 
+#if XTEST
+#define print(x) std::cout << x
+#else
+#define print(x) 
+#endif 
 
 using namespace cv;
 using namespace std;
@@ -40,4 +46,5 @@ int testWriteh264();
 int testWriteh264tiles();
 void testBoundingBox();
 int upload_image(string path, Mat &image);
-void testDistortedERI();
+void testEncodingDecoding();
+int testvideoencodedecode();

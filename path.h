@@ -29,8 +29,9 @@ public:
 	void WriteH264(char* fname, int lastFrame, int codec);
 	void WriteH264tiles(char* fname, int lastFrame, int m, int n, int codec);
 	void DrawBoundinigBox(char* fname, int lastFrame);
-	void GetDistoredERI(PPC camera1, int compressionfactor);
-	void Decode(Mat encoded_image, int original_length, int original_width, int We, int Het, int Heb, int R0x, int R0y, int compressionfactor);
+	Mat Encode(PPC camera1, int compressionfactor, Mat frame, int& We, int& Het, int& Heb, int& R0x, int& R0y);
+	Mat Decode(Mat encoded_image, int original_length, int original_width, int We, int Het, int Heb, int R0x, int R0y, int compressionfactor);
 	void OverlayImage(Mat* src, Mat* overlay, const Point& location);
+	vector<Mat> videoencode(char* fname, int lastFrame, int& We, int& Het, int& Heb, int& R0x, int& R0y, int compressionfactor);
 };
 
