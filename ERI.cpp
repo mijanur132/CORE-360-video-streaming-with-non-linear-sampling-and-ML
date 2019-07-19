@@ -76,7 +76,7 @@ V3 ERI::Unproject(int i, int j) {
 
 float ERI::GetXYZ2Latitude(V3 p)
 {
-	//float sqrt_P = p.Length();
+	p= p.UnitVector();
 	
 	float lat =90.0f- asin(p[1])* 180.0f / PI;
 	return lat;
@@ -85,7 +85,7 @@ float ERI::GetXYZ2Latitude(V3 p)
 
 float ERI::GetXYZ2Longitude(V3 p)
 {
-	//float sqrt_P = p.Length();
+	p= p.UnitVector();
 	float x = p[0];
 	float y = p[1];
 	float z = p[2];

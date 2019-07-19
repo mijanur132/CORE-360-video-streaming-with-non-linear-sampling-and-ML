@@ -31,9 +31,13 @@ int main()
 	//testtilevideo();
 	//testPlayBackHMDPathVideo();
 	//testBoundingBox();
-	testEncodingDecoding();
+	///testEncodingDecoding();
 
 	//testvideoencodedecode();
+	testRotationxy();
+	//getcheckerboard();
+	//tempcheckerB();
+	//testbilinear();
 	system("pause");
 	return 0;
 }

@@ -10,7 +10,7 @@
 #include <iostream>
 #include<vector>
 
-#define XTEST		0
+#define XTEST		1
 
 #if XTEST
 #define print(x) std::cout << x
@@ -47,4 +47,8 @@ int testWriteh264tiles();
 void testBoundingBox();
 int upload_image(string path, Mat &image);
 void testEncodingDecoding();
+void testRotationxy();
 int testvideoencodedecode();
+int getcheckerboard();
+void tempcheckerB();
+void testbilinear();

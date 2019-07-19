@@ -40,6 +40,19 @@ PPC::PPC(float hfov, int _w, int _h): a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 
 }
 
+PPC::PPC(float fov[2], int _w) : a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
+C(0.0f, 0.0f, 0.0f), w(_w) {
+
+	float hfov = fov[0];
+	float vfov = fov[1];
+	float hfovr = hfov * 3.14159f / 180.0f;
+	float vfovr = vfov * 3.14159f / 180.0f;
+	h = tan(vfovr / 2) / tan(hfovr / 2)*w;	
+	float f = -(float)w / (2.0f *tanf(hfovr / 2.0f));
+	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);
+	updateInv = 1;	
+
+}
 
 int PPC::Project(V3 p, V3& pp) {
 	

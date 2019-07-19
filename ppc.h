@@ -18,6 +18,7 @@ public:
   // horizontal field of view and image resolution
   // this constructor places the eye at (0, 0, 0), view direction is (0, 0, -1), and the up vector is (0, 1, 0)
 	PPC(float hfov, int _w, int _h);
+	PPC(float fov[2], int _w);
 	PPC();
 	~PPC();
   // takes a 3D point and projects it on the image plane

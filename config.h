@@ -1,5 +1,5 @@
 #pragma once
-#define		IMAGE "./Image/RollerCoasterFrame3to1.jpg"
+#define		IMAGE "./Image/cb_color_eri.jpg"
 #define		IMAGE_TYPE 16
 #define		cameraW  1200
 #define     cameraH  800
