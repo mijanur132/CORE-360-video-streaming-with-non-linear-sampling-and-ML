@@ -636,6 +636,117 @@ void Path::DrawBoundinigBox(char* fname, int lastFrame)
 
 
 
+void Path::DrawBoundinigBoxTemp(char* fname, int lastFrame)
+{
+	VideoCapture cap(fname);
+	if (!cap.isOpened())
+	{
+		cout << "Can't open video: " << fname << endl;
+		return;
+	}
+
+
+	for (int fi = 1; fi < lastFrame; fi++)
+	{
+
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << "Reached beyond last frame. Fi=" << fi << "; LastFrame=" << lastFrame << endl;
+			break;
+		}
+
+		Mat newERI(frame.rows,frame.cols, frame.type());
+	
+		ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));		
+		int pixelI, pixelJ = 0;
+		int PxL = eri.w;
+		int PxR = 0;
+		int PxU = eri.h;
+		int PxD = 0;
+		int segi = 0;
+		int fps = cap.get(CAP_PROP_FPS);
+		segi = GetCamIndex(fi, fps, segi);
+		//cams[segi].Pan(180);
+		PPC camera(110.0f, 800, 400);
+		V3 pb=camera.GetVD();
+		V3 pa = cams[segi].GetVD();
+
+		// build local coordinate system of RERI
+		V3 xaxis = cams[segi].a.UnitVector();
+		V3 yaxis = cams[segi].b.UnitVector()*-1.0f;
+		V3 zaxis = xaxis ^ yaxis;
+		M33 reriCS;
+		reriCS[0] = xaxis;
+		reriCS[1] = yaxis;
+		reriCS[2] = zaxis;
+
+		
+		RotateXYaxisERI2RERI(frame, newERI, pb,pa,reriCS);
+
+		
+
+		//cams[segi].PositionAndOrient(V3(0, 0, 0),pb, V3(0, 1, 0));
+		cams[segi] = camera;
+		for (int v = 0; v < cams[segi].h; v++)
+		{
+			int u = 0;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelJ < PxL)
+				PxL = pixelJ;
+
+			u = cams[segi].w - 1;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelJ > PxR)
+				PxR = pixelJ;
+
+		}
+		for (int u = 0; u < cams[segi].w; u++)
+		{
+			int v = 0;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelI < PxU)
+				PxU = pixelI;
+
+			v = cams[segi].h - 1;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelI > PxD)
+				PxD = pixelI;
+
+		}
+		int half;
+		Vec3b insidecolor(255, 0, 0);
+		cout << PxL << " " << PxR << " " << PxU << " " << PxD << endl;	
+
+		int left = newERI.cols / 2-(((PxR - PxL))/2);
+		int up = newERI.rows / 2-(((PxD - PxU)) / 2);
+
+		Rect RectangleToDraw(left, up, (PxR-PxL), (PxD-PxU));
+		rectangle(newERI, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
+
+				
+		/*
+		for (int u = PxL; u < PxR; u++)
+		{
+			for (int v = PxU; v < PxD; v++)
+			{
+				
+				newERI.at<Vec3b>(v, u) = insidecolor;
+			}
+		}
+		*/
+		
+		namedWindow("sample", WINDOW_NORMAL);
+		resizeWindow("sample", 600, 400);
+		imshow("sample", newERI);
+		waitKey(10);
+	}//end of fi loop
+
+}
+
+
+
 
 
 /*************************************************************************************************************/
@@ -663,9 +774,7 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 	int PxU = eri.h;
 	int PxD = 0;
 	int segi = 0;
-	//int fps = cap.get(CAP_PROP_FPS);
-	//segi = GetCamIndex(fi, fps, segi);
-	camera1.Pan(50);
+
 	
 	/****************Get left right most points of the convectional image from the ERI and the camera***************/
 
@@ -744,6 +853,7 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 	mat2 = tripleframe.colRange(midPx, (midPx + half));
 	hconcat(mat1, mat2, midcorrectedmat);          ///Rotates ERI to put bounding box midle of the frame.
 	
+	print(R0R1 << " " << R0R4 << " " << R0x);
 	
 	Mat distortedframemat= Mat::zeros((Het+R0R1+Heb), (2*We+R0R4) , frame.type());
 	Mat tmp = midcorrectedmat(Rect(R0x, R0y, R0R4, R0R1));
@@ -810,8 +920,43 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 	int mxcrow = midcorrectedmat.rows - 1;
 	int mxccol = midcorrectedmat.cols - 1;
 
+	//to calculated nonuniform distance and then correct it by rotatiing the array/vector//
+
+	/*
+	In this region with increasing the array comes in oppossite direction. means when col increases
+	d actually increases in inverse direction.  Thats why the 
+	array needs to be inversed. For this reason we created next two loop. First one 
+	calculate inverted d and second one correct it.
+	f(d)=axx+bx+c; cond1: f(both_edge_of_dist_ERI)= both_edge_of_big_ERI; f'(d_inner_edge_of_dist)=1 
+	to make sampling constant with the inner rectangle
+	the equation becomes b=1; a=(100-10)/10*10. Where d=0 maps to 0 and d=10 maps to 100: 
+	means edges are at 0,10 for distmat and 0,100 for originalmat 
+	*/
+
+	vector <float> nonuniformD;
+	vector <float > nonuniformDrowcorrected;
+	//to understand logic for this two loop, print them somewhere and see with 
+	//increasing col quad_out keep increasing the gap. this d here is not our real d.
+	//read d starts from the R0R1 and go towards QQ1. So we need to turn the array top to bottom
+	for (int col = 0; col < We; col++)
+	{
+		float d = col;
+		float quad_out = ((float)(R0x - We) / (float)(We*We))*d*d + d;
+		nonuniformD.push_back(quad_out);
+
+	}
+
+	for (int i = nonuniformD.size()-1; i> -1; i--)
+	{
+		nonuniformDrowcorrected.push_back(nonuniformD[i]);
+		
+	}
+
+//////////////
 	for (int col = 0; col < We; col++)	
 	{
+		float Dx = R0x - nonuniformDrowcorrected[col];
+		//print("Dx: " << Dx << endl);
 		for (int row = 0; row < distortedframemat.rows; row++)
 		{
 			float xx = (float)col / (float)row;
@@ -820,9 +965,7 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 			{
 				//region L this one using the technique of using distance to find a point with a slope m//
 			
-
-				float d = We - col;  //get distance between current line with the base line
-				float Dx = R0x - compressionfactor * d;  //Get Dy by multiplying d with factor, this line in orig ERI represent line d of distorted ERI
+				//float Dx = R0x - nonuniformDrowcorrected[col];
 				float Cx = Dx;
 				float Ex = Dx;
 				float Cy =Cx* (float)R0y / (float)R0x;
@@ -834,12 +977,32 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 				float Ey = mxcrow + (Ex * (float)(R0y + R0R1 - mxcrow)) / (float)R0x;
 				float Dy = Cy + (float)(Ey - Cy)*(float)(row + R0y - Het - My) / (float)(Ny - My);
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
-				//print(Dy << ","<<Dx << endl);
-				//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
+				
+				bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
 			}
 		}
 	}
 	//print("loop1" << endl);
+
+	//same logic for quadratic equation of region one
+
+	vector <float> nonuniformD2;
+	vector <float > nonuniformDrowcorrected2;
+
+	for (int row = 0; row < Het; row++)
+	{
+		float d = row;
+		float quad_out = ((float)(R0y - Het) / (float)(Het*Het))*d*d + d;
+		nonuniformD2.push_back(quad_out);
+
+	}
+
+	for (int i = nonuniformD2.size() - 1; i > -1; i--)
+	{
+		nonuniformDrowcorrected2.push_back(nonuniformD2[i]);
+		//cout << "i:" << i << " d: " << nonuniformD[i] << endl;
+	}
+
 
 
 	for (int row = 0; row < Het; row++)
@@ -850,8 +1013,12 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 			float yy = (float)We / (float)Het;
 			if (xx > yy && row < (float)(Het*(float)(mxdcol-col) / (float)(We)))
 			{
-				float d = Het-row;  //get distance between current line with the base line
-				float Dy = R0y - compressionfactor * d;  //Get Dy by multiplying d with factor, this line in orig ERI represent line d of distorted ERI
+				//Next two commented line for uniform sampling
+				//float d = Het-row;  //get distance between current line with the base line			
+				//float Dy = R0y - compressionfactor * d;  //Get Dy by multiplying d with factor, this line in orig ERI represent line d of distorted ERI
+				
+				float Dy = R0y - nonuniformDrowcorrected2[row];
+				
 				float Cx = Dy*(float)R0x / ((float)R0y);  //Cy==Dy
 
 				//use equation to find E,C, M,N. We know their x distance, put that in line equation to find y distance//
@@ -862,7 +1029,7 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);		
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
 				//print(Dy << ","<<Dx << endl);
-				//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
+				bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
 			}
 		}
 	}
@@ -870,26 +1037,34 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 	//print("loop2" << endl);
 	for (int col = We+R0R4; col < distortedframemat.cols; col++)	
 	{
+		float d = col - We - R0R4;
+		float quad_out = ((float)(R0x - We) / (float)(We*We))*d*d + d;
+		//float Dx = R0x + R0R4 + compressionfactor * d;
+		float Dx = R0x + R0R4 + quad_out;
+
 		for (int row = 0; row < distortedframemat.rows; row++)		
 		{
 			float xx=Heb*((float)(col-mxdcol)/(float)We)+mxdrow;
 
 			if((row<xx) && (row > (float)(Het*(float)(mxdcol - col) / (float)(We))))
 			{
-				//3rd region
+				//3rd region. This region is alligned with our quadratic equation means
+				// when col increase d also increase in same direction. So we dont need
+				// additional work we did in region 1			
+			
 
-				float d = col - We - R0R4;
-				float Dx = R0x + R0R4 + compressionfactor * d;
+				
 				float Cy = R0y * (float)(mxccol - Dx) / (float)(mxccol - R0x - R0R4);
 				float My= R0y * (float)(mxccol - (R0x-We+col)) / (float)(mxccol - R0x - R0R4);
 				float Ey = mxcrow + (Dx - mxccol)*(float)(mxcrow - R0y - R0R1) / (float)(mxccol - R0x - R0R4);
 				float Ny= mxcrow + ((R0x - We + col) - mxccol)*(float)(mxcrow - R0y - R0R1) / (float)(mxccol - R0x - R0R4);
 				float Dy = Cy + (Ey - Cy)*(float)(row+R0y-Het-My) / (float)(Ny-My);				
 				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
-				//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
-
+				bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
+				
 			}
 		}
+		//print("Dx2:" << Dx << endl);
 	}
 
 	//print("loop3" << endl);
@@ -900,16 +1075,18 @@ Mat Path::Encode(PPC camera1, int compressionfactor, Mat frame, vector<float>& W
 			float xx = Heb * ((float)(col - mxdcol) / (float)We) + mxdrow;
 			if (row > xx && col > (float)(We*(float)(mxdrow - row) / (float)(Heb)))
 			{
-			//4th region				
+			//4th region has same logic as second region for quad//
+
 				float d = row-(Het + R0R1);
-				float Dy = (R0y + R0R1) + compressionfactor * d;
+				float quad_out = ((float)(midcorrectedmat.rows-R0y-R0R1 - Heb) / (float)(Heb*Heb))*d*d + d; //Should replace Roy
+				float Dy = (R0y + R0R1) + quad_out;
 				float Cx =  R0x * ((float)(Dy -mxcrow) /(float)(R0y + R0R1 - mxcrow));
 				float Mx= R0x * ((float)(row+R0y-Het - mxcrow) / (float)(R0y + R0R1 - mxcrow));
 				float Nx= mxccol + (mxcrow - (row + R0y - Het))*((float)(mxccol - R0x - R0R4) / (float)(R0y + R0R1 - mxcrow));
 				float Ex = mxccol+ (mxcrow- Dy)*((float)(mxccol - R0x - R0R4) / (float)(R0y + R0R1 - mxcrow));
 				float Dx = Cx + (float)(Ex - Cx)*(float)(col+R0x-We-Mx) / (float)(Nx-Mx);				
-				distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
-				//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
+				//distortedframemat.at<Vec3b>(row, col) = midcorrectedmat.at<Vec3b>(Dy, Dx);
+				bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
 			}
 		}
 	}
@@ -1393,7 +1570,7 @@ void Path::bilinearinterpolation(Mat &output, Mat &source, int Orow, int Ocol, f
 	}
 }
 
-void Path:: PixelXMapRERI2ERI(int ur, int uc, int w, float &u)
+void Path:: PixelXMapERI2RERI(int ur, int uc, int w, float &u)
 {
     u = ur + (uc - w / 2);
 	u = (u < 0) ? (w + u) : u; // wrap around ERI if needed (left)
@@ -1410,40 +1587,156 @@ void Path::RotateXaxisERI2RERI(Mat originERI, Mat& newERI, PPC camera1)
 	{
 		for (int i = 0; i < newERI.cols; i++)
 		{
-			PixelXMapRERI2ERI(i, uc, newERI.cols, u);
+			PixelXMapERI2RERI(i, uc, newERI.cols, u);
 			newERI.at<Vec3b>(j, i) = originERI.at<Vec3b>(j, u);
 		}
 	}
 	
 }
 
-void Path::BuildERI2RERI(Mat originERI, PPC camera1)
+void Path::BuildERI2RERI(Mat originERI,  PPC camera1)
 {
-	Mat PanRotatedERI = Mat::zeros(originERI.rows, originERI.cols, originERI.type());
-	Mat TiltRotatedERI= Mat::zeros(originERI.rows, originERI.cols, originERI.type());
+	Mat newERI = Mat::zeros(originERI.rows, originERI.cols, originERI.type());	
+
 	
-	camera1.Pan(180);
-
-	RotateXaxisERI2RERI(originERI, PanRotatedERI, camera1);
-
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 400);
-	imshow("sample", PanRotatedERI);
-	waitKey(10000);
+	
+	// build local coordinate system of RERI
+	V3 xaxis = camera1.a.UnitVector();
+	V3 yaxis = camera1.b.UnitVector()*-1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+	M33 reriCS;
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
 
 	V3 p = camera1.GetVD();
-	camera1.Tilt(-30.0f);
+	camera1.Pan(0);
+	camera1.Tilt(45.0f);
 	V3 p1 = camera1.GetVD();
-	RotateYaxisERI2RERI(PanRotatedERI,TiltRotatedERI, p, p1);
+	RotateXYaxisERI2RERI(originERI, newERI, p, p1, reriCS);
 
-	imshow("sample", TiltRotatedERI);
+	imshow("sample", newERI);
 	waitKey(100000);
 
-	
+
 }
 
 
-void Path::RotateYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, V3 directionaftertilt)
+void Path::BuildERI2RERIVideo(Mat originERI, PPC ReferenceCamera)
+{
+
+	VideoCapture cap("./Video/roller.MKV");
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: "<< endl;
+		waitKey(100000);
+		return;
+	}
+
+
+	int fps = 30;
+	int segi = 0;
+	float max_w = 0;
+	float max_h = 0;
+
+	
+	for (int fi = 0; fi < 100; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+
+		Mat newERI = Mat::zeros(frame.rows, frame.cols, frame.type());
+
+		segi = GetCamIndex(fi, fps, segi);
+
+		V3 p = ReferenceCamera.GetVD();
+		V3 p1 = cams[segi].GetVD();
+
+		// build local coordinate system of RERI
+		V3 xaxis = cams[segi].a.UnitVector();
+		V3 yaxis = cams[segi].b.UnitVector()*-1.0f;
+		V3 zaxis = xaxis ^ yaxis;
+		M33 reriCS;
+		reriCS[0] = xaxis;
+		reriCS[1] = yaxis;
+		reriCS[2] = zaxis;
+
+
+		RotateXYaxisERI2RERI(frame, newERI, p, p1, reriCS);
+
+
+		ERI eri(cap.get(CAP_PROP_FRAME_WIDTH), cap.get(CAP_PROP_FRAME_HEIGHT));
+		int pixelI, pixelJ = 0;
+		int PxL = eri.w;
+		int PxR = 0;
+		int PxU = eri.h;
+		int PxD = 0;
+
+
+		cams[segi] = ReferenceCamera;
+		for (int v = 0; v < cams[segi].h; v++)
+		{
+			int u = 0;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelJ < PxL)
+				PxL = pixelJ;
+
+			u = cams[segi].w - 1;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelJ > PxR)
+				PxR = pixelJ;
+
+		}
+		for (int u = 0; u < cams[segi].w; u++)
+		{
+			int v = 0;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelI < PxU)
+				PxU = pixelI;
+
+			v = cams[segi].h - 1;
+			eri.EachPixelConv2ERI(cams[segi], u, v, pixelI, pixelJ);
+			if (pixelI > PxD)
+				PxD = pixelI;
+
+		}
+		int half;
+		Vec3b insidecolor(255, 0, 0);
+		cout << PxL << " " << PxR << " " << PxU << " " << PxD << endl;
+
+		int left = newERI.cols / 2 - (((PxR - PxL)) / 2);
+		int up = newERI.rows / 2 - (((PxD - PxU)) / 2);
+
+		Rect RectangleToDraw(left, up, (PxR - PxL), (PxD - PxU));
+		rectangle(newERI, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
+
+
+
+
+
+
+
+
+		namedWindow("sample", WINDOW_NORMAL);
+		resizeWindow("sample", 800, 400);
+
+		imshow("sample",newERI);
+		waitKey(10);
+
+	}
+}
+
+
+void Path::RotateXYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, V3 directionaftertilt, M33 reriCS)
 {
 	
 	ERI oERI(originERI.cols, originERI.rows);
@@ -1454,7 +1747,7 @@ void Path::RotateYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, V
 	float m = p*p1;
 	V3 dir = (p1^p).UnitVector();
 	float angle =((float)180/(float)PI)* acos(m);
-	cout << a << " " << b << " m: " << m<<" dir: " <<dir << endl;
+	cout << a << " " << b << " m: " << m<<" angle: " <<angle << endl;
 	
 	//system("pause");
 	
@@ -1462,7 +1755,8 @@ void Path::RotateYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, V
 	{
 		for (int i = 0; i < newERI.cols; i++)
 		{
-			V3 q = oERI.Unproject(j,i);
+			V3 q = oERI.Unproject(j,i);			
+			q = reriCS * q;
 			q = q.RotateThisVectorAboutDirection(dir, angle);
 			int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
 			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
