@@ -1,5 +1,5 @@
 #pragma once
-#define		IMAGE "./Image/cb_color_eri.jpg"
+#define		IMAGE "./Image/360_equirectangular_800_400.jpg"
 #define		IMAGE_TYPE 16
 #define		cameraW  1200
 #define     cameraH  800
@@ -8,7 +8,7 @@
 
 #define		VIDEO    "./Video/roller_2000_1000.mkv"
 #define		HMD_DATA  "./Video/roller.txt"
-
+#define     STOP      system("pause")
 //function check_interpolation()
 #define NUM_INTERP_frameN	0 // 0 means no interpolation... each frame one seperate camera. value 1 is not permitted... gives error
 

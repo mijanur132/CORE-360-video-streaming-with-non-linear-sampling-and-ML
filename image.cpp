@@ -63,11 +63,11 @@ void testMousecontrol()
 	
 }
 
-void tempcheckerB()
+void getcheckerboard()
 {	
-	ERI eri(1000, 1000);	
+	ERI eri(2000, 1000);	
 	Mat convImage;
-	upload_image("./Image/cb_color.JPG", convImage);
+	upload_image("./Image/checkerbig.PNG", convImage);
 	Mat eriMat(eri.h, eri.w, convImage.type());
 	float fov[2];
 	fov[0] = 90.0f;
@@ -200,6 +200,7 @@ void tempcheckerB()
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 400);
 	imshow("sample", eriMat);
+	img_write("./Image/checkerbigERI.PNG", eriMat);
 	waitKey(10000);
 
 }
@@ -234,69 +235,6 @@ void testforwardbackward()
 	
 }
 
-int getcheckerboard()
-{	
-	Mat eriPixels;
-	upload_image(IMAGE, eriPixels);
-	ERI eri(eriPixels.cols, eriPixels.rows);
-
-	float hfov = 90.0f;
-	PPC camera1(hfov, hfov, 200);	
-	Mat convPixels = Mat::zeros(cameraH, cameraW, eriPixels.type());
-	Mat convPixelsreverse = Mat::zeros(cameraH, cameraW, eriPixels.type());
-
-	camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 400);
-
-	for (int i = 0; i <= 360; i = i + 90)
-	{
-
-		camera1.Pan(i);		
-		upload_image("./Image/checkerboard2.jpg", convPixels);
-		eri.Conv2ERI(convPixels, convPixelsreverse, eriPixels, camera1);
-
-		imshow("sample1", convPixelsreverse);
-		camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-		waitKey(5000);
-
-	}
-
-	camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-	for (int i = 0; i <= 360; i = i + 90)
-	{
-
-		camera1.Pan(i);
-		camera1.Tilt(-90);
-		upload_image("./Image/checkerboard2.jpg", convPixels);
-		eri.Conv2ERI(convPixels, convPixelsreverse, eriPixels, camera1);
-
-		imshow("sample1", convPixelsreverse);
-		camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-		waitKey(5000);
-
-	}
-
-	camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-	for (int i = 0; i <= 360; i = i + 90)
-	{
-
-		camera1.Pan(i);
-		camera1.Tilt(90);
-		upload_image("./Image/checkerboard2.jpg", convPixels);
-		eri.Conv2ERI(convPixels, convPixelsreverse, eriPixels, camera1);
-
-		imshow("sample1", convPixelsreverse);
-		camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-		waitKey(5000);
-
-	}
-
-
-	return 0;
-}
-
 void img_write(const char *s1, cv::InputArray s2) {
 
 	vector<int> compression_params;
@@ -314,9 +252,13 @@ void playstillmanually()
 	ERI_INIT;
 	for (int i = 0; i < 1500; i++)
 	{
+		namedWindow("sample", WINDOW_NORMAL);
+		resizeWindow("sample", 800, 400);
+
 		camera1.Pan(10);
+		cout << i * 10 << endl;
 		eri.ERI2Conv(eriPixels, convPixels, camera1);
-		imshow("CONV_image", convPixels);
+		imshow("sample", convPixels);
 		waitKey(1000);
 
 	}
@@ -503,10 +445,11 @@ void testBoundingBox()
 {
 	
 	Path path1;
-	int lastFrame = 1500;
-	PPC camera1(cFoV, cameraW, cameraH);
+	int lastFrame = 100;
+	PPC camera1(110.0f, 800, 400);
+	//cout << camera1.GetVD() << endl;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	path1.DrawBoundinigBox("./video/roller.mkv", lastFrame);
+	path1.DrawBoundinigBoxTemp("./video/roller.mkv", lastFrame);
 
 }
 	
@@ -549,38 +492,41 @@ void testEncodingDecoding()
 	vector<float> R0R1;
 	vector<float> R0R4;
 
-	int compressionfactor = 5;
+	int compressionfactor = 10;
 	Path path1;	
 	Mat frame;
 	Mat retencode;
 	Mat retdecode;
-	upload_image("./Image/cb_color_eri.jpg", frame);
-	img_write("./Image/test_source.PNG", frame);
-	float fov[2];
-	fov[0] = 45.0f;
-	fov[1] = 45.0f;
-	PPC camera1(fov, cameraW);	
-	retencode=path1.Encode(camera1,compressionfactor, frame, We, Het, Heb, R0x, R0y, R0R1, R0R4);
+	upload_image("./Image/eri_4000_2000.JPG", frame);
+	//img_write("./Image/test_source.PNG", frame);
+	float hfov = 60.0f;
+	PPC camera1(hfov, 800, 400);
+	camera1.Pan(5);
+	//camera1.Tilt(15);  //temp line for testing
+	retencode=path1.EncodeNewNonLinV2(camera1,compressionfactor, frame, We, Het, Heb, R0x, R0y, R0R1, R0R4);
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 800);	
 	imshow("sample", retencode);
 	img_write("./Image/test_encoded.PNG", retencode);
-	waitKey(1000);
+	waitKey(10000);
+	print(R0R1[0] << " " << R0R4[0] << " " << R0x[0] << " " << R0y[0] << " " << We[0] << " " << Het[0] << " " << Heb[0]) << endl;
+	
+	//system("pause");
 
-	retdecode = path1.Decode(retencode, frame.cols, frame.rows, We[0], Het[0], Heb[0], R0x[0], R0y[0],R0R1[0], R0R1[4], compressionfactor);
+	retdecode = path1.DecodeNewNonLinV2(retencode, frame.cols, frame.rows, We[0], Het[0], Heb[0], R0x[0], R0y[0],R0R1[0], R0R4[0], compressionfactor);
 			
 	imshow("sample", retdecode);
 	img_write("./Image/test_decoded.PNG", retdecode);
-	waitKey(10000);
-	PPC camera2(30, 1200,1200);
+	waitKey(1000);
+	PPC camera2(90, 1200,1200);
 	//PPC camera2(30, 30, 1200);
 	Mat eriPixels=retdecode;
-	camera2.Tilt(90);
+	camera2.Pan(-50);
 	ERI eri(retdecode.cols, retdecode.rows);	
 	Mat convPixels = Mat::zeros(camera2.h, camera2.w, retdecode.type());	
 	eri.ERI2Conv(eriPixels, convPixels, camera2);
 
-
+	img_write("./Image/test_conventional.PNG", convPixels);
 	
 	imshow("sample", convPixels);
 
@@ -601,9 +547,9 @@ int testvideoencodedecode() {
 	int compressionfactor = 5;
 	Path path1;
 	vector <Mat> encodedbuffer;
-	PPC camera1(cFoV, cameraW, cameraH);
+	PPC camera1(110.0f, 800, 400);
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	int lastframe = 1000;	
+	int lastframe = 500;	
 	encodedbuffer=path1.videoencode("./Video/roller.mkv", lastframe, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
 	path1.videodecode("./Video/encodingtest/rollerh264encod.MKV", lastframe, 3840,2044, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
 
@@ -621,17 +567,63 @@ void testRotationxy()
 		return;
 	}
 
-	
+		
 	float hfov = 110.0f;	
-	PPC camera1(hfov, 800, 400);
+	PPC camera(hfov, 800, 400);	
 	
-	//camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
 	Path path1;
-	path1.BuildERI2RERI(eriPixels, camera1);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera);
+	path1.BuildERI2RERIVideo(eriPixels, camera);
 
 	
 
 }
+
+
+void testrotationxyframe()
+{
+	Mat frame;
+	upload_image("./Image/360_equirectangular_800_400.JPG", frame);
+	if (!frame.data)                              // Check for invalid input
+	{
+		cout << "Could not open or find the image" << std::endl;
+		return;
+	}
+
+
+	float hfov = 110.0f;
+	PPC camera(hfov, 800, 400);
+
+	Path path1;
+	
+	Mat newERI = Mat::zeros(frame.rows, frame.cols, frame.type());
+
+	V3 p = camera.GetVD();
+	camera.Tilt(45);
+	V3 p1 = camera.GetVD();
+
+	// build local coordinate system of RERI
+	V3 xaxis = camera.a.UnitVector();
+	V3 yaxis = camera.b.UnitVector()*-1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+	M33 reriCS;
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
+
+	path1.RotateXYaxisERI2RERI(frame, newERI, p, p1, reriCS);	
+
+
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 400, 400);
+
+	imshow("sample", newERI);
+	waitKey(10);
+
+
+}
+
 
 
 int testTiling() {

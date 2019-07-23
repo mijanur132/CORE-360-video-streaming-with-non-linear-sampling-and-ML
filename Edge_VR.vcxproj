@@ -119,6 +119,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="encode.cpp" />
     <ClCompile Include="ERI.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="m33.cpp" />
@@ -132,6 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h" />
+    <ClInclude Include="encode.h" />
     <ClInclude Include="ERI.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="m33.h" />

@@ -44,5 +44,7 @@ public:
 	void RotateXYaxisERI2RERI(Mat origninalERI, Mat& newERI, V3 pb, V3 pa, M33 reriCS);//direction based
 	void RotateXaxisERI2RERI(Mat originERI, Mat& newERI, PPC camera1);
 	void DrawBoundinigBoxframe(Mat frame, PPC camera, float& pXl, float& pxr, float&pxu, float &pxd);
+	Mat EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vector<float>& We1, vector<float>& Het1, vector<float>& Heb1, vector<float>& R0x1, vector<float>& R0y1, vector<float>& R0R1_1, vector<float>& R0R4_1);
+	Mat DecodeNewNonLinV2(Mat encoded_image, int original_w, int original_h, float We, float Het, float Heb, float R0x, float R0y, float R0R1, float R0R4, int compressionfactor);
 };
 

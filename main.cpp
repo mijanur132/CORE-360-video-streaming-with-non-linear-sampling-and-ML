@@ -20,6 +20,7 @@ using namespace std::chrono;
 
 int main()
 {
+	//playstillmanually();
 	//testforwardbackward();
 	//testPlayBackManualPathStillImage();
 	//testPlayBackHMDPathStillImage(); //playone still image 
@@ -31,12 +32,15 @@ int main()
 	//testtilevideo();
 	//testPlayBackHMDPathVideo();
 	//testBoundingBox();
-	///testEncodingDecoding();
 
-	//testvideoencodedecode();
-	testRotationxy();
 	//getcheckerboard();
-	//tempcheckerB();
+
+	//testEncodingDecoding();
+	//testrotationxyframe();
+
+	testvideoencodedecode();
+	//testRotationxy();
+		
 	//testbilinear();
 	system("pause");
 	return 0;

@@ -49,6 +49,6 @@ int upload_image(string path, Mat &image);
 void testEncodingDecoding();
 void testRotationxy();
 int testvideoencodedecode();
-int getcheckerboard();
-void tempcheckerB();
+void getcheckerboard();
 void testbilinear();
+void testrotationxyframe();
