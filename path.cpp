@@ -1555,7 +1555,7 @@ Mat Path::DecodeNewNonLinV2(Mat encoded_image, int original_w, int original_h, f
 		float d = R0x - col;
 		float Dx = R0x-nonuniformDrev[d];
 		//float Dx = R0x - d / compressionfactorX;
-		cout << "decode col: "<<col<<" Dx: " << (Dx - (R0x - We)) << endl;
+		//cout << "decode col: "<<col<<" Dx: " << (Dx - (R0x - We)) << endl;
 		
 		for (int row = 0; row < decodedframe.rows; row++)
 		{
@@ -2822,3 +2822,339 @@ void Path::RotateXYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, 
 
 
 }
+
+
+
+
+
+Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1)
+{
+
+	float compressionfactorX = compressionfactor;
+	float compressionfactorY = (float)compressionfactor / (float)1;
+
+	
+	int ERI_w= var[0];
+	int ERI_h= var[1];
+	float We= var[2];
+	float Het= var[3];
+	float Heb = Het;
+
+	float R0R4 = ERI_w - 2 * We*compressionfactorX;
+	float R0R1 = ERI_h - 2 * Het*compressionfactorY;
+	float R0x = We * compressionfactor;
+	float R0y = Het * compressionfactor;
+
+	
+	/**********************************Recreate Mapping******************************************/
+
+	vector <float> nonuniformDrev;
+	vector <float > nonuniformDrowrev;
+	//to understand logic for this two loop, print them somewhere and see with 
+	//increasing col quad_out keep increasing the gap. this d here is not our real d.
+	//read d starts from the R0R1 and go towards QQ1. So we need to turn the array top to bottom
+
+
+	for (int col = 0; col < R0x; col++)
+	{
+		float j = (float)col / (float)R0x;
+		float a = 1 - (float)1 / (float)compressionfactorX - 0;
+		float b = (1 - a);
+		a = a * (-1);
+		float quad_out = R0x * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorX);
+		//cout << a << " " << b << " " << quad_out << endl;
+		nonuniformDrev.push_back(quad_out);
+
+	}
+
+	vector <float> nonuniformDrev2;
+	vector <float > nonuniformDrowrev2;
+
+
+	for (int row = 0; row < R0y; row++)
+	{
+		float j = (float)row / (float)R0y;
+		float a = 1 - ((float)1 / (float)compressionfactorY);
+		float b = (1 - a);
+		a = a * (-1);
+		float quad_out = R0y * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorY);
+		//cout << a << " " << b << " " << quad_out << endl;
+		nonuniformDrev2.push_back(quad_out);
+
+	}
+
+
+
+
+	/*********************** create a red outline********************************************/
+	//Rect RectangleToDraw(0, 0, tmp.cols, tmp.rows);
+	//rectangle(tmp, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
+////	tmp.copyTo(decodedframe(Rect(R0x, R0y, R0R4, R0R1)));     //copy the bounding box and paste in the distortedframemat image. 
+	int mxrow = ERI_h - 1;
+	int mxcol = ERI_w - 1;
+	/***************************Region 01: left *****************************************/
+
+	/*****************************/
+	ERI eri(ERI_w, ERI_h);
+
+	int pixelI, pixelJ = 0;
+	Mat convPixels(camera1.h, camera1.w, CRERI.type());
+	//camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
+	
+	camera1.Pan(90.0f);
+	camera1.Tilt(45.0f);
+	
+	Mat tmp = CRERI(Rect(We, Het, R0R4, R0R1));
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+
+			eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+			int col = pixelJ;
+			int	row = pixelI;
+
+			//cout << row << " " << col<<endl;
+
+			if ((row > R0y && row < R0y + R0R1)&& (col > R0x && col < R0x + R0R4))
+				{
+					//cout << "decode inner: "<< endl;
+					convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(pixelI - (R0y - Het), pixelJ - (R0x - We));
+				}
+			
+
+			else
+			{
+				float d = R0x - col;
+				float Dx = R0x - nonuniformDrev[d];
+				//cout << "decode colr1: " << col << " Dx: " << (Dx - (R0x - We)) << endl;
+
+				if (col < R0x)
+				{
+					Vec3b insidecolor(255, 0, 0);
+					float x1 = col * (float)R0y / (float)R0x;
+					float x2 = mxrow - (float)col*(mxrow - (R0y + R0R1)) / (float)R0x;
+					if ((row > x1) && (row < x2))
+					{
+						float dx = col;
+						float dy = row;
+						float Cx = Dx;
+						float Ex = Dx;
+						float My = dx * (float)R0y / (float)R0x;
+						float Cy = Cx * (float)R0y / (float)R0x;
+						float Ny = mxrow - (float)dx*(mxrow - R0y - R0R1) / (float)R0x;
+						float Ey = mxrow - (float)Ex*(mxrow - R0y - R0R1) / (float)R0x;
+						float Dy = Ey - (float)((Ey - Cy)*(Ny - dy)) / (float)(Ny - My);
+						float distx = Dx - (R0x - We);
+						float disty = Dy - (R0y - Het);
+
+						if (disty >= CRERI.rows)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = CRERI.rows - 1;
+						}
+						if (distx >= CRERI.cols)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = CRERI.cols - 1;
+						}
+						if (disty < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = 0;
+						}
+						if (distx < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = 0;
+						}
+						//cout << distx << " " << disty << endl;						
+						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
+						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+					}
+				} //end region 1
+
+				//print("dloop1" << endl);
+				//region 3
+				if (col > R0x + R0R4)
+				{
+					float d = col - (R0x + R0R4);
+					float dx = col;
+					float Dx = nonuniformDrev[d] + (R0x + R0R4);;
+					//cout << "decode col2: " << col << " Dx: " << (Dx - (R0x - We)-We-R0R4) << endl;					
+					Vec3b insidecolor(255, 0, 0);
+					float y1 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
+					float y2 = mxrow + (float)(col - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+
+					if ((row > y1) && (row < y2))
+					{
+						float dy = row;
+						float Cx = Dx;
+						float Ex = Dx;
+						float My = (float)R0y*(mxcol - dx) / (float)(mxcol - R0x - R0R4);
+						float Cy = (float)R0y*(mxcol - Dx) / (float)(mxcol - R0x - R0R4);
+						float Ny = mxrow + (float)(dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+						float Ey = mxrow + (float)(Dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+						float Dy = Ey - (float)((Ey - Cy)*(Ny - dy)) / (float)(Ny - My);
+						float distx = Dx - (R0x - We);
+						float disty = Dy - (R0y - Het);
+						if (disty >= CRERI.rows)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = CRERI.rows - 1;
+						}
+						if (distx >= CRERI.cols)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = CRERI.cols - 1;
+						}
+						if (disty < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = 0;
+						}
+						if (distx < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = 0;
+						}
+						//print(distx << " " << disty << " " << CRERI.size() << endl);						
+						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
+						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+					}
+				}  //end region 3
+
+
+				//	print("dloop2" << endl);
+
+					//region 2: top
+
+				if (row < R0y)
+				{
+					float d = R0y - row;
+					float dy = row;
+					//cout << d <<" "<<nonuniformDrev2.size()<< endl;
+					float Dy = R0y - nonuniformDrev2[d];
+					//cout << "decode r2: " << row << " Dy: " << (Dy - (R0y - Het) ) << endl;
+
+					Vec3b insidecolor(255, 0, 0);
+
+					float y1 = col * (float)R0y / (float)R0x;
+					float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
+
+					if ((row < y1) && (row < y2))
+					{
+						float dx = col;
+						float Cy = Dy;
+						float Ey = Dy;
+						float Mx = dy * (float)R0x / (float)R0y;
+						float Cx = Dy * (float)R0x / (float)R0y;;
+						float Nx = mxcol - dy * (float)(mxcol - R0x - R0R4) / (float)R0y;
+						float Ex = mxcol - Dy * (float)(mxcol - R0x - R0R4) / (float)R0y;
+						float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
+						float distx = Dx - (R0x - We);
+						float disty = Dy - (R0y - Het);
+
+						if (disty > CRERI.rows - 1)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = CRERI.rows - 1;
+						}
+
+						if (distx > CRERI.cols - 1)
+						{
+							//print(" danger1 " << distx << endl);
+							//print(distx << " " << disty << " " << CRERI.size() << endl);
+							distx = CRERI.cols - 1;
+						}
+						if (disty < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = 0;
+						}
+						if (distx < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = 0;
+						}
+
+						//decodedframe.at<Vec3b>(row, col) = CRERI.at<Vec3b>(disty, distx);
+
+						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
+						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+
+					}
+				}  //end region 2
+
+				//print("dloop3" << endl);
+				//region 4: bottom
+
+				if (row > R0y + R0R1)
+				{
+					float d = row - (R0y + R0R1);
+					float Dy = nonuniformDrev2[d] + (R0y + R0R1);
+					Vec3b insidecolor(255, 0, 0);
+					float x1 = (mxrow - row)*(float)R0x / (mxrow - (R0y + R0R1));
+					float x2 = mxcol + (row - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
+
+					if ((col > x1) && (col < x2))
+					{
+						float dx = col;
+						float dy = row;
+
+						float Cy = Dy;
+						float Ey = Dy;
+						float Mx = (mxrow - dy)*(float)R0x / (mxrow - (R0y + R0R1));
+						float Cx = (mxrow - Dy)*(float)R0x / (mxrow - (R0y + R0R1));
+						float Nx = mxcol + (dy - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
+						float Ex = mxcol + (Dy - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
+						float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
+						float distx = Dx - (R0x - We);
+						float disty = Dy - (R0y - Het) - 1;
+						if (disty >= CRERI.rows)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = CRERI.rows - 1;
+						}
+						if (distx >= CRERI.cols)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = CRERI.cols - 1;
+						}
+						if (disty < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							disty = 0;
+						}
+						if (distx < 0)
+						{
+							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+							distx = 0;
+						}
+						//decodedframe.at<Vec3b>(row, col) = CRERI.at<Vec3b>(disty, distx);
+						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
+						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+					}
+
+				}  //end region 4
+				//	print("dloop4" << endl);
+				
+
+			}
+		}
+	
+	}
+	namedWindow("sample1", WINDOW_NORMAL);
+	resizeWindow("sample1", 800, 400);
+	imshow("sample1", convPixels);
+	waitKey(10000000);
+
+
+	return convPixels;
+
+	STOP;
+}
+
+

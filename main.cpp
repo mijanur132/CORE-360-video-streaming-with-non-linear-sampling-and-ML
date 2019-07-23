@@ -35,10 +35,10 @@ int main()
 
 	//getcheckerboard();
 
-	//testEncodingDecoding();
+	testEncodingDecoding();
 	//testrotationxyframe();
 
-	testvideoencodedecode();
+	//testvideoencodedecode();
 	//testRotationxy();
 		
 	//testbilinear();

@@ -249,7 +249,14 @@ void img_write(const char *s1, cv::InputArray s2) {
 
 void playstillmanually()
 {
-	ERI_INIT;
+	Mat eriPixels; 
+		upload_image(IMAGE, eriPixels);  
+		ERI eri(eriPixels.cols, eriPixels.rows); 
+		
+		PPC camera1(70.0f, 90.0f, 500); 
+		Mat convPixels = Mat::zeros(cameraH, cameraW, eriPixels.type()); 
+		
+		
 	for (int i = 0; i < 1500; i++)
 	{
 		namedWindow("sample", WINDOW_NORMAL);
@@ -258,8 +265,11 @@ void playstillmanually()
 		camera1.Pan(10);
 		cout << i * 10 << endl;
 		eri.ERI2Conv(eriPixels, convPixels, camera1);
-		imshow("sample", convPixels);
+		cout << camera1.w << " " << camera1.h << endl;
+		cout << convPixels.cols << " " << convPixels.rows << endl;
+		//imshow("sample", convPixels);
 		waitKey(1000);
+		
 
 	}
 }
@@ -492,14 +502,14 @@ void testEncodingDecoding()
 	vector<float> R0R1;
 	vector<float> R0R4;
 
-	int compressionfactor = 10;
+	int compressionfactor = 5;
 	Path path1;	
 	Mat frame;
 	Mat retencode;
 	Mat retdecode;
 	upload_image("./Image/eri_4000_2000.JPG", frame);
 	//img_write("./Image/test_source.PNG", frame);
-	float hfov = 60.0f;
+	float hfov = 110.0f;
 	PPC camera1(hfov, 800, 400);
 	camera1.Pan(5);
 	//camera1.Tilt(15);  //temp line for testing
@@ -508,20 +518,28 @@ void testEncodingDecoding()
 	resizeWindow("sample", 800, 800);	
 	imshow("sample", retencode);
 	img_write("./Image/test_encoded.PNG", retencode);
-	waitKey(10000);
+	waitKey(1000);
 	print(R0R1[0] << " " << R0R4[0] << " " << R0x[0] << " " << R0y[0] << " " << We[0] << " " << Het[0] << " " << Heb[0]) << endl;
 	
 	//system("pause");
 
-	retdecode = path1.DecodeNewNonLinV2(retencode, frame.cols, frame.rows, We[0], Het[0], Heb[0], R0x[0], R0y[0],R0R1[0], R0R4[0], compressionfactor);
-			
+	//retdecode = path1.DecodeNewNonLinV2(retencode, frame.cols, frame.rows, We[0], Het[0], Heb[0], R0x[0], R0y[0],R0R1[0], R0R4[0], compressionfactor);
+	
+	float var[10];
+	var[0] = frame.cols;
+	var[1] = frame.rows;
+	var[2] = We[0];
+	var[3] = Het[0];//*/
+
+	retdecode = path1.CRERI2Conv(retencode, var, compressionfactor, camera1);
+
 	imshow("sample", retdecode);
 	img_write("./Image/test_decoded.PNG", retdecode);
 	waitKey(1000);
 	PPC camera2(90, 1200,1200);
 	//PPC camera2(30, 30, 1200);
 	Mat eriPixels=retdecode;
-	camera2.Pan(-50);
+	camera2.Pan(-20);
 	ERI eri(retdecode.cols, retdecode.rows);	
 	Mat convPixels = Mat::zeros(camera2.h, camera2.w, retdecode.type());	
 	eri.ERI2Conv(eriPixels, convPixels, camera2);
