@@ -2867,15 +2867,12 @@ void Path::RotateXYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, 
 Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, Mat& qual, struct samplingvar * var1)
 {
 	float compressionfactorX = compressionfactor;
-	float compressionfactorY = (float)compressionfactor / (float)1;
-
-	
+	float compressionfactorY = (float)compressionfactor / (float)1;	
 	int ERI_w= var[0];
 	int ERI_h= var[1];
 	float We= var[2];
 	float Het= var[3];
 	float Heb = Het;
-
 	float R0R4 = ERI_w - 2 * We*compressionfactorX;
 	float R0R1 = ERI_h - 2 * Het*compressionfactorY;
 	float R0x = We * compressionfactor;
@@ -2919,41 +2916,24 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 
 	}
 
-
-
-
-	/*********************** create a red outline********************************************/
-	//Rect RectangleToDraw(0, 0, tmp.cols, tmp.rows);
-	//rectangle(tmp, RectangleToDraw.tl(), RectangleToDraw.br(), Scalar(0, 0, 255), 2, 8, 0);
-////	tmp.copyTo(decodedframe(Rect(R0x, R0y, R0R4, R0R1)));     //copy the bounding box and paste in the distortedframemat image. 
 	int mxrow = ERI_h - 1;
 	int mxcol = ERI_w - 1;
 	/***************************Region 01: left *****************************************/
 
-	/*****************************/
 	ERI eri(ERI_w, ERI_h);
-
 	int pixelI, pixelJ = 0;
 	Mat convPixels(camera1.h, camera1.w, CRERI.type());
 	//camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-	
 	//camera1.Pan(160.0f);//undo this in real case
 	//camera1.Tilt(5.0f);// this too
-
-
 	
 	Mat tmp = CRERI(Rect(We, Het, R0R4, R0R1));
-	
-	
 	float prevdx=0;
 	float currentdx = 0;
 	float a = (float)1 / (float)compressionfactor-1;
 	float b = 1 - a;
 	float vto = abs((float)(2 * a) / (float)(2 * a + b));
 	float vtin = abs((float)(2 * a) / (float)(b));
-
-
-	
 
 	for (int v = 0; v < camera1.h; v++)
 	{
@@ -2966,11 +2946,9 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 			if ((row > R0y && row < R0y + R0R1)&& (col > R0x && col < R0x + R0R4))
 				{					
 					convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(pixelI - (R0y - Het), pixelJ - (R0x - We));					
-					qual.at<Vec3b>(v, u) =  (10*vtin);					
+					qual.at<float>(v, u) =  vtin;					
 					//cout << v << " u: " << u << " row: " << row << " col: " << col << " " << 10 * vtin << endl;
-										
 				}			
-
 			else
 			{
 				float d = R0x - col;
@@ -3026,7 +3004,7 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						float t = (float)d / (float)R0x;						
 						float vt = abs((float)2 * a / (float)(2 * a*t + b));
 						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
-						qual.at<Vec3b>(v, u) = 10*vt;
+						qual.at<float>(v, u) = vt;
 						
 
 					}
@@ -3084,7 +3062,7 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						float t = (float)d / (float)R0x;
 						float vt = abs((float)2 * a / (float)(2 * a*t + b));
 						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
-						qual.at<Vec3b>(v, u) = 10 * vt;
+						qual.at<float>(v, u) = vt;
 					}
 				}  //end region 3
 
@@ -3120,37 +3098,31 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						float disty = Dy - (R0y - Het);
 
 						if (disty > CRERI.rows - 1)
-						{
-							//cout << distx << " " << disty << " " << CRERI.size() << endl;
+						{							
 							disty = CRERI.rows - 1;
 						}
 
 						if (distx > CRERI.cols - 1)
-						{
-							//print(" danger1 " << distx << endl);
-							//print(distx << " " << disty << " " << CRERI.size() << endl);
+						{						
 							distx = CRERI.cols - 1;
 						}
 						if (disty < 0)
 						{
-							//cout << distx << " " << disty << " " << CRERI.size() << endl;
 							disty = 0;
 						}
 						if (distx < 0)
 						{
-							//cout << distx << " " << disty << " " << CRERI.size() << endl;
 							distx = 0;
 						}
 
 						//decodedframe.at<Vec3b>(row, col) = CRERI.at<Vec3b>(disty, distx);
-
 						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
 						//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
 						bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
 						float t = (float)d / (float)R0y;
 						float vt = abs((float)2 * a / (float)(2 * a*t + b));
 						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
-						qual.at<Vec3b>(v, u) = 10 * vt;
+						qual.at<float>(v, u) = vt;
 
 					}
 				}  //end region 2
@@ -3206,7 +3178,7 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						float t = (float)d / (float)R0y;
 						float vt = abs((float)2 * a / (float)(2 * a*t + b));
 						//cout <<v<<" u: "<<u<<" row: "<<row<<" col: "<<col<<" t: "<< t << " " << 10*vt << endl;
-						qual.at<Vec3b>(v, u) = 10 * vt;
+						qual.at<float>(v, u) = vt;
 
 					}
 					
@@ -3229,19 +3201,19 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 	{
 		for (int jj = 0; jj < camera1.w; jj++)
 		{
-			bb = qual.at<Vec3b>(i, jj)[0];
-			if (bb == 0) { bb = 8; }
+			bb = qual.at<float>(i, jj);
+			if (bb == 0) { bb = vtin; }
 			if (bb > minv)
 			{
-				minv = (float)10*vtin / (float)(bb);
-				//cout <<j<<" bb: "<< bb<<" minv: "<< minv << endl;
+				minv = (float)vtin / (float)(bb);
+				//cout <<jj<<" bb: "<< bb<<" minv: "<< minv << endl;
 			}
 			sum = sum + bb;
 			number++;
 		}
 	}
-	float average = (float)(10*vtin*number)/ (float)(sum);
-	//cout << "avg: "<<average << " min: " << minv << endl;
+	float average = (float)(vtin*number)/ (float)(sum);
+	cout << "avg: "<<average << " min: " << minv << endl;
 
 		
 	/*

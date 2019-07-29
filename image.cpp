@@ -816,7 +816,7 @@ void testvideodecodeNcompare()
 				break;
 			}
 			segi = path1.GetCamIndex(j, fps, segi);
-			print("chunN: " << i << " frame: " << j << " segi: " << segi <<"size"<<encodframe.size()<< endl;);
+			print("chunN: " << i << " frame: " << j << " segi: " << segi <<endl;);
 			if (j%fps == 0)
 			{
 				segref = segi;
@@ -824,11 +824,12 @@ void testvideodecodeNcompare()
 			}
 			
 			V3 p = path1.cams[segi].GetVD() - path1.cams[segref].GetVD();
-			print(p << " prev: "<< path1.cams[segi].GetVD()<<endl<<endl);
+			//print(p << " prev: "<< path1.cams[segi].GetVD()<<endl<<endl);
 			p = V3(0, 0, -1) + p;		
 			p = p.UnitVector();
 			
-			Mat heatmap = Mat::zeros(camera2.h, camera2.w, encodframe.type());
+			Mat heatmap3c = Mat::zeros(camera2.h, camera2.w, encodframe.type());
+			Mat heatmap = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
 			camera2.PositionAndOrient(V3(0, 0, 0), p, V3(0, 1, 0));
 			ret1 = path1.CRERI2Conv(encodframe, var, cf, camera2, heatmap, &svar);
 
@@ -844,15 +845,17 @@ void testvideodecodeNcompare()
 			{
 				for (int j = 0; j < camera2.w; j++)
 				{
-					bb = heatmap.at<Vec3b>(i, j)[0];
-					float factor = (float)bb / (float)(10 * vtin);
+					bb = heatmap.at<float>(i, j);
+					float factor = (float)bb / (float)(vtin);
 					int colora = (float)255 / (float)factor;
 					colora = (colora <= 255) ? colora : 255;
 					Vec3b insidecolorx(colora, colora, 255);
-					heatmap.at<Vec3b>(i, j) = insidecolorx;					
+					heatmap3c.at<Vec3b>(i, j) = insidecolorx;		
+					//cout << heatmap3c.at<Vec3b>(i, j) << endl;
 				}
 			}
-			hmap.push_back(heatmap);
+		
+			hmap.push_back(heatmap3c);
 			conv.push_back(ret1);			
 		}		
 	}	
