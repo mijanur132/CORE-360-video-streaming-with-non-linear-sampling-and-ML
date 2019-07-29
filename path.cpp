@@ -1134,7 +1134,7 @@ Mat Path::EncodeNew(PPC camera1, int compressionfactor, Mat frame, vector<float>
 //reference Dr. Popescu GPC paper.
 
 
-Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vector<float>& We1, vector<float>& Het1, vector<float>& Heb1, vector<float>& R0x1, vector<float>& R0y1, vector<float>& R0R1_1, vector<float>& R0R4_1)
+Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, int compressionfactor)
 {
 	float compressionfactorY = (float)compressionfactor;
 	float compressionfactorX = compressionfactor;
@@ -1190,9 +1190,9 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 	float Het = (float)(frame.rows-R0R1) / (float)(2*compressionfactorY);
 	float Heb = Het;
 
-
-	//print(R0R1 << " " << R0R4 << " " << R0x<<" " << R0y<<" " << We<<" " << Het<<" " << Heb);
-
+	//print("frame size:"<<frame.size() << endl);
+	//print("ror1: "<<R0R1 << " ror4:" << R0R4 << " rox:" << R0x<<" roy:" << R0y<<" we:" << We<<" het:" << Het<<" heb:" << Heb);
+	
 	Mat distortedframemat = Mat::zeros((Het + R0R1 + Heb), (2 * We + R0R4), frame.type());
 	Mat tmp = midcorrectedmat(Rect(R0x, R0y, R0R4, R0R1));  //midcorrected one is CRERI
 
@@ -1277,6 +1277,8 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 	//to understand logic for this two loop, print them somewhere and see with 
 	//increasing col quad_out keep increasing the gap. this d here is not our real d.
 	//read d starts from the R0R1 and go towards QQ1. So we need to turn the array top to bottom
+
+	Mat quality(frame.rows, frame.cols, frame.type());
 	
 	for (int col = 0; col < We; col++)
 	{
@@ -1285,21 +1287,25 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 		float v = (a)*j*j + (1-a)*j;	
 		float quad_out = v*We*compressionfactorX;
 		nonuniformD.push_back(quad_out);
-		//cout << a << " "<< quad_out << endl;
+		//cout << " nonuniformD "<< quad_out << endl;
 
 	}
 		   	  	
 	for (int i =0; i< nonuniformD.size(); i++)
 	{
+		//cout << We * compressionfactorX << " " << nonuniformD[i] << endl;
 		float x = We * compressionfactorX-nonuniformD[i];
+		//cout << x << endl;
 		nonuniformDtemp.push_back(x);		
 
 	}  //*/
 
 
-	for (int i = nonuniformD.size() - 1; i > -1; i--)
+	for (int i = nonuniformDtemp.size() - 1; i > -1; i--)
 	{
+		//cout << nonuniformDtemp[i] << endl;
 		nonuniformDrowcorrected.push_back(nonuniformDtemp[i]);
+		//cout<<"corrected:" << nonuniformDrowcorrected[nonuniformDtemp.size()-1-i]<<endl;
 	}
 	/*
 	for (int i = 0; i < nonuniformD.size(); i++)
@@ -1352,7 +1358,7 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 	for (int col = 0; col < We; col++)
 	{
 		float Dx = nonuniformD[col];
-		//print("Dx: " << Dx << endl);
+		//print("Dx and We: " << Dx <<" "<<We<< endl);
 		for (int row = 0; row < distortedframemat.rows; row++)
 		{
 			float xx = (float)col / (float)row;
@@ -1386,7 +1392,7 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 	{
 		float d = col - We - R0R4;
 		float Dx = R0x + R0R4 + nonuniformDrowcorrected[d];
-		//print("Dx2:" << Dx << endl);
+		//print("Dx2:" << Dx-(R0x + R0R4) << endl);
 		for (int row = 0; row < distortedframemat.rows; row++)
 		{
 			float xx = Heb * ((float)(col - mxdcol) / (float)We) + mxdrow;
@@ -1478,13 +1484,11 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 
 	//OverlayImage(&midcorrectedmat, &distortedframemat, Point((R0x-We), (R0y-Het)));
 	//eri.VisualizeNeededPixels(frame, &cams[segi]);
-	We1.push_back(We);
-	Het1.push_back(Het);
-	Heb1.push_back(Heb);
-	R0x1.push_back(R0x);
-	R0y1.push_back(R0y);
-	R0R1_1.push_back(R0R1);
-	R0R4_1.push_back(R0R4);
+	(var1)->colN = frame.cols;
+	(var1)->rowN = frame.rows;
+	(var1)-> We= We;
+	(var1)->Het= Het;//*/
+
 	//print(We<<","<< R0x<<","<< Het<<" "<< Heb<<" "<< R0y<<endl);
 	return distortedframemat;
 
@@ -1493,14 +1497,25 @@ Mat Path::EncodeNewNonLinV2(PPC camera1, int compressionfactor, Mat frame, vecto
 
 
 
-
-Mat Path::DecodeNewNonLinV2(Mat encoded_image, int original_w, int original_h, float We, float Het, float Heb, float R0x, float R0y, float R0R1, float R0R4, int compressionfactor)
+Mat Path::DecodeNewNonLinV2(Mat encoded_image, float var[10], int compressionfactor, PPC camera1)
 {
-
 	float compressionfactorX = compressionfactor;
 	float compressionfactorY = (float)compressionfactor / (float)1;
 
-	Mat decodedframe(original_h, original_w, encoded_image.type());
+
+	int ERI_w = var[0];
+	int ERI_h = var[1];
+	float We = var[2];
+	float Het = var[3];
+	float Heb = Het;
+
+	float R0R4 = ERI_w - 2 * We*compressionfactorX;
+	float R0R1 = ERI_h - 2 * Het*compressionfactorY;
+	float R0x = We * compressionfactor;
+	float R0y = Het * compressionfactor;
+	
+
+	Mat decodedframe(ERI_h, ERI_w, encoded_image.type());
 	Mat tmp = encoded_image(Rect(We, Het, R0R4, R0R1));
 
 	/**********************************Recreate Mapping******************************************/
@@ -2461,18 +2476,22 @@ vector<Mat> Path::videoencode(char* fname, int lastFrame, vector<float>& We, vec
 			break;
 		}
 		
-		
+		namedWindow("sample", WINDOW_NORMAL);
+		resizeWindow("sample", 800, 800);
+		imshow("sample", frame);
+		waitKey(10000);
+
 		Mat ret;
 		segi = GetCamIndex(fi, fps, segi);		
-		ret=EncodeNewNonLinV2(cams[segi], 5, frame, We, Het, Heb, R0x, R0y, R0R1, R0R4);	
-		if (ret.cols > max_w)
+		//ret=EncodeNewNonLinV2(cams[segi], compressionfactor, frame, We, Het, Heb, R0x, R0y, R0R1, R0R4);	
+	/*	if (ret.cols > max_w)
 		{
 			max_w = ret.cols;
 		}
 		if (ret.rows > max_h)
 		{
 			max_h = ret.rows;
-		}
+		}  */
 		retbuffer.push_back(ret);		
 	}
 
@@ -2480,10 +2499,10 @@ vector<Mat> Path::videoencode(char* fname, int lastFrame, vector<float>& We, vec
 	
 	VideoWriter writer;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
-	writer.set(VIDEOWRITER_PROP_QUALITY, 80);
+	writer.set(VIDEOWRITER_PROP_QUALITY, 30);
 	string filename = "./Video/encodingtest/rollerh264encod.MKV";
 	cout << "Writing videofile: " << filename << codec << endl;
-	writer.open(filename, codec, fps, Size(max_w, max_h), true);
+	writer.open(filename, codec, fps, Size(retbuffer[0].cols, retbuffer[0].rows), true);
 
 	if (!writer.isOpened())
 	{
@@ -2496,13 +2515,16 @@ vector<Mat> Path::videoencode(char* fname, int lastFrame, vector<float>& We, vec
 		Mat temp1;
 		Mat ret;
 		ret = retbuffer[i];
+
+		imshow("sample", ret);
+		waitKey(1000);
 		
 		//cout << ret.size()<<"," <<max_w<<","<<max_h<< endl;
 		if (max_w>ret.cols)
 		{
 			
-			temp1 = Mat::zeros(max_h, max_w, ret.type());
-			ret.copyTo(temp1(Rect(0, 0, ret.cols, ret.rows)));
+			//temp1 = Mat::zeros(max_h, max_w, ret.type());
+			//ret.copyTo(temp1(Rect(0, 0, ret.cols, ret.rows)));
 			
 		//imshow("sample", ret);
 		//waitKey(1000);
@@ -2536,14 +2558,14 @@ void Path::videodecode(char* fname, int lastFrame, int original_w, int original_
 	resizeWindow("sample", 800, 800);
 
 
-	PPC camera2(90, 1200, 1200);
-	camera2.Pan(30);
+	PPC camera1(110.0f, 800, 400);
+	camera1.Tilt(-25);
 	VideoWriter writer;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
 	writer.set(VIDEOWRITER_PROP_QUALITY, 80);
 	int fps = 30;
 	string filename = "./Video/encodingtest/rollerh264decod.avi";
-	writer.open(filename, codec, fps, Size(camera2.w,camera2.h), true);
+	writer.open(filename, codec, fps, Size(camera1.w,camera1.h), true);
 
 	cout << "Writing videofile: " << filename << codec << endl;
 
@@ -2562,15 +2584,22 @@ void Path::videodecode(char* fname, int lastFrame, int original_w, int original_
 		imshow("sample", frame);
 		waitKey(30);
 
-		retdecode = path1.DecodeNewNonLinV2(frame,original_w, original_h, We[fi], Het[fi], Heb[fi], R0x[fi], R0y[fi], R0R1[fi], R0R4[fi], compressionfactor);
+		float var[10];
+		var[0] = frame.cols;
+		var[1] = frame.rows;
+		var[2] = We[fi];
+		var[3] = Het[fi];//*/
 		
+		//need work with this one. Change the code to accomodate 0 angle diff.
+		print("comehere" << endl);
+		//ret1 = path1.CRERI2Conv(encodframe, var, cf, camera2, heatmap, &svar);
+
+
+		//retdecode = path1.CRERI2Conv(frame,original_w, original_h, We[fi], Het[fi], Heb[fi], R0x[fi], R0y[fi], R0R1[fi], R0R4[fi], compressionfactor);
 			
 		
-		ERI eri(retdecode.cols, retdecode.rows);
-		Mat convPixels = Mat::zeros(camera2.h, camera2.w, retdecode.type());
-		eri.ERI2Conv(retdecode, convPixels, camera2);
-
-		writer.write(convPixels);
+		
+		writer.write(retdecode);
 	
 	}
 	writer.release();
@@ -2617,7 +2646,10 @@ void Path::bilinearinterpolation(Mat &output, Mat &source, int Orow, int Ocol, f
 			uf = 0;
 			//print(vf << " " << uf << " " << source.size() << endl);
 		}
+
+
 		output.at<Vec3b>(Orow, Ocol) = source.at<Vec3b>((int)uf, (int)vf);
+
 	}
 }
 
@@ -2799,6 +2831,11 @@ void Path::RotateXYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, 
 	V3 dir = (p1^p).UnitVector();
 	float angle =((float)180/(float)PI)* acos(m);
 	angle = angle ; 
+	if (angle == 0)
+	{
+		newERI = originERI;
+		return;
+	}
 	//cout << a << " " << b << " m: " << m<<" angle: " <<angle << endl;
 	
 	//system("pause");
@@ -2827,9 +2864,8 @@ void Path::RotateXYaxisERI2RERI(Mat originERI, Mat& newERI, V3 directionbefore, 
 
 
 
-Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1)
+Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, Mat& qual, struct samplingvar * var1)
 {
-
 	float compressionfactorX = compressionfactor;
 	float compressionfactorY = (float)compressionfactor / (float)1;
 
@@ -2901,35 +2937,45 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 	Mat convPixels(camera1.h, camera1.w, CRERI.type());
 	//camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
 	
-	camera1.Pan(90.0f);
-	camera1.Tilt(45.0f);
+	//camera1.Pan(160.0f);//undo this in real case
+	//camera1.Tilt(5.0f);// this too
+
+
 	
 	Mat tmp = CRERI(Rect(We, Het, R0R4, R0R1));
+	
+	
+	float prevdx=0;
+	float currentdx = 0;
+	float a = (float)1 / (float)compressionfactor-1;
+	float b = 1 - a;
+	float vto = abs((float)(2 * a) / (float)(2 * a + b));
+	float vtin = abs((float)(2 * a) / (float)(b));
+
+
+	
 
 	for (int v = 0; v < camera1.h; v++)
 	{
 		for (int u = 0; u < camera1.w; u++)
 		{
-
 			eri.EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
-
 			int col = pixelJ;
 			int	row = pixelI;
-
-			//cout << row << " " << col<<endl;
-
+				
 			if ((row > R0y && row < R0y + R0R1)&& (col > R0x && col < R0x + R0R4))
-				{
-					//cout << "decode inner: "<< endl;
-					convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(pixelI - (R0y - Het), pixelJ - (R0x - We));
-				}
-			
+				{					
+					convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(pixelI - (R0y - Het), pixelJ - (R0x - We));					
+					qual.at<Vec3b>(v, u) =  (10*vtin);					
+					//cout << v << " u: " << u << " row: " << row << " col: " << col << " " << 10 * vtin << endl;
+										
+				}			
 
 			else
 			{
 				float d = R0x - col;
 				float Dx = R0x - nonuniformDrev[d];
-				//cout << "decode colr1: " << col << " Dx: " << (Dx - (R0x - We)) << endl;
+				//cout << "decode col_r1: " << col << " Dx: " << (Dx - (R0x - We)) << endl;
 
 				if (col < R0x)
 				{
@@ -2950,6 +2996,11 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						float distx = Dx - (R0x - We);
 						float disty = Dy - (R0y - Het);
 
+						float dist = distx - prevdx;
+						prevdx = distx;
+
+					//	cout <<"diff: "<< dist <<"current: "<<distx<< " prev: " << prevdx << endl;
+
 						if (disty >= CRERI.rows)
 						{
 							//cout << distx << " " << disty << " " << CRERI.size() << endl;
@@ -2969,15 +3020,21 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						{
 							//cout << distx << " " << disty << " " << CRERI.size() << endl;
 							distx = 0;
-						}
-						//cout << distx << " " << disty << endl;						
-						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
-						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						}										
+						//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
+						float t = (float)d / (float)R0x;						
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<Vec3b>(v, u) = 10*vt;
+						
+
 					}
 				} //end region 1
 
 				//print("dloop1" << endl);
 				//region 3
+
 				if (col > R0x + R0R4)
 				{
 					float d = col - (R0x + R0R4);
@@ -3022,7 +3079,12 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						}
 						//print(distx << " " << disty << " " << CRERI.size() << endl);						
 						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
-						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
+						float t = (float)d / (float)R0x;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<Vec3b>(v, u) = 10 * vt;
 					}
 				}  //end region 3
 
@@ -3083,7 +3145,12 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 						//decodedframe.at<Vec3b>(row, col) = CRERI.at<Vec3b>(disty, distx);
 
 						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
-						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
+						float t = (float)d / (float)R0y;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<Vec3b>(v, u) = 10 * vt;
 
 					}
 				}  //end region 2
@@ -3134,27 +3201,65 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 							distx = 0;
 						}
 						//decodedframe.at<Vec3b>(row, col) = CRERI.at<Vec3b>(disty, distx);
-						//bilinearinterpolation(decodedframe, CRERI, row, col, disty, distx);
-						convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
-					}
+						bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
+						//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(disty, distx);
+						float t = (float)d / (float)R0y;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout <<v<<" u: "<<u<<" row: "<<row<<" col: "<<col<<" t: "<< t << " " << 10*vt << endl;
+						qual.at<Vec3b>(v, u) = 10 * vt;
 
+					}
+					
 				}  //end region 4
-				//	print("dloop4" << endl);
-				
+				//	print("dloop4" << endl);			
 
 			}
 		}
 	
 	}
+
+	float minv = 0;
+	float sum = 0;
+	int number = 0;
+	float bb;
+
+	cout << vtin << " " << vto << endl;
+
+	for (int i = 0; i < camera1.h; i++)
+	{
+		for (int jj = 0; jj < camera1.w; jj++)
+		{
+			bb = qual.at<Vec3b>(i, jj)[0];
+			if (bb == 0) { bb = 8; }
+			if (bb > minv)
+			{
+				minv = (float)10*vtin / (float)(bb);
+				//cout <<j<<" bb: "<< bb<<" minv: "<< minv << endl;
+			}
+			sum = sum + bb;
+			number++;
+		}
+	}
+	float average = (float)(10*vtin*number)/ (float)(sum);
+	//cout << "avg: "<<average << " min: " << minv << endl;
+
+		
+	/*
+	ofstream output("./Video/encodingtest/qual.txt");
+	output << qual << endl;	
+	output.close();
+	/*
 	namedWindow("sample1", WINDOW_NORMAL);
 	resizeWindow("sample1", 800, 400);
-	imshow("sample1", convPixels);
-	waitKey(10000000);
-
+	imshow("qual", qual);
+	waitKey(1000); */	
+	var1->vtin = vtin;
+	var1->vto = vto;
+	var1->avg = average;
+	var1->min = minv;
 
 	return convPixels;
-
-	STOP;
+	
 }
 
 

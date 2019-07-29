@@ -1,12 +1,15 @@
 #include"image.h"
+#include<fstream>
 #include<conio.h>
+#include<string.h>
 #include "config.h"
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
+using namespace std;
 
-
+std::string filename;
 int Is_MInv_calculated;
 M33 M_Inv;
 
@@ -26,7 +29,33 @@ int upload_image(string path, Mat &image) {
 	return 0;
 }
 
+Mat diffimgage(Mat backgroundImage, Mat currentImage) {
+	cv::Mat diffImage;
+	cv::absdiff(backgroundImage, currentImage, diffImage);
 
+	cv::Mat foregroundMask = cv::Mat::zeros(diffImage.rows, diffImage.cols, CV_8UC1);
+
+	float threshold = 30.0f;
+	float dist;
+
+	for (int j = 0; j < diffImage.rows; ++j)
+	{
+		for (int i = 0; i < diffImage.cols; ++i)
+		{
+			cv::Vec3b pix = diffImage.at<cv::Vec3b>(j, i);
+
+			dist = (pix[0] * pix[0] + pix[1] * pix[1] + pix[2] * pix[2]);
+			dist = sqrt(dist);
+
+			if (dist > threshold)
+			{
+				foregroundMask.at<unsigned char>(j, i) = 255;
+			}
+		}
+	}
+
+	return diffImage;
+}
 void testMousecontrol()
 {	
 	ERI_INIT;
@@ -494,13 +523,6 @@ void testbilinear()
 
 void testEncodingDecoding()
 {
-	vector<float> We;
-	vector<float> Het;
-	vector<float> Heb;
-	vector<float> R0x;
-	vector<float> R0y;
-	vector<float> R0R1;
-	vector<float> R0R4;
 
 	int compressionfactor = 5;
 	Path path1;	
@@ -511,47 +533,380 @@ void testEncodingDecoding()
 	//img_write("./Image/test_source.PNG", frame);
 	float hfov = 110.0f;
 	PPC camera1(hfov, 800, 400);
-	camera1.Pan(5);
-	//camera1.Tilt(15);  //temp line for testing
-	retencode=path1.EncodeNewNonLinV2(camera1,compressionfactor, frame, We, Het, Heb, R0x, R0y, R0R1, R0R4);
+	struct var encodevar;
+	retencode = path1.EncodeNewNonLinV2(frame, &encodevar, camera1, compressionfactor);	
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 800);	
 	imshow("sample", retencode);
 	img_write("./Image/test_encoded.PNG", retencode);
 	waitKey(1000);
-	print(R0R1[0] << " " << R0R4[0] << " " << R0x[0] << " " << R0y[0] << " " << We[0] << " " << Het[0] << " " << Heb[0]) << endl;
 	
-	//system("pause");
-
-	//retdecode = path1.DecodeNewNonLinV2(retencode, frame.cols, frame.rows, We[0], Het[0], Heb[0], R0x[0], R0y[0],R0R1[0], R0R4[0], compressionfactor);
+	
 	
 	float var[10];
 	var[0] = frame.cols;
 	var[1] = frame.rows;
-	var[2] = We[0];
-	var[3] = Het[0];//*/
+	var[2] = encodevar.We;
+	var[3] = encodevar.Het;//*/	
 
-	retdecode = path1.CRERI2Conv(retencode, var, compressionfactor, camera1);
+	
+	retdecode = path1.DecodeNewNonLinV2(retencode, var, compressionfactor, camera1);
 
 	imshow("sample", retdecode);
 	img_write("./Image/test_decoded.PNG", retdecode);
 	waitKey(1000);
-	PPC camera2(90, 1200,1200);
-	//PPC camera2(30, 30, 1200);
-	Mat eriPixels=retdecode;
-	camera2.Pan(-20);
-	ERI eri(retdecode.cols, retdecode.rows);	
-	Mat convPixels = Mat::zeros(camera2.h, camera2.w, retdecode.type());	
-	eri.ERI2Conv(eriPixels, convPixels, camera2);
 
-	img_write("./Image/test_conventional.PNG", convPixels);
+	Mat diff = diffimgage(frame, retdecode);
+
+	imshow("sample", diff);
+	img_write("./Image/test_diff.PNG", diff);
+	waitKey(1000);
 	
-	imshow("sample", convPixels);
-
-	waitKey(10000);
 
 }
 
+void testvideoendecodenew() {
+	vector <Mat> encoded;
+	vector <Mat> conv;
+	struct var encodevar;
+	Path path1;
+	PPC camera1(90.0f, 800,400);
+	int cf = 5;
+
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	VideoCapture cap("./Video/roller.MKV");
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		waitKey(100000);		
+	}
+
+	int lastframe = 720;
+	int fps = 30;
+	int segi = 0;
+	Mat ret; Mat ret1;
+
+	for (int fi = 0; fi < lastframe; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+		segi = path1.GetCamIndex(fi, fps, segi);
+
+		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], cf);
+		encoded.push_back(ret);
+		//namedWindow("sample", WINDOW_NORMAL);
+		//resizeWindow("sample", 800, 800);
+		//imshow("sample", ret);
+		//waitKey(1000);
+		float var[10];
+		var[0] = frame.cols;
+		var[1] = frame.rows;
+		var[2] = encodevar.We;
+		var[3] = encodevar.Het;//*/	
+		
+		PPC camera2(120.0f, 800, 400);
+		camera2.Pan(120.0f);
+		//camera2.Tilt(25.0f);
+		//ret1 =  path1.CRERI2Conv(encodframe, var, cf, camera2, heatmap, &svar);
+		//conv.push_back(ret1);
+		//imshow("sample", ret1);
+		waitKey(1000);
+	}	
+
+	VideoWriter writer;
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	writer.set(VIDEOWRITER_PROP_QUALITY, 30);
+	string filename = "./Video/encodingtest/rollerh264encod.MKV";
+	cout << "Writing videofile: " << filename << codec << endl;
+	writer.open(filename, codec, fps, Size(ret.cols, ret.rows), true);
+
+	if (!writer.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+	for (int i = 0; i < encoded.size(); i++)
+	{
+		writer.write(encoded[i]);
+	}
+	writer.release();
+
+	VideoWriter writer1;	
+	writer1.set(VIDEOWRITER_PROP_QUALITY, 30);
+	filename = "./Video/encodingtest/rollerh264conv.MKV";
+	cout << "Writing videofile: " << filename << codec << endl;
+	writer1.open(filename, codec, fps, Size(ret1.cols, ret1.rows), true);
+
+	if (!writer1.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+	for (int i = 0; i < conv.size(); i++)
+	{
+		writer1.write(conv[i]);
+	}
+	writer1.release();
+}
+
+
+void testvideoencodenew4s(int chunDurationsec) {
+	vector <Mat> encoded;	
+	struct var encodevar;
+	Path path1;
+	PPC camera1(90.0f, 800, 400);
+	int cf = 5;
+
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	VideoCapture cap("./Video/roller.MKV");
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		waitKey(100000);
+	}
+	int fps = cap.get(CAP_PROP_FPS);
+	int lastframe = 1800;	
+	int segi = 0;
+	Mat ret; 
+	float var[10];
+	
+	for (int fi = 0; fi < lastframe; fi++)
+	{
+		print("fi: "<<fi<<endl);
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+		if (fi % (chunDurationsec*fps) == 0)
+		{
+			segi = path1.GetCamIndex(fi, fps, segi);
+			print("segi: "<< segi << endl);
+		}
+
+		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], cf);
+		encoded.push_back(ret);
+		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)		
+		{
+			int chunkN = (fi + 1) / (chunDurationsec*fps);
+			cout << chunkN << endl;
+		/*	string fn = "./Video/encodingtest/rollerh264encod";
+			std::ostringstream oss;
+			oss << fn << chunkN << ".avi";
+			string filename = oss.str();
+
+			VideoWriter writer;
+			int codec = VideoWriter::fourcc('H', '2', '6', '4');
+			writer.set(VIDEOWRITER_PROP_QUALITY, 30);			
+			cout << "Writing videofile: " << filename << codec << endl;
+			writer.open(filename, codec, fps, Size(ret.cols, ret.rows), true);
+
+			if (!writer.isOpened())
+			{
+				cerr << "Could not open the output video file for write\n";
+				return;
+			}
+			for (int i = (chunDurationsec * fps*(chunkN-1)); i < (chunDurationsec*fps*chunkN); i++)
+			{
+				writer.write(encoded[i]);
+			}
+			writer.release();*/
+
+			int sf = chunDurationsec * fps*(chunkN - 1);
+			int ef = chunDurationsec * fps*chunkN;
+			filename = "./Video/encodingtest/rollerh264encod";
+			cout << fps << ret.cols << ret.rows <<" sf: "<< sf<<" ef: " << ef << endl;
+			
+			videowriterhelperx(chunkN, fps, ret.cols, ret.rows, sf, ef, encoded);
+
+			
+		}
+		
+			
+		if (fi == 2)
+		{			
+			var[0] = encodevar.colN;
+			var[1] = encodevar.rowN;
+			var[2] = encodevar.We;
+			var[3] = encodevar.Het;			
+		}
+		
+	}  
+
+	ofstream output("./Video/encodingtest/encoding_variable.txt");
+	output << var[0] << endl;
+	output << var[1] << endl;
+	output << var[2] << endl;
+	output << var[3] << endl;
+	output.close();
+	
+
+}
+
+void testvideodecodeNcompare()
+{
+	vector <Mat> conv;
+	vector <Mat> hmap;
+	vector<float> min;
+	vector<float> avg;
+	struct samplingvar svar;
+	Mat ret1;
+	Path path1;
+	PPC camera2(120.0f, 800, 400);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera2);		
+	int lastframe = 1800;
+	int segi = 0;	
+
+	int cf = 5;
+	float var[10];
+	float x;
+	ifstream varfile("./Video/encodingtest/encoding_variable.txt");
+	if (varfile.is_open())
+	{
+		int i = 0;
+		while (varfile >> x)
+		{
+			var[i] =(int) x;
+			cout << var[i] << '\n';
+			i++;
+		}
+		varfile.close();
+	}
+
+	else cout << "Unable to open file";	
+	
+	int chunkD = 4;
+	int chunkN;
+	int fps;
+	int MxchunkN = 2;
+	for (int i = 1; i <= MxchunkN; i++)
+	{
+		chunkN = i;
+		string fn = "./Video/encodingtest/rollerh264encod";
+		std::ostringstream oss;
+		oss << fn << (chunkN+8) << ".avi";
+		string filename = oss.str();
+
+		VideoCapture cap1(filename);
+		if (!cap1.isOpened())
+		{
+			cout << "Cannot open the video file: " << endl;
+			waitKey(100000);
+		}
+		fps = cap1.get(CAP_PROP_FPS);		
+		
+		for (int j = fps * (chunkN-1)*chunkD; j < fps*chunkN*chunkD; j++)
+		{
+			int segref;
+			Mat encodframe;
+			cap1 >> encodframe;
+			if (encodframe.empty())
+			{
+				cout << j << endl;
+				cout << "Can not read video frame: " << endl;
+				break;
+			}
+			segi = path1.GetCamIndex(j, fps, segi);
+			print("chunN: " << i << " frame: " << j << " segi: " << segi <<"size"<<encodframe.size()<< endl;);
+			if (j%fps == 0)
+			{
+				segref = segi;
+				print("segref: " << segref << endl);
+			}
+			
+			V3 p = path1.cams[segi].GetVD() - path1.cams[segref].GetVD();
+			print(p << " prev: "<< path1.cams[segi].GetVD()<<endl<<endl);
+			p = V3(0, 0, -1) + p;		
+			p = p.UnitVector();
+			
+			Mat heatmap = Mat::zeros(camera2.h, camera2.w, encodframe.type());
+			camera2.PositionAndOrient(V3(0, 0, 0), p, V3(0, 1, 0));
+			ret1 = path1.CRERI2Conv(encodframe, var, cf, camera2, heatmap, &svar);
+
+			//ret1 is the conventional image, heatmap is the heatmap of quality and svar has vto and vtin parameter: max and min sampling interval
+			//generate color for heatmap//
+
+			float vtin = svar.vtin;
+			float vto = svar.vto;
+			min.push_back(svar.min);
+			avg.push_back(svar.avg);
+			float bb;
+			for (int i = 0; i < camera2.h; i++)
+			{
+				for (int j = 0; j < camera2.w; j++)
+				{
+					bb = heatmap.at<Vec3b>(i, j)[0];
+					float factor = (float)bb / (float)(10 * vtin);
+					int colora = (float)255 / (float)factor;
+					colora = (colora <= 255) ? colora : 255;
+					Vec3b insidecolorx(colora, colora, 255);
+					heatmap.at<Vec3b>(i, j) = insidecolorx;					
+				}
+			}
+			hmap.push_back(heatmap);
+			conv.push_back(ret1);			
+		}		
+	}	
+	
+	ofstream output("./Video/encodingtest/min.txt");
+	for (int i = 0; i < min.size(); i++)
+	{
+		output << min[i] << "\n";
+	}
+	output.close();
+
+	ofstream output1("./Video/encodingtest/avg.txt");
+	for (int i = 0; i < avg.size(); i++)
+	{
+		output1 << avg[i] << "\n";
+	}
+	output1.close();
+
+	int starting_frame = 0;
+	int ending_frame = fps * chunkN*chunkD;
+	filename = "./Video/encodingtest/rollerh264conv";
+	videowriterhelperx(111, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, conv);
+	filename = "./Video/encodingtest/rollerh264Hmap";
+	videowriterhelperx(111, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, hmap);
+	
+
+}
+
+void videowriterhelperx(int chunkN ,int fps,int cols, int rows, int starting_frame,int ending_frame, vector<Mat> file2wr )
+{
+	
+	
+	std::ostringstream oss1;
+	oss1 << filename << chunkN << ".avi";
+	string ofilename = oss1.str();
+	VideoWriter writer1;
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	writer1.set(VIDEOWRITER_PROP_QUALITY, 10);
+	cout << "Writing videofile: " << ofilename << codec << endl;	
+	writer1.open(ofilename, codec, fps, Size(cols, rows), true);
+
+	if (!writer1.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+	for (int i = starting_frame; i < ending_frame; i++)
+	{
+		writer1.write(file2wr[i]);
+	}
+	writer1.release();
+
+
+}
 
 int testvideoencodedecode() {
 	
@@ -567,10 +922,10 @@ int testvideoencodedecode() {
 	vector <Mat> encodedbuffer;
 	PPC camera1(110.0f, 800, 400);
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	int lastframe = 500;	
-	encodedbuffer=path1.videoencode("./Video/roller.mkv", lastframe, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
-	path1.videodecode("./Video/encodingtest/rollerh264encod.MKV", lastframe, 3840,2044, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
-
+	int lastframe = 5;	
+	encodedbuffer=path1.videoencode("./Video/roller_2000_1000.mp4", lastframe, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
+	path1.videodecode("./Video/encodingtest/rollerh264encod.MKV", lastframe, 2000,1000, We, Het, Heb, R0x, R0y, R0R1, R0R4, compressionfactor);
+	//change the frame height and width in this funciton
 	return 0;
 	
 }

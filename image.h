@@ -25,6 +25,7 @@ using namespace std;
 #define YES 1
 #define PI  3.1416
 
+
 extern int Is_MInv_calculated;
 extern M33 M_Inv;
 
@@ -52,3 +53,8 @@ int testvideoencodedecode();
 void getcheckerboard();
 void testbilinear();
 void testrotationxyframe();
+void testvideoendecodenew();
+void testvideoencodenew4s(int chunDurationsec);
+void testvideodecodeNcompare();
+void videowriterhelperx(int chunN, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr);
+Mat diffimgage(Mat backgroundImage, Mat currentImage);
