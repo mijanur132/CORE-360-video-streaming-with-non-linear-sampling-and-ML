@@ -3,11 +3,14 @@
 #include<conio.h>
 #include<string.h>
 #include "config.h"
+#include "ssim.h"
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
+using namespace cv;
 using namespace std;
+
 
 std::string filename;
 int Is_MInv_calculated;
@@ -28,6 +31,8 @@ int upload_image(string path, Mat &image) {
 
 	return 0;
 }
+
+
 
 Mat diffimgage(Mat backgroundImage, Mat currentImage) {
 	cv::Mat diffImage;
@@ -92,11 +97,12 @@ void testMousecontrol()
 	
 }
 
+
 void getcheckerboard()
 {	
-	ERI eri(2000, 1000);	
+	ERI eri(3840, 2160);	
 	Mat convImage;
-	upload_image("./Image/checkerbig.PNG", convImage);
+	upload_image("./Image/checkerbigcolor1.PNG", convImage);   //Image must be square size
 	Mat eriMat(eri.h, eri.w, convImage.type());
 	float fov[2];
 	fov[0] = 90.0f;
@@ -115,7 +121,7 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -123,6 +129,15 @@ void getcheckerboard()
 		}
 
 	}
+
+
+
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 800, 400);
+	imshow("sample", eriMat);	
+	waitKey(1000);
+
+	upload_image("./Image/checkerbigcolor2.PNG", convImage);   //Image must be square size
 	camera1.PositionAndOrient(V3(0, 0, 0), V3(1, 0, 0), V3(0, 1, 0));
 
 	for (int i = 0; i < eri.h; i++)
@@ -133,7 +148,7 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -141,11 +156,14 @@ void getcheckerboard()
 		}
 
 	}
-	
+
+	imshow("sample", eriMat);	
+	waitKey(1000);
+
+	upload_image("./Image/checkerbigcolor3.PNG", convImage);   //Image must be square size
 	camera1.PositionAndOrient(V3(0, 0, 0), V3(1, 0, 0), V3(0, 1, 0));
 	camera1.Pan(90);
 
-	//camera1.Tilt(45);
 
 	for (int i = 0; i < eri.h; i++)
 	{
@@ -155,7 +173,8 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+	
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -166,7 +185,10 @@ void getcheckerboard()
 	camera1.PositionAndOrient(V3(0, 0, 0), V3(1, 0, 0), V3(0, 1, 0));
 	camera1.Pan(180);
 
-	//camera1.Tilt(90);
+	imshow("sample", eriMat);	
+	waitKey(1000);
+
+	upload_image("./Image/checkerbigcolor4.PNG", convImage);   //Image must be square size
 
 	for (int i = 0; i < eri.h; i++)
 	{
@@ -176,7 +198,7 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -188,7 +210,9 @@ void getcheckerboard()
 	camera1.PositionAndOrient(V3(0, 0, 0), V3(1, 0, 0), V3(0, 1, 0));
 	camera1.Pan(270);
 
-	//camera1.Tilt(90);
+	imshow("sample", eriMat);	
+	waitKey(1000);
+	upload_image("./Image/checkerbigcolor5.PNG", convImage);   //Image must be square size
 
 	for (int i = 0; i < eri.h; i++)
 	{
@@ -198,7 +222,7 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -209,6 +233,8 @@ void getcheckerboard()
 	camera1.PositionAndOrient(V3(0, 0, 0), V3(1, 0, 0), V3(0, 1, 0));
 	camera1.Tilt(-90);
 
+	upload_image("./Image/checkerbigcolor6.PNG", convImage);   //Image must be square size
+
 	for (int i = 0; i < eri.h; i++)
 	{
 		for (int j = 0; j < eri.w; j++)
@@ -217,7 +243,7 @@ void getcheckerboard()
 			V3 pp;
 			if (!camera1.Project(p, pp))
 				continue;
-			if (pp[0] < convImage.rows && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.cols)
+			if (pp[0] < convImage.cols && pp[0] >= 0 && pp[1] >= 0 && pp[1] < convImage.rows)
 			{
 				//print(pp[1] << " " << pp[0] << " " << i << " " << j<<" "<<camera1.h<<" "<<camera1.w << endl);
 				eriMat.at<Vec3b>(i, j) = convImage.at<Vec3b>((int)pp[1], (int)pp[0]);
@@ -226,13 +252,14 @@ void getcheckerboard()
 
 	}
 
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 400);
+	
 	imshow("sample", eriMat);
 	img_write("./Image/checkerbigERI.PNG", eriMat);
 	waitKey(10000);
 
 }
+
+
 
 void testforwardbackward()
 {
@@ -419,7 +446,8 @@ int testPlayBackHMDPathVideo()
 	Path path1;
 	int lastframe =1500;
 	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
-	path1.PlayBackPathVideo("./Video/roller.mkv", convPixels,lastframe);
+	//path1.PlayBackPathVideo("./Video/roller.mkv", convPixels,lastframe);
+	path1.PlayBackPathVideo("http://127.0.0.5:80/input.avi", convPixels, lastframe);
 	return 0;
 
 }
@@ -520,27 +548,55 @@ void testbilinear()
 
 }
 
+void getssim()
+{
+	int block_size = 10;
+	compute_quality_metrics("./Image/test_conv_real.PNG", "./Image/test_conv_nl1.PNG", block_size);
+	compute_quality_metrics("./Image/test_conv_real.PNG", "./Image/test_conv_ln1.PNG", block_size);
+
+}
 
 void testEncodingDecoding()
 {
-
-	int compressionfactor = 5;
+	int compressionfactor =10;
 	Path path1;	
 	Mat frame;
 	Mat retencode;
 	Mat retdecode;
-	upload_image("./Image/eri_4000_2000.JPG", frame);
-	//img_write("./Image/test_source.PNG", frame);
-	float hfov = 110.0f;
-	PPC camera1(hfov, 800, 400);
-	struct var encodevar;
-	retencode = path1.EncodeNewNonLinV2(frame, &encodevar, camera1, compressionfactor);	
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 800);	
-	imshow("sample", retencode);
-	img_write("./Image/test_encoded.PNG", retencode);
-	waitKey(1000);
+	upload_image("./Image/checkerbig.PNG", frame);
+
 	
+	float hfov = 90.0f;
+	float corePredictionMargin = 1;
+	int w = 960;
+	int h = 540;
+	PPC corePPC(hfov*corePredictionMargin, w*corePredictionMargin , h*corePredictionMargin);
+	PPC encodeRefPPC = corePPC;  //always next to corePPC before pan or tilt
+	//corePPC.Pan(50.0f);
+	//corePPC.Tilt(10.0f);
+
+	PPC userPPC(hfov, w, h);
+	userPPC.Pan(25.0f);
+	userPPC.Tilt(20.0f);
+
+	struct var encodevar;
+	ERI eri(frame.cols,frame.rows);
+	Vec3b linecolor(0, 0, 255);
+	//eri.ERI2ConvDrawBorderinERI(frame, corePPC, linecolor);
+	Vec3b linecolor1(0, 100, 255);
+	//eri.ERI2ConvDrawBorderinERI(frame, userPPC, linecolor1);
+	namedWindow("sample", WINDOW_NORMAL);
+	resizeWindow("sample", 640, 360);
+	imshow("sample", frame);	
+	waitKey(1000);
+	img_write("./Image/test_original.PNG", frame);
+	
+	retencode = path1.EncodeNewNonLinV2(frame, &encodevar, corePPC, encodeRefPPC, compressionfactor);	
+	//retencode = path1.EncodeLinear(frame, &encodevar, corePPC, compressionfactor);
+
+	img_write("./Image/test_encoded.PNG", retencode);	
+	imshow("sample", retencode);
+	waitKey(100);
 	
 	
 	float var[10];
@@ -550,18 +606,32 @@ void testEncodingDecoding()
 	var[3] = encodevar.Het;//*/	
 
 	
-	retdecode = path1.DecodeNewNonLinV2(retencode, var, compressionfactor, camera1);
-
-	imshow("sample", retdecode);
-	img_write("./Image/test_decoded.PNG", retdecode);
-	waitKey(1000);
-
-	Mat diff = diffimgage(frame, retdecode);
-
-	imshow("sample", diff);
-	img_write("./Image/test_diff.PNG", diff);
-	waitKey(1000);
+	retdecode = path1.DecodeNewNonLinV2(retencode, var, compressionfactor, corePPC);
+	//retdecode = path1.DecodeLinear(retencode, var, compressionfactor, corePPC);
 	
+	
+	imshow("sample",retdecode);
+	img_write("./Image/test_decoded.PNG",retdecode);
+	waitKey(100);
+
+	//Mat diff = diffimgage(frame, retdecode);
+	//imshow("sample", diff);
+	//img_write("./Image/test_diff.PNG", diff);
+	//waitKey(100);
+
+	Mat convPixels(userPPC.h, userPPC.w, frame.type());
+
+	eri.ERI2Convtemp(retdecode, convPixels, userPPC);
+	imshow("sample", convPixels);
+	waitKey(100);
+	img_write("./Image/test_conv.PNG", convPixels);
+/*
+	eri.ERI2Conv(frame, convPixels, userPPC);
+	imshow("sample", convPixels);
+	waitKey(100);
+	img_write("./Image/test_conv_real.PNG", convPixels);
+
+*/
 
 }
 
@@ -598,7 +668,7 @@ void testvideoendecodenew() {
 		}
 		segi = path1.GetCamIndex(fi, fps, segi);
 
-		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], cf);
+		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], camera1, cf);
 		encoded.push_back(ret);
 		//namedWindow("sample", WINDOW_NORMAL);
 		//resizeWindow("sample", 800, 800);
@@ -660,10 +730,18 @@ void testvideoencodenew4s(int chunDurationsec) {
 	vector <Mat> encoded;	
 	struct var encodevar;
 	Path path1;
-	PPC camera1(90.0f, 800, 400);
+
+
+	float hfov = 90.0f;
+	float corePredictionMargin = 1;
+	int w = 960;
+	int h = 540;
+	PPC corePPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	PPC encodeRefPPC = corePPC;  //always next to corePPC before pan or tilt
+	   	
 	int cf = 5;
 
-	path1.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	path1.LoadHMDTrackingData("./Video/roller.txt", corePPC);
 	VideoCapture cap("./Video/roller.MKV");
 	if (!cap.isOpened())
 	{
@@ -671,7 +749,7 @@ void testvideoencodenew4s(int chunDurationsec) {
 		waitKey(100000);
 	}
 	int fps = cap.get(CAP_PROP_FPS);
-	int lastframe = 1800;	
+	int lastframe = 1000;	
 	int segi = 0;
 	Mat ret; 
 	float var[10];
@@ -693,45 +771,19 @@ void testvideoencodenew4s(int chunDurationsec) {
 			print("segi: "<< segi << endl);
 		}
 
-		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], cf);
+		ret = path1.EncodeNewNonLinV2(frame, &encodevar, path1.cams[segi], encodeRefPPC, cf);
 		encoded.push_back(ret);
 		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)		
 		{
 			int chunkN = (fi + 1) / (chunDurationsec*fps);
 			cout << chunkN << endl;
-		/*	string fn = "./Video/encodingtest/rollerh264encod";
-			std::ostringstream oss;
-			oss << fn << chunkN << ".avi";
-			string filename = oss.str();
-
-			VideoWriter writer;
-			int codec = VideoWriter::fourcc('H', '2', '6', '4');
-			writer.set(VIDEOWRITER_PROP_QUALITY, 30);			
-			cout << "Writing videofile: " << filename << codec << endl;
-			writer.open(filename, codec, fps, Size(ret.cols, ret.rows), true);
-
-			if (!writer.isOpened())
-			{
-				cerr << "Could not open the output video file for write\n";
-				return;
-			}
-			for (int i = (chunDurationsec * fps*(chunkN-1)); i < (chunDurationsec*fps*chunkN); i++)
-			{
-				writer.write(encoded[i]);
-			}
-			writer.release();*/
-
 			int sf = chunDurationsec * fps*(chunkN - 1);
 			int ef = chunDurationsec * fps*chunkN;
-			filename = "./Video/encodingtest/rollerh264encod";
+			filename = "./Video/encodingtest/newmethod/rollerh264encod";
 			cout << fps << ret.cols << ret.rows <<" sf: "<< sf<<" ef: " << ef << endl;
 			
 			videowriterhelperx(chunkN, fps, ret.cols, ret.rows, sf, ef, encoded);
-
-			
 		}
-		
-			
 		if (fi == 2)
 		{			
 			var[0] = encodevar.colN;
@@ -742,7 +794,7 @@ void testvideoencodenew4s(int chunDurationsec) {
 		
 	}  
 
-	ofstream output("./Video/encodingtest/encoding_variable.txt");
+	ofstream output("./Video/encodingtest/newmethod/encoding_variable.txt");
 	output << var[0] << endl;
 	output << var[1] << endl;
 	output << var[2] << endl;
@@ -752,6 +804,36 @@ void testvideoencodenew4s(int chunDurationsec) {
 
 }
 
+/*
+string datax;
+
+size_t download(char* buf, size_t size, size_t nmemb, void* userP)
+{
+	//size*nmemb is the size of the buf(fer)
+	for (int c = 0; c < size*nmemb; c++)
+	{
+		datax.push_back(buf[c]);
+	}
+	return size * nmemb; //return the number of bytes we handled
+}
+
+void fetchTextOverHttp()
+{
+
+	curl_global_init(CURL_GLOBAL_ALL); //pretty simple
+
+	CURL* conHandle = curl_easy_init(); //make an "easy" handle
+
+	curl_easy_setopt(conHandle, CURLOPT_URL, "http://www.example.com");
+	curl_easy_setopt(conHandle, CURLOPT_VERBOSE, 1L); //outputs status
+	curl_easy_setopt(conHandle, CURLOPT_WRITEFUNCTION, &download); //set our callback to handle data
+	curl_easy_perform(conHandle); //get the file
+
+	cout << datax << endl; //should output an html file (if the set url is valid)
+
+}
+
+*/
 void testvideodecodeNcompare()
 {
 	vector <Mat> conv;
@@ -770,6 +852,15 @@ void testvideodecodeNcompare()
 	float var[10];
 	float x;
 	ifstream varfile("./Video/encodingtest/encoding_variable.txt");
+	//ifstream varfile("http://127.0.0.5:80/encoding_variable.txt");
+	Mat image_temp = imread("http://127.0.0.5:80/encoding_variable.txt", IMREAD_COLOR);
+	if (!image_temp.data)                              // Check for invalid input
+	{
+		cout << "Could not open or find the image" << std::endl;
+	}
+	else
+		cout << image_temp.at<Vec3b>(0,0)<<endl;
+	STOP;
 	if (varfile.is_open())
 	{
 		int i = 0;
@@ -791,9 +882,10 @@ void testvideodecodeNcompare()
 	for (int i = 1; i <= MxchunkN; i++)
 	{
 		chunkN = i;
-		string fn = "./Video/encodingtest/rollerh264encod";
+		//string fn = "./Video/encodingtest/rollerh264encod";
+		string fn = "http://127.0.0.5:80/input";
 		std::ostringstream oss;
-		oss << fn << (chunkN+8) << ".avi";
+		oss << fn << (chunkN) << ".avi";
 		string filename = oss.str();
 
 		VideoCapture cap1(filename);
@@ -803,10 +895,11 @@ void testvideodecodeNcompare()
 			waitKey(100000);
 		}
 		fps = cap1.get(CAP_PROP_FPS);		
-		
+		int segref=0;
+
 		for (int j = fps * (chunkN-1)*chunkD; j < fps*chunkN*chunkD; j++)
 		{
-			int segref;
+			
 			Mat encodframe;
 			cap1 >> encodframe;
 			if (encodframe.empty())
@@ -830,8 +923,8 @@ void testvideodecodeNcompare()
 			
 			Mat heatmap3c = Mat::zeros(camera2.h, camera2.w, encodframe.type());
 			Mat heatmap = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
-			camera2.PositionAndOrient(V3(0, 0, 0), p, V3(0, 1, 0));
-			ret1 = path1.CRERI2Conv(encodframe, var, cf, camera2, heatmap, &svar);
+			//camera2.PositionAndOrient(V3(0, 0, 0), p, V3(0, 1, 0));
+			ret1 = path1.CRERI2Conv(encodframe, var, cf, path1.cams[segi], segref, heatmap, &svar);
 
 			//ret1 is the conventional image, heatmap is the heatmap of quality and svar has vto and vtin parameter: max and min sampling interval
 			//generate color for heatmap//
@@ -881,6 +974,12 @@ void testvideodecodeNcompare()
 	filename = "./Video/encodingtest/rollerh264Hmap";
 	videowriterhelperx(111, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, hmap);
 	
+
+}
+
+void onlineVideo()
+{
+
 
 }
 
@@ -975,7 +1074,8 @@ void testrotationxyframe()
 	Mat newERI = Mat::zeros(frame.rows, frame.cols, frame.type());
 
 	V3 p = camera.GetVD();
-	camera.Tilt(45);
+	camera.Pan(0.0f);
+	camera.Tilt(45.0f);
 	V3 p1 = camera.GetVD();
 
 	// build local coordinate system of RERI
@@ -989,14 +1089,14 @@ void testrotationxyframe()
 
 
 	path1.RotateXYaxisERI2RERI(frame, newERI, p, p1, reriCS);	
-
+	
 
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 400, 400);
 
 	imshow("sample", newERI);
-	waitKey(10);
-
+	waitKey(10000);
+	
 
 }
 
@@ -1013,7 +1113,49 @@ int testTiling() {
 	Path path3;
 	Path path4;
 	Path path5;
-	int lastframe = 900;
+	int lastframe = 121;
+
+	path5.LoadHMDTrackingData("./Video/roller.txt", camera1);
+	
+	int m = 1;
+	int n = 1;
+	int t = 1;
+	
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 2;
+	n = 2;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+	
+	m = 4;
+	n = 6;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 8;
+	n = 8;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 10;
+	n = 10;
+	t = 1;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+	STOP;
+	m = 20;
+	n = 20;
+	t = 4;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+	m = 30;
+	n = 30;
+	t = 4;
+	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
+
+
+
+	/*
 
 	path1.LoadHMDTrackingData("./Video/diving.txt", camera1);
 
@@ -1161,7 +1303,7 @@ int testTiling() {
 	path1.ConvPixel2ERITile("./Video/diving_original.mkv", lastframe, m, n, t);
 
 	//////// path 2................
-
+	
 
 	path2.LoadHMDTrackingData("./Video/italy.txt", camera2);
 
@@ -1601,9 +1743,9 @@ int testTiling() {
 	t = 3;
 	path4.ConvPixel2ERITile("./Video/paris.mkv", lastframe, m, n, t);
 
-	//*/////////////////////// path 5..............
+	///////////////////////// path 5..............
 
-
+	
 
 	path5.LoadHMDTrackingData("./Video/roller.txt", camera5);
 
@@ -1749,6 +1891,8 @@ int testTiling() {
 	t = 3;
 	path5.ConvPixel2ERITile("./Video/roller.mkv", lastframe, m, n, t);
 
+	*/
 	return 0;
 
 }
+

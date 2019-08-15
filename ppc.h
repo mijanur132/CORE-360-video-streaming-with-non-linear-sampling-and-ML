@@ -1,11 +1,13 @@
 #pragma once
+#include<math.h>
 #include "v3.h"
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
+/*
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
-#include<math.h>
 
-using namespace cv;
+*/
+//using namespace cv;
 
 //class FrameBuffer;
 

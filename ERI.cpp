@@ -3,7 +3,7 @@
 #include "v3.h"
 #include <math.h>
 #include "Image.h"
-#include <C:\opencv\build\include\opencv2/opencv.hpp>
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
@@ -165,6 +165,7 @@ int ERI::TestLatLon2Pixel(float lat, float lon, int source_H, int source_W)
 
 int ERI:: EachPixelConv2ERI(PPC camera1, int u, int v, int &pixelI, int &pixelJ)
 {
+	
 	V3 p = camera1.GetUnitRay(0.5f + u, 0.5f + v);	//this focul length needs to go way	
 	//p = p.UnitVector();
 	pixelI = Lat2PixI(GetXYZ2Latitude(p));
@@ -173,6 +174,37 @@ int ERI:: EachPixelConv2ERI(PPC camera1, int u, int v, int &pixelI, int &pixelJ)
 	return 0;
 }
 
+int ERI::EachPixelConv2ERItemp(PPC camera1, int u, int v, int &pixelI, int &pixelJ)
+{
+	//
+	float hfov = 110.0f;
+	float corePredictionMargin = 1.2;
+	int w = 1168;
+	int h = 657;
+	PPC camera(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	camera.Pan(50.0f);
+	camera.Tilt(10.0f);
+
+	// build local coordinate system of RERI
+	V3 xaxis = camera.a.UnitVector();
+	V3 yaxis = camera.b.UnitVector()*-1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+	M33 reriCS;
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
+
+	//
+
+	V3 p = camera1.GetUnitRay(0.5f + u, 0.5f + v);	//this focul length needs to go way	
+	//p = p.UnitVector();
+	p = reriCS * p;
+	pixelI = Lat2PixI(GetXYZ2Latitude(p));
+	pixelJ = Lon2PixJ(GetXYZ2Longitude(p));
+
+	return 0;
+}
 
 
 
@@ -193,6 +225,74 @@ int ERI::ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
 	}
 
 
+	return 0;
+}
+
+
+
+int ERI::ERI2Convtemp(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
+{
+	int pixelI, pixelJ = 0;
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+
+			EachPixelConv2ERItemp(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(v, u) = source_image_mat.at<cv::Vec3b>(pixelI, pixelJ);
+
+		}
+	}
+
+
+	return 0;
+}
+
+int ERI::ERI2ConvDrawBorderinERI(Mat &output_image_mat, PPC _camera1, Vec3b insidecolor)
+{
+	PPC camera1(_camera1);
+	int magf = 10;
+	int linet = 35 * magf;
+	camera1.a = camera1.a*(1.0f / (float)magf);
+	camera1.b = camera1.b*(1.0f / (float)magf);
+	camera1.w *= magf;
+	camera1.h *= magf;
+	int pixelI, pixelJ = 0;
+	for (int v = 0; v < linet; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(pixelI,pixelJ) = insidecolor;
+		}
+	}
+	
+	for (int v = camera1.h - linet-1; v < camera1.h - 1; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(pixelI, pixelJ) = insidecolor;
+		}
+	}
+
+	for (int u = 0; u < linet; u++)
+	{
+		for (int v = 0; v < camera1.h; v++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(pixelI, pixelJ) = insidecolor;
+		}
+	}
+	for (int u = camera1.w - 1-linet; u < camera1.w - 1; u++)
+	{
+		for (int v = 0; v < camera1.h; v++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+			output_image_mat.at<cv::Vec3b>(pixelI, pixelJ) = insidecolor;
+		}
+	}
 	return 0;
 }
 

@@ -114,7 +114,7 @@
       <AdditionalIncludeDirectories>C:\opencv\build\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\opencv\build\x64\vc14\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\opencv\build\x64\vc14\lib;C:\%ProgramFiles%\vcpkg\packages\curl_x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>C:\opencv\build\x64\vc14\lib\opencv_world410.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -129,6 +129,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="PixelCalculation.cpp" />
     <ClCompile Include="ppc.cpp" />
+    <ClCompile Include="ssim.cpp" />
     <ClCompile Include="v3.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -48,6 +48,9 @@
     <ClCompile Include="encode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ssim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ERI.h">

@@ -17,9 +17,9 @@
 #else
 #define print(x) 
 #endif 
-
-using namespace cv;
 using namespace std;
+//using namespace cv;
+
 
 #define NO  0
 #define YES 1
@@ -34,7 +34,7 @@ void testforwardbackward();
 void img_write(const char *s1, cv::InputArray s2);
 void playstillmanually();
 
-int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1);
+int out_video_file(cv::Mat &output_image_mat, ERI eri_image, Path path1);
 void check_interpolation();
 
 int testPlayBackHMDPathStillImage();
@@ -46,7 +46,7 @@ int testViewDirectionAvgRotation();
 int testWriteh264();
 int testWriteh264tiles();
 void testBoundingBox();
-int upload_image(string path, Mat &image);
+int upload_image(string path, cv::Mat &image);
 void testEncodingDecoding();
 void testRotationxy();
 int testvideoencodedecode();
@@ -56,5 +56,7 @@ void testrotationxyframe();
 void testvideoendecodenew();
 void testvideoencodenew4s(int chunDurationsec);
 void testvideodecodeNcompare();
-void videowriterhelperx(int chunN, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr);
-Mat diffimgage(Mat backgroundImage, Mat currentImage);
+void videowriterhelperx(int chunN, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<cv::Mat> file2wr);
+cv::Mat diffimgage(cv::Mat backgroundImage, cv::Mat currentImage);
+void getssim();
+void onlineVideo();

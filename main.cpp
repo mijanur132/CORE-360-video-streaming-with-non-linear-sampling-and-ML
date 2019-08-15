@@ -5,17 +5,18 @@
 #include "image.h"
 #include "ppc.h"
 #include "config.h"
-#include <C:\opencv\build\include\opencv2\opencv.hpp>
-#include <C:\opencv\build\include\opencv2\core\core.hpp>
-#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
+
 #include <chrono> 
 #include <cstdlib>
 #include "path.h"
 
-
-using namespace cv;
 using namespace std;
 using namespace std::chrono;
+
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
+#include <C:\opencv\build\include\opencv2\core\core.hpp>
+#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
+using namespace cv;
 
 
 int main()
@@ -35,6 +36,8 @@ int main()
 
 	//getcheckerboard();
 
+	//getssim();
+
 	//testEncodingDecoding();
 	//testrotationxyframe();
 
@@ -45,7 +48,7 @@ int main()
 	//testRotationxy();
 		
 	//testbilinear();
-	system("pause");
+	//system("pause");
 	return 0;
 }
 

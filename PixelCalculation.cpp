@@ -27,7 +27,7 @@ void PIXELCALCULATION::EndPixelInterval(int pixel, int frame) {
 
 }
 
-void PIXELCALCULATION::GetFramePixelInterval(ERI eri, Mat erivis, PPC *ppc) 
+void PIXELCALCULATION::GetFramePixelInterval(ERI eri, cv::Mat erivis, PPC *ppc) 
 {
 	int wscalefactor = eri.w / erivis.cols;
 	int hscalefactor =eri.h / erivis.rows;

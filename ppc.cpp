@@ -2,17 +2,17 @@
 #include "ppc.h"
 #include "m33.h"
 #include"Image.h"
-
-#include <C:\opencv\build\include\opencv2\opencv.hpp>
-#include <C:\opencv\build\include\opencv2\core\core.hpp>
-#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 #include<math.h>
 #include<string.h>
 #include"config.h"
+/*
+#include <C:\opencv\build\include\opencv2\opencv.hpp>
+#include <C:\opencv\build\include\opencv2\core\core.hpp>
+#include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
+
 
 using namespace cv;
-
-//#include "framebuffer.h"
+*/
 
 PPC::PPC():a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 C(0.0f, 0.0f, 0.0f) {
@@ -38,7 +38,7 @@ PPC::PPC(float hfov, int _w, int _h): a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 	c = V3(-(float)w / 2.0f, (float)h / 2.0f, f);	
 	updateInv = 1;
 
-}
+}	
 
 PPC::PPC(float fov[2], int _w) : a(1.0f, 0.0f, 0.0f), b(0.0f, -1.0f, 0.0f),
 C(0.0f, 0.0f, 0.0f), w(_w) {
