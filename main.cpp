@@ -42,8 +42,8 @@ int main()
 	//testrotationxyframe();
 
 	//testvideoendecodenew();
-	//testvideoencodenew4s(4);
-	testvideodecodeNcompare();
+	//testvideoEncodeNew4s(4);
+	testDownloadVideoHttp();
 
 	//testRotationxy();
 		
