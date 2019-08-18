@@ -78,7 +78,6 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 int Path::GetCamIndex(int fi, int fps, int segi) {
 
 	int ret = segi;
-	print(fps <<" "<<fi<< endl);
 	while (tstamps[ret] <= (float)(fi) / (float)(fps))
 	{
 		ret++;

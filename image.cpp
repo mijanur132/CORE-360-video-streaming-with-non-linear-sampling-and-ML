@@ -48,8 +48,34 @@ string fetchTextOverHttp(char* addr)
 }
 //................................... http End.................................//
 
+class queueclass {
+	std::queue<Mat> Fqueue;
+public:
+	void pushframe(Mat newframe)
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		Fqueue.push(newframe);
 
-void thredCatchFrame(int MxchunkN, int chunkD, int &fps, std::queue<Mat> &frameQ)
+	}
+	Mat  getframe()
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		Mat outFrame = Fqueue.front();
+		Fqueue.pop();
+		return outFrame;
+	}
+	bool empty()
+	{
+		if (Fqueue.empty())
+			return TRUE;
+		else return FALSE;
+	}
+private:
+	std::mutex mutex;
+
+}frameQ;
+
+void thredCatchFrame(int MxchunkN, int chunkD, int &fps)
 {	
 	int chunkN;
 	Mat frame;
@@ -68,7 +94,7 @@ void thredCatchFrame(int MxchunkN, int chunkD, int &fps, std::queue<Mat> &frameQ
 			waitKey(100);
 		}
 		fps = cap1.get(CAP_PROP_FPS);
-		cout << fps << endl;
+		//cout << fps << endl;
 		for (int j = 1; j <= chunkD * fps; j++)
 		{
 
@@ -76,8 +102,8 @@ void thredCatchFrame(int MxchunkN, int chunkD, int &fps, std::queue<Mat> &frameQ
 			fps = cap1.get(CAP_PROP_FPS);
 			if (!frame.empty())
 			{
-				cout << "frame pushed: " << j << endl;
-				frameQ.push(frame.clone());
+				cout<< j << endl;
+				frameQ.pushframe(frame.clone());
 			}
 			else
 			{
@@ -92,9 +118,10 @@ void thredCatchFrame(int MxchunkN, int chunkD, int &fps, std::queue<Mat> &frameQ
 
 }
  
-void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fps, int cf, struct samplingvar& svar, float var[10], std::queue<Mat> &frameQ, vector <Mat>& conv)
+void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fps, int cf, struct samplingvar& svar, float var[10], vector <Mat>& conv)
 {
-	cout << "here2" << endl;
+	//waitKey(5000);
+	cout << "here2" << endl;	
 	int segi = 0;
 	int chunkN = 0;
 	Mat ret1;
@@ -108,9 +135,8 @@ void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fp
 		
 		if (!frameQ.empty())
 		{
-			frame = frameQ.front();
-			frameQ.pop();
-			cout << "Frame queue not empty" << endl;
+			frame = frameQ.getframe();		
+			//cout << "Frame queue not empty" << endl;
 
 			// Process the frame
 			if (!frame.empty())
@@ -143,7 +169,7 @@ void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fp
 	}
 	int starting_frame = 0;
 	int ending_frame = fps * chunkN*chunkD;
-	filename = "./Video/encodingtest/newmethod/rollerh264convtemp";
+	//filename = "./Video/encodingtest/newmethod/rollerh264convtemp";
 	//videowriterhelperx(1, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, conv);
 	return;
 }
@@ -151,7 +177,7 @@ void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fp
 
 void testDownloadVideoHttp()
 {
-	std::queue<Mat> frameQ;
+	//std::queue<Mat> frameQ;
 	vector <Mat> conv;
 	vector <Mat> hmap;
 	vector<float> min;
@@ -165,7 +191,7 @@ void testDownloadVideoHttp()
 	int w = 960;
 	int h = 512;  //540 for perfect 2160 p but here we have 2048
 	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
-	path1.LoadHMDTrackingData("./Video/roller2.txt", camera2);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera2);
 	int lastframe = 1800;
 	
 
@@ -187,14 +213,14 @@ void testDownloadVideoHttp()
 	int chunkN;
 	int fps=0;
 	int MxchunkN = 4;
-
+	//queueclass frameQ;
 	//thredCatchFrame(MxchunkN, chunkD, fps, frameQ);
-	auto futurex = std::async(std::launch::async, thredCatchFrame, MxchunkN, chunkD, std::ref(fps), std::ref(frameQ));		
+	auto futurex = std::async(std::launch::async, thredCatchFrame, MxchunkN, chunkD, std::ref(fps));		
 	fps = 29;
 	//auto futurex1 = std::async(std::launch::async, thredProcessFrame, camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, frameQ, conv);
 	
 	//futurex1.get();	
-	thredProcessFrame(camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, frameQ, conv);
+	thredProcessFrame(camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, conv);
 	futurex.get();
 }
 
