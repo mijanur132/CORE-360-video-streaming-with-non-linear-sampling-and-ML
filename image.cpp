@@ -5,6 +5,12 @@
 #include<string.h>
 #include "config.h"
 #include "ssim.h"
+
+#include <future>
+#include <mutex>
+#include <thread>
+#include <queue>
+
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
@@ -17,11 +23,11 @@ std::string filename;
 int Is_MInv_calculated;
 M33 M_Inv;
 
-//
-string datax;		//variable data to be saved
-
+//................................... http.................................//
+string datax;
 size_t download(char* buf, size_t size, size_t nmemb, void* userP)
-{
+{	//
+	//variable data to be saved
 	//size*nmemb is the size of the buf(fer)
 	for (int c = 0; c < size*nmemb; c++)
 	{
@@ -29,27 +35,123 @@ size_t download(char* buf, size_t size, size_t nmemb, void* userP)
 	}
 	return size * nmemb; //return the number of bytes we handled
 }
-
-void fetchTextOverHttp(char* addr)
-{
-
+string fetchTextOverHttp(char* addr)
+{	//		//variable data to be saved
 	curl_global_init(CURL_GLOBAL_ALL); //pretty simple
-
 	CURL* conHandle = curl_easy_init(); //make an "easy" handle
-
-	curl_easy_setopt(conHandle, CURLOPT_URL, addr);
+		curl_easy_setopt(conHandle, CURLOPT_URL, addr);
 	curl_easy_setopt(conHandle, CURLOPT_VERBOSE, 1L); //outputs status
 	curl_easy_setopt(conHandle, CURLOPT_WRITEFUNCTION, &download); //set our callback to handle data
 	curl_easy_perform(conHandle); //get the file
+	return datax;
+	//cout << datax << endl; //should output an html file (if the set url is valid)
+}
+//................................... http End.................................//
 
-	cout << datax << endl; //should output an html file (if the set url is valid)
+
+void thredCatchFrame(int MxchunkN, int chunkD, int &fps, std::queue<Mat> &frameQ)
+{	
+	int chunkN;
+	Mat frame;
+	for (int i = 1; i <= MxchunkN; i++)
+	{
+		cout << "here1" << endl;
+		chunkN = i;
+		string fn = "http://127.0.0.5:80/RollerInput_";
+		std::ostringstream oss;
+		oss << fn << (chunkN) << ".avi";
+		string filename = oss.str();
+		VideoCapture cap1(filename);
+		if (!cap1.isOpened())
+		{
+			cout << "Cannot open the video file: " << endl;
+			waitKey(100);
+		}
+		fps = cap1.get(CAP_PROP_FPS);
+		cout << fps << endl;
+		for (int j = 1; j <= chunkD * fps; j++)
+		{
+
+			cap1 >> frame;
+			fps = cap1.get(CAP_PROP_FPS);
+			if (!frame.empty())
+			{
+				cout << "frame pushed: " << j << endl;
+				frameQ.push(frame.clone());
+			}
+			else
+			{
+				cout << "Cannot open the video file: " << endl;
+				break;
+			}
+		}
+		cap1.release();
+	}
+	cout << "All Frame Loaded" << endl;
+	return;
 
 }
+ 
+void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fps, int cf, struct samplingvar& svar, float var[10], std::queue<Mat> &frameQ, vector <Mat>& conv)
+{
+	cout << "here2" << endl;
+	int segi = 0;
+	int chunkN = 0;
+	Mat ret1;
+	int frameN = 0;
+	int segref = 0;
+	int condition = 1;
+	while (condition)
+	{
+		// Get a next frame
+		Mat frame;
+		
+		if (!frameQ.empty())
+		{
+			frame = frameQ.front();
+			frameQ.pop();
+			cout << "Frame queue not empty" << endl;
 
+			// Process the frame
+			if (!frame.empty())
+			{
+				frameN++;
+				print("frameN: " << frameN << endl);
+				segi = path1.GetCamIndex(frameN, fps, segi);
+				chunkN = frameN % (fps*chunkD);
+				if (chunkN == 0)
+				{
+					segref = segi;
+					print("segref: " << segref << endl);
+				}
+
+				Mat heatmap3c = Mat::zeros(camera2.h, camera2.w, frame.type());
+				Mat heatmap = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
+				ret1 = path1.CRERI2Conv(frame, var, cf, path1.cams[segi], segref, heatmap, &svar);
+				//conv.push_back(ret1);
+
+				namedWindow("sample", WINDOW_NORMAL);
+				resizeWindow("sample", 800, 600);
+				imshow("sample", ret1);
+				waitKey(30);
+				if (frameN == chunkD * fps*MxchunkN)
+				{
+					condition = 0;
+				}
+			}
+		}
+	}
+	int starting_frame = 0;
+	int ending_frame = fps * chunkN*chunkD;
+	filename = "./Video/encodingtest/newmethod/rollerh264convtemp";
+	//videowriterhelperx(1, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, conv);
+	return;
+}
 
 
 void testDownloadVideoHttp()
 {
+	std::queue<Mat> frameQ;
 	vector <Mat> conv;
 	vector <Mat> hmap;
 	vector<float> min;
@@ -59,22 +161,23 @@ void testDownloadVideoHttp()
 	Path path1;
 
 	float hfov = 90.0f;
-	float corePredictionMargin = 1;
+	float corePredictionMargin = 0.8;
 	int w = 960;
 	int h = 512;  //540 for perfect 2160 p but here we have 2048
 	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
-	path1.LoadHMDTrackingData("./Video/roller.txt", camera2);
+	path1.LoadHMDTrackingData("./Video/roller2.txt", camera2);
 	int lastframe = 1800;
-	int segi = 0;
+	
 
 	int cf = 5;
 	float var[10];
 	float x;
-	fetchTextOverHttp("http://127.0.0.5:80/encoding_variable.txt");
+	string datax=fetchTextOverHttp("http://127.0.0.5:80/encoding_variable.txt");
 	std::istringstream f(datax);
 	std::string line;
 	int i = 0;
-	while (std::getline(f, line)) {
+	while (std::getline(f, line)) 
+	{
 		var[i] = stoi(line);
 		cout << var[i] << '\n';
 		i++;
@@ -82,109 +185,17 @@ void testDownloadVideoHttp()
 
 	int chunkD = 4;
 	int chunkN;
-	int fps;
+	int fps=0;
 	int MxchunkN = 4;
 
-	namedWindow("sample", WINDOW_NORMAL);
-	resizeWindow("sample", 800, 600);
-
-
-
-	for (int i = 1; i <= MxchunkN; i++)
-	{
-		chunkN = i;
-		string fn = "http://127.0.0.5:80/RollerInput_";
-		std::ostringstream oss;
-		oss << fn << (chunkN) << ".avi";
-		string filename = oss.str();
-
-		VideoCapture cap1(filename);
-		if (!cap1.isOpened())
-		{
-			cout << "Cannot open the video file: " << endl;
-			waitKey(100000);
-		}
-		fps = cap1.get(CAP_PROP_FPS);
-		int segref = 0;
-
-		for (int j = fps * (chunkN - 1)*chunkD; j < fps*chunkN*chunkD; j++)
-		{
-
-			Mat encodframe;
-			cap1 >> encodframe;
-			if (encodframe.empty())
-			{
-				cout << j << endl;
-				cout << "Can not read video frame: " << endl;
-				break;
-			}
-			segi = path1.GetCamIndex(j, fps, segi);
-			//print("chunN: " << i << " frame: " << j << " segi: " << segi << endl;);
-			//if (j%fps == 0)
-			if (j == fps * (chunkN - 1)*chunkD)
-			{
-				segref = segi;
-				//print("segref: " << segref << endl);
-			}
-
-			Mat heatmap3c = Mat::zeros(camera2.h, camera2.w, encodframe.type());
-			Mat heatmap = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
-			ret1 = path1.CRERI2Conv(encodframe, var, cf, path1.cams[segi], segref, heatmap, &svar);
-
-			imshow("sample", ret1);
-			waitKey(30);
-			conv.push_back(ret1);
-
-			//ret1 is the conventional image, heatmap is the heatmap of quality and svar has vto and vtin parameter: max and min sampling interval
-			//generate color for heatmap//
-			/*
-			float vtin = svar.vtin;
-			float vto = svar.vto;
-			min.push_back(svar.min);
-			avg.push_back(svar.avg);
-			float bb;
-			for (int i = 0; i < camera2.h; i++)
-			{
-				for (int j = 0; j < camera2.w; j++)
-				{
-					bb = heatmap.at<float>(i, j);
-					float factor = (float)bb / (float)(vtin);
-					int colora = (float)255 / (float)factor;
-					colora = (colora <= 255) ? colora : 255;
-					Vec3b insidecolorx(colora, colora, 255);
-					heatmap3c.at<Vec3b>(i, j) = insidecolorx;
-				}
-			}
-
-			hmap.push_back(heatmap3c);*/
-
-		}
-	}
-
-	/*
-
-	ofstream output("./Video/encodingtest/min.txt");
-	for (int i = 0; i < min.size(); i++)
-	{
-		output << min[i] << "\n";
-	}
-	output.close();
-
-	ofstream output1("./Video/encodingtest/avg.txt");
-	for (int i = 0; i < avg.size(); i++)
-	{
-		output1 << avg[i] << "\n";
-	}
-	output1.close();
-	*/
-	int starting_frame = 0;
-	int ending_frame = fps * chunkN*chunkD;
-	filename = "./Video/encodingtest/newmethod/rollerh264convtemp";
-	videowriterhelperx(111, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, conv);
-	//filename = "./Video/encodingtest/rollerh264Hmap";
-	//videowriterhelperx(111, fps, ret1.cols, ret1.rows, starting_frame, ending_frame, hmap);
-
-
+	//thredCatchFrame(MxchunkN, chunkD, fps, frameQ);
+	auto futurex = std::async(std::launch::async, thredCatchFrame, MxchunkN, chunkD, std::ref(fps), std::ref(frameQ));		
+	fps = 29;
+	//auto futurex1 = std::async(std::launch::async, thredProcessFrame, camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, frameQ, conv);
+	
+	//futurex1.get();	
+	thredProcessFrame(camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, frameQ, conv);
+	futurex.get();
 }
 
 Mat diffimgage(Mat backgroundImage, Mat currentImage) {

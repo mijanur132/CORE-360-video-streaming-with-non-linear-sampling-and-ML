@@ -1,4 +1,4 @@
-
+#include"curl/curl.h"
 #include"path.h"
 #include"image.h"
 #include<stdio.h>
@@ -78,7 +78,7 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 int Path::GetCamIndex(int fi, int fps, int segi) {
 
 	int ret = segi;
-	//print(fps <<""<<fi<< endl);
+	print(fps <<" "<<fi<< endl);
 	while (tstamps[ret] <= (float)(fi) / (float)(fps))
 	{
 		ret++;
@@ -86,7 +86,7 @@ int Path::GetCamIndex(int fi, int fps, int segi) {
 		{
 			cerr << "Reached the end of the path without finding HMD pos for frame" << endl;
 			waitKey(10000);
-			exit(0);
+			exit(0);  //eita on thakbe.
 
 		}
 
@@ -607,6 +607,7 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 			else
 			{
 				float d = R0x - col;
+				//cout << "d: " << d << endl;
 				float Dx = R0x - nonuniformDrev[d];
 				//cout << "decode col_r1: " << col << " Dx: " << (Dx - (R0x - We)) << endl;
 

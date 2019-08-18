@@ -47,7 +47,8 @@ public:
 	cv::Mat EncodeNewNonLinV2(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
 	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera, int refcam, cv::Mat& heatmap, struct samplingvar * var1);
-
+	//string fetchTextOverHttp(char* addr);
+	//size_t download(char* buf, size_t size, size_t nmemb, void* userP);
 };
 
 struct var {
