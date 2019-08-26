@@ -18,6 +18,7 @@ public:
 	Path();	
 	~Path();
 	int GetCamIndex(int fi, int fps, int segi);
+	int GetCamIndexUsingTime(float time_sec, int last_cam_index);
 	void AppendCamera(PPC newCam, int framesN); // appends camera to cams array, connected by segment with framesN frames to the previously last camera; has to reallocate array of cams to have size increased by one, copy old data, append new data
 		
 	void PlayBackPathStillImage(cv::Mat ERI_image, ERI eri, cv::Mat conv_image);
@@ -46,7 +47,7 @@ public:
 	void DrawBoundinigBoxframe(cv::Mat frame, PPC camera, float& pXl, float& pxr, float&pxu, float &pxd);
 	cv::Mat EncodeNewNonLinV2(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
-	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera, int refcam, cv::Mat& heatmap, struct samplingvar * var1);
+	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
 	//string fetchTextOverHttp(char* addr);
 	//size_t download(char* buf, size_t size, size_t nmemb, void* userP);
 };

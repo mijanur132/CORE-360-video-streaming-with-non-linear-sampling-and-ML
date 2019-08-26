@@ -34,7 +34,7 @@ public:
 	void PositionAndOrient(V3 C1, V3 L1, V3 vpv);
 	void SetInterpolated(PPC *ppc0, PPC *ppc1, int stepi, int stepsN);// takes two cameras and it ask to path and total number of step, create an intermidiete camera.. stepsN 100, stepi=0 ppc0 step100=ppc1 step50=50 middle of both camera
 	void Pan(float angled);
-	void Tilt(float angled);
+	void Tilt(float angled);//+ve tilt dile camera upore uthe, means lat kome
 	void Roll(float angled);
 //	void Visualize(PPC *ppc3, FrameBuffer *fb3, float vf, V3 colv);
 	V3 UnprojectPixel(float uf, float vf, float currf);

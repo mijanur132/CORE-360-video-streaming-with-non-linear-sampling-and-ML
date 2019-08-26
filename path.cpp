@@ -64,21 +64,57 @@ void Path::LoadHMDTrackingData(char* filename, PPC ppc0)
 		v3 = q[3] / sin(theta2);
 
 		PPC camera1(ppc0);
-		//camera1.PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-		V3 v(v2, v3, v1);
+		V3 v(v2, v3, v1);		
 		camera1.RotateAboutAxisThroughEye(v, theta2 * 2 * 180 / PI);
 		AppendCamera(camera1, 2);
+		/*
+		cout << "original camera rotateion vec: " << v.UnitVector() << endl;
+		ERI eri(10, 10); //size does not matter here
+		float latt = eri.GetXYZ2Latitude(v);
+		float longg = eri.GetXYZ2Longitude(v);
+		// ei lat long value asbe motamuti 90 and 180 as we are focusing -z axis
+		//next line will make long 180 to 0, we will not change lat this time
+		ppc0.PositionAndOrient(V3(0, 0, 0),V3(0,0,-1), V3(0, 1, 0));
+		float pann = longg - 180;
+		float tiltt = 90 - latt;
+		ppc0.Pan(pann); //long degree pan
+		ppc0.Tilt(tiltt);  // lat 90 hlo lat take 0 degree te nite, ar -latt hlo (latt) deg namate, jinista ulta. Tilt komle lat bare
+		cout << "resulting camera rotateion vec: " << ppc0.GetVD() << endl;
+		v = ppc0.GetVD();
+		latt =  eri.GetXYZ2Latitude(v);
+		longg = eri.GetXYZ2Longitude(v);
+		cout << "pan: " << pann << " tilt: " << tiltt << endl;	//*/
+		
 	}
 
 	print("read: " << cams.size() << " cameras from: " << filename << endl);
-
-
+	
 }
 
 int Path::GetCamIndex(int fi, int fps, int segi) {
 
 	int ret = segi;
 	while (tstamps[ret] <= (float)(fi) / (float)(fps))
+	{
+		ret++;
+		if (ret >= tstamps.size())
+		{
+			cerr << "Reached the end of the path without finding HMD pos for frame" << endl;
+			waitKey(10000);
+			exit(0);  //eita on thakbe.
+
+		}
+
+	}
+
+	return ret - 1;
+
+}
+//cam index for playback at 3s, 7s etc...
+int Path::GetCamIndexUsingTime(float time_sec, int last_cam_index) {
+
+	int ret = last_cam_index;
+	while (tstamps[ret] <= time_sec)
 	{
 		ret++;
 		if (ret >= tstamps.size())
@@ -510,7 +546,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 }//mainloop of End of Encoding
 
 
-Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, int refcam, Mat& qual, struct samplingvar * var1)
+Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, Mat& qual, struct samplingvar * var1)
 {
 	float compressionfactorX = compressionfactor;
 	float compressionfactorY = (float)compressionfactor / (float)1;
@@ -567,8 +603,8 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 	/***************************Region 01: left *****************************************/
 
 	// build local coordinate system of RERI
-	V3 xaxis = cams[refcam].a.UnitVector();
-	V3 yaxis = cams[refcam].b.UnitVector()*-1.0f;
+	V3 xaxis = refcam.a.UnitVector();
+	V3 yaxis =refcam.b.UnitVector()*-1.0f;
 	V3 zaxis = xaxis ^ yaxis;
 	M33 reriCS;
 	reriCS[0] = xaxis;
@@ -1035,19 +1071,12 @@ void Path::PlayBackPathVideo(char* fname, Mat convPixels, int lastFrame)
 			return;
 		}	
 		segi = GetCamIndex(fi, fps, segi);
-		eri.ERI2Conv(frame, convPixels, cams[segi]);	
-		//print(fi << " " << segi << "; ");
-		//imshow("outputImage", convPixels);
-		//eri.VisualizeNeededPixels(erivis, &(cams[segi]));
-		//print("done visualisation" << endl);
-		//imshow("ERIpixelsNeeded", erivis);
-		imshow("output", convPixels);
-		waitKey(2);
+		//eri.ERI2Conv(frame, convPixels, cams[segi]);	
+		V3 cameraDirection = cams[segi].GetVD();
+		int tiltAngle = 20;
+		//getChunkNametoReq(cameraDirection, tiltAngle);
+	}
 	
-	}	   	
-	
-
-	//destruct ERI here
 }
 
 void Path::PlayBackPathVideoPixelInterval(char* fname, Mat convPixels, int lastFrame)

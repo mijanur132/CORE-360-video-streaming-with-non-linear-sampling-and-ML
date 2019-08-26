@@ -31,7 +31,7 @@ int main()
 	//testWriteh264();
 	//testWriteh264tiles();
 	//testtilevideo();
-	//testPlayBackHMDPathVideo();
+	
 	//testBoundingBox();
 
 	//getcheckerboard();
@@ -43,12 +43,14 @@ int main()
 
 	//testvideoendecodenew();
 	//testvideoEncodeNew4s(4);
+	//testPlayBackHMDPathVideo();
+	//GenerateEncoding4AllDirectiontemp();
 	testDownloadVideoHttp();
 
 	//testRotationxy();
 		
 	//testbilinear();
-	//system("pause");
+	system("pause");
 	return 0;
 }
 
