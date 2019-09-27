@@ -22,13 +22,22 @@ using namespace std;
 std::string filename;
 int Is_MInv_calculated;
 M33 M_Inv;
+vector <Mat> frameQvec;
+int NextChunkDownloaded=0;
+int decodeCount=0;
+auto start = std::chrono::high_resolution_clock::now();
+
 
 void displayImage(Mat ret1)
 {
-	namedWindow("PALASH CoRE Player", WINDOW_NORMAL);
-	resizeWindow("PALASH CoRE Player", 800, 600);
-	imshow("PALASH CoRE Player", ret1);
-	waitKey(10);
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	cout << "Time=" << elapsed.count()*1000 << endl;
+	start = finish;
+	//namedWindow("PALASH CoRE Player", WINDOW_NORMAL);
+	//resizeWindow("PALASH CoRE Player", 800, 600);
+	imshow("P", ret1);
+	waitKey(2);
 
 }
 
@@ -83,6 +92,44 @@ private:
 	std::mutex mutex;
 
 }frameQ;
+
+
+void DownLoadChunk4thSecVar(string filename, int chunkD, int fps)
+{
+
+	Mat frame;
+
+ 	VideoCapture cap1(filename);
+	if (!cap1.isOpened())
+	{
+		cout << "Cannot open the video file: " << filename << endl;
+		waitKey(100);
+	}
+
+	for (int j = 0; j < 120; j++)
+	{
+
+		cap1 >> frame;
+		fps = 30;
+		if (!frame.empty())
+		{
+			//cout<<"d: "<< j << endl;
+			frameQvec[j]=frame.clone();
+		}
+		else
+		{
+			cout << "Cannot open the video file: " << endl;
+			break;
+		}
+	}
+	cap1.release();
+	NextChunkDownloaded = 1;
+	decodeCount = 0;
+	cout << "All frame Loaded for: " << filename << endl;
+	return;
+
+}
+
 
 void DownLoadChunk(string filename, int chunkD, int fps)
 {	
@@ -153,13 +200,73 @@ string getChunkNametoReqnRefCam(PPC &camera, string srcBaseAddr, int chunkN, V3 
 	cout << latt << " orig tilt and pan:  " << longg << endl;
 	cout << reqtilt << " req tilt and pan:  " << reqpann << endl;
 	std::ostringstream oss1;
+	//remove these two lines when you have chunk for all direction.
+	reqtilt = -10;  //dlt 
+	reqpann = 0;    //dlt
+
 	oss1 <<srcBaseAddr<< "_"<<chunkN <<"_" << reqtilt << "_" << reqpann << ".avi";
 	camera.Pan(reqpann);
 	camera.Tilt(reqtilt);
+
+
+
 	string ofilename = oss1.str();
 	return ofilename;
 }
- 
+string getChunkNametoReqnRefCamOptimized(PPC &camera, M33 & reriCS, string srcBaseAddr, int chunkN, V3 cameraDirection, int tiltAngle)
+{
+	ERI eri(10, 10); //size does not matter here
+	float latt = eri.GetXYZ2Latitude(cameraDirection);
+	float longg = eri.GetXYZ2Longitude(cameraDirection);
+
+	float pann = longg - 180;
+	float tiltt = 90 - latt;
+	int latAngle = 20;
+	int temp = -90 - latAngle / 2;
+
+	while ((int)tiltt >= temp)
+	{
+		temp = temp + latAngle;
+		//cout << temp << endl;
+
+	}
+	int reqtilt = (2 * temp - latAngle) / 2;
+	int panAngle = (int)abs((20) / cos(3.1416*reqtilt / 180));   //argument in radian
+	if (panAngle % 2 != 0)
+	{
+		panAngle += 1;
+	}
+	temp = -180 - panAngle / 2;
+	//cout << temp << endl;
+	//cout << "pan" << endl;
+	while ((int)pann >= temp)
+	{
+		temp = temp + panAngle;
+	}
+	int reqpann = (2 * temp - panAngle) / 2;
+	cout << latt << " orig tilt and pan:  " << longg << endl;
+	cout << reqtilt << " req tilt and pan:  " << reqpann << endl;
+	std::ostringstream oss1;
+	//remove these two lines when you have chunk for all direction.
+	reqtilt = -10;  //dlt 
+	reqpann = 0;    //dlt
+
+	oss1 << srcBaseAddr << "_" << chunkN << "_" << reqtilt << "_" << reqpann << ".avi";
+	camera.Pan(reqpann);
+	camera.Tilt(reqtilt);
+
+	V3 xaxis = camera.a.UnitVector();
+	V3 yaxis = camera.b.UnitVector()*-1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
+	string ofilename = oss1.str();
+	return ofilename;
+}
+
 void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fps, int cf, struct samplingvar& svar, float var[10], vector <Mat>& conv)
 {
 	//waitKey(5000);
@@ -222,6 +329,224 @@ void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fp
 	return;
 }
 
+void testDownloadVideoHttp4thSecVar()
+{
+	vector <Mat> conv;
+	struct samplingvar svar;
+	Mat ret1;
+	Path path1;
+	float var[10];
+
+	for (int i = 0; i < 120; i++)
+	{
+		Mat m;
+		frameQvec.push_back(m);
+		m.release();
+	}
+	vector <float> nonUniformList;
+	float howManySecondsfor4thSec = 5;
+	temp_calc(nonUniformList, howManySecondsfor4thSec);
+	
+	/*IMP*/
+	string datax = fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/encoding_variable.txt");
+	std::istringstream f(datax);
+	std::string line;
+	int i = 0;
+	while (std::getline(f, line))
+	{
+		var[i] = stoi(line);
+		cout << var[i] << '\n';
+		i++;
+	}
+
+	int frameLen = var[0];
+	int frameWidth = var[1];
+	float hfov = 90.0f;
+	float corePredictionMargin = 0.8;
+	int w = frameLen * hfov / 360; //add frameLen and Width into the variable file also totalChunkN
+	int h = frameWidth * hfov / 180;  //540 for perfect 2160 p but here we have 2048
+	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	PPC refCam(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	path1.LoadHMDTrackingData("./Video/roller.txt", camera2);
+
+	int mxChunkN = 5;// var[4];
+	int chunkD = 4;//var[5]; //read from variable	
+	int compressionFactor = 5;// var[6];  //read from variable file
+
+	int frameStarted = 0;
+	
+	int chunkN = 0;
+	int fps = 30;
+	int nextDlChunkSec = 3;
+	Mat firstScene;
+	upload_image("./Video/encodingtest/newmethod/startScene.PNG", firstScene);
+
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	string srcBaseAddr = "http://127.0.0.5:80/4thSecVar/RollerInput2";
+	int tiltAngle = 20;
+	string filename;
+	V3 VD;
+	int frameCount = 0;
+	int startIndex = 0;
+	int after90Index = 0;
+	std::vector<std::future<void>> futures;
+	Mat heatmap3c = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
+	Mat heatmap = Mat::zeros(camera2.h, camera2.w, DataType<double>::type);
+	
+	path1.nonUniformListInit();
+	path1.mapx();
+	cout << "Very first Chunk, no frame yet......" << endl;
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+	VD = path1.cams[cam_index].GetVD();
+	chunkN++;
+	M33 reriCS;
+	filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkN, VD, tiltAngle);
+	cout <<"Requested file="<< filename << endl;
+	NextChunkDownloaded = 0;
+	DownLoadChunk4thSecVar(filename, chunkD, fps);
+	int returningFromExtra = 0;
+	while (NextChunkDownloaded == 0)
+	{
+		displayImage(firstScene);
+	}
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+	
+	
+	while (condition)
+	{
+		
+		if (frameCount == 90 * mxChunkN)
+		{
+			condition = 0;
+		}
+
+		if (decodeCount <= 90) 
+		{
+			Mat frame;		
+			//cout <<"chunkN="<< chunkN << "extra "<<returningFromExtra<<endl;
+			if (startIndex > 60 && returningFromExtra==1)
+			{
+				returningFromExtra = 0;
+				cout << "Previos start index way over next chunk......strIndex=" << startIndex << endl;
+				
+				chunkN = (int)frameCount / 90 + 1;
+				if (startIndex % 90 > 59)
+				{
+					startIndex = 0;
+					chunkN++;
+					frameCount = (chunkN-1)*90;
+				}
+				else {
+					startIndex = startIndex % 90;
+				}
+				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+				VD = path1.cams[cam_index].GetVD();
+				int chunkNN=chunkN;
+				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkNN, VD, tiltAngle);
+				cout << "Requested file=" << filename << endl;
+				NextChunkDownloaded = 0;
+				
+				DownLoadChunk4thSecVar(filename, chunkD, fps);
+
+			}
+			frame = frameQvec[startIndex];
+			startIndex++;
+			after90Index = 0;
+			decodeCount = startIndex;
+			//cout << "<90 frame=" << startIndex <<" chunkN="<<chunkN<<" frmcount="<<frameCount<<" decCnt="<<decodeCount<<" Nx="<<NextChunkDownloaded<< endl;
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			path1.CRERI2ConvOptimized(frame, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
+			displayImage(convPixels);
+			frameCount++;
+
+			if (decodeCount == 60)
+			{
+				int chunkNn = chunkN+1;
+				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+				VD = path1.cams[cam_index].GetVD();
+				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkNn, VD, tiltAngle);
+				cout << "New Request for:................ " << filename << endl;
+				NextChunkDownloaded = 0;
+				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps));
+
+			}
+		
+		}
+		if (decodeCount == 90 && NextChunkDownloaded == 1 &&after90Index==0)
+		{
+			chunkN++;
+			decodeCount = 0;
+			startIndex = 0;
+		}
+
+		if (after90Index >= 30)
+		{
+			cout << "Network disconnected, try again...................................." << endl;
+				STOP;
+		}
+		
+		if (decodeCount> 90 && NextChunkDownloaded == 0 && after90Index < 30)
+		{
+			
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);			
+			int index = nonUniformList[after90Index];
+			int index2 = nonUniformList[after90Index + 1];
+			after90Index++;
+			//cout << "loop=" << index2 - index <<" after90="<<after90Index<<" index="<<index<<" indx2="<<index2<< endl;
+			
+			for (int i = 0; i < (index2 - index); i++)
+			{
+				frameCount++;
+				decodeCount++;
+				if (decodeCount <90)
+				{
+					decodeCount = 0;
+					cout << "breaking for loop" << endl;
+					cout << "start Index=" << startIndex << " after90=" << after90Index << endl;
+					cout << "curent framecount=" << frameCount << " decoded=" << decodeCount << " nx=" << NextChunkDownloaded << endl;
+					chunkN++;
+					break;
+				}
+				else {
+					startIndex = decodeCount - 90;
+				}	
+
+				if (startIndex > 60)
+				{
+					returningFromExtra = 1;
+				}
+								
+				//cout << "start Index=" << startIndex <<" after90="<<after90Index<< endl;
+				//cout << "last 30. curent framecount=" << frameCount << " decoded=" << decodeCount <<" nx="<<NextChunkDownloaded<< endl;
+				path1.CRERI2ConvOptimized(frameQvec[90 + after90Index],reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
+				//cout << "test" << endl;
+				displayImage(convPixels);
+			
+			}
+
+			//cout << "after for loop" << endl;
+			
+		}
+					   		
+
+	}
+
+
+
+
+
+	//queueclass frameQ;
+	//thredCatchFrame(MxchunkN, chunkD, fps, frameQ);
+	//auto futurex = std::async(std::launch::async, thredCatchFrame, MxchunkN, chunkD, std::ref(fps));		
+	//fps = 29;
+	//auto futurex1 = std::async(std::launch::async, thredProcessFrame, camera2, path1, MxchunkN, chunkD, fps, cf, svar, var, frameQ, conv);
+
+	//futurex1.get();	
+	//thredProcessFrame(camera2, path1, mxChunkN, chunkD, fps, compressionFactor, svar, var, conv);
+	//futurex.get();
+}
 
 void testDownloadVideoHttp()
 {	
@@ -231,8 +556,8 @@ void testDownloadVideoHttp()
 	Path path1;	
 	float var[10];
 	
-
-	string datax=fetchTextOverHttp("http://127.0.0.5:80/encoding_variable.txt");
+	/*IMP*/
+	string datax=fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/encoding_variable.txt");
 	std::istringstream f(datax);
 	std::string line;
 	int i = 0;
@@ -261,7 +586,7 @@ void testDownloadVideoHttp()
 	Mat savedLastChunkFRame; //need attention
 	int displayedFrameCount = 0;
 	int chunkN=1;
-	int fps = 29;
+	int fps = 30;
 	int nextDlChunkSec = 3;
 	Mat firstScene;	
 	upload_image("./Video/encodingtest/newmethod/startScene.PNG", firstScene);
@@ -269,7 +594,7 @@ void testDownloadVideoHttp()
 	Mat endScene;
 	int condition = 1;
 	int cam_index=0;
-	string srcBaseAddr = "http://127.0.0.5:80/RollerInput";
+	string srcBaseAddr = "http://127.0.0.5:80/4thSecVar/RollerInput2";
 	int tiltAngle = 20;
 	string filename;
 	V3 VD;
@@ -297,7 +622,6 @@ void testDownloadVideoHttp()
 			}
 			else
 			{
-				//cout << "S" << endl;	
 				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
 				if (savedLastChunkFRame.empty())
 				{
@@ -314,20 +638,9 @@ void testDownloadVideoHttp()
 		{			
 			frame = frameQ.getframe();
 			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
-			/*
-			V3 cameraDirection = path1.cams[cam_index].GetVD();
-			ERI eri(100, 100);
-			float latt = eri.GetXYZ2Latitude(cameraDirection);
-			float longg = eri.GetXYZ2Longitude(cameraDirection);
-
-			float pann = longg - 180;
-			float tiltt = 90 - latt;
-			cout<<"play: " << pann << " " << tiltt << endl;
-			 //*/
-
+			
 			ret1 = path1.CRERI2Conv(frame, var, compressionFactor, path1.cams[cam_index], refCam, heatmap, &svar);
-			//conv.push_back(ret1);
-
+		
 			if (frameCount == chunkD * fps*mxChunkN)
 			{
 				condition = 0;
@@ -918,12 +1231,118 @@ void GenerateEncoding4AllDirectiontemp()
 	int chunkDurationsec = 4;
 	int pan = 0;
 	int tilt = -10;
-	int chunkstart = 3;
+	int chunkstart = 1;
 
-	//cout << "tilt: " << tilt << " pan: " << pan <<" angle: "<< panAngle<< endl;
-	testvideoEncodeNew4stemp(chunkDurationsec, pan, tilt, chunkstart);
+	cout << "tilt: " << tilt << " pan: " << pan<< endl;
+	//testvideoEncodeNew4stemp(chunkDurationsec, pan, tilt, chunkstart);
+	makeVideo4thSecVar(pan, tilt);
 	
 	STOP;
+}
+
+void temp_calc(vector <float>& nonUniformList, float n)
+{	
+	for (int col = 1; col < 31; col++)
+	{
+		float b = 1;
+		float x=col;
+		float a = float((30*n-30*b)/900.0f);
+		float u_x = a * x*x+b*x;
+		cout << x << "-" << u_x<<endl;
+		nonUniformList.push_back(u_x);
+
+	}
+}
+
+void makeVideo4thSecVar(float pan, float tilt)
+{
+	vector <Mat> encoded;
+	vector <Mat> bufferedFrame;
+	struct var encodevar;
+	Path path1;
+	float hfov = 90.0f;
+	float corePredictionMargin = 1;
+	int w = 500;
+	int h = 250;	
+	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
+	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	int cf = 5;
+	VideoCapture cap("./Video/roller_2000_1000.mp4");
+
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		waitKey(100000);
+	}
+	int fps = 30;
+	int lastframe = 910;
+	int segi = 0;
+	Mat ret;
+	float var[10];
+	int chunDurationsec = 3;
+	Mat frame;
+	core1PPC.Pan(pan);
+	core1PPC.Tilt(tilt);
+
+
+	for (int fi = 0; fi < lastframe; fi++)
+	{
+		//print("frame Saving: " << fi << endl);		
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+			
+		print("enFi: " << fi << endl);					
+		ret = path1.EncodeNewNonLinV2(frame, &encodevar, core1PPC, encodeRefPPC, cf); //for all possible angle encodinig
+		
+		encoded.push_back(ret);
+		frame.release();
+		ret.release();
+		
+	}
+
+
+	vector <float> nonUniformList;
+	float howManySecondsfor4thSec = 5;
+	temp_calc(nonUniformList, howManySecondsfor4thSec);
+	float addI;
+	for (int fi = 0; fi < lastframe; fi++)
+	{
+		cout << fi << endl;		
+		bufferedFrame.push_back(encoded[fi]);
+		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)
+		{
+			for (int i = 1; i < 31; i++)
+			{ 
+				addI = fi +(int)nonUniformList[i-1];
+				bufferedFrame.push_back(encoded[addI]);
+				cout <<"fi-"<<fi<< " addI-" << addI << endl;
+			}
+
+			int chunkN = (fi + 1) / (chunDurationsec*fps);
+			cout << chunkN << endl;
+			int sf = bufferedFrame.size()-120;
+			int ef = bufferedFrame.size();
+			cout <<sf<< " sf:ef " << ef << endl;
+			filename = "./Video/encodingtest/4thSec/RollerInput2_";
+			cout << fps << ret.cols << ret.rows << " sf: " << sf << " ef: " << ef << endl;
+			videowriterhelperx(chunkN, (int)pan, (int)tilt, fps, encoded[1].cols, encoded[1].rows, sf, ef, bufferedFrame);
+			
+		}
+
+		if (fi == 117)
+		{
+			var[0] = encodevar.colN;
+			var[1] = encodevar.rowN;
+			var[2] = encodevar.We;
+			var[3] = encodevar.Het;
+		}
+	}
+
 }
 
 
@@ -934,22 +1353,22 @@ void testvideoEncodeNew4stemp(int chunDurationsec, float pan, float tilt, int ch
 
 	float hfov = 90.0f;
 	float corePredictionMargin = 1;
-	int w = 960;
-	int h = 512;
+	int w = 500;
+	int h = 250;
 	PPC corePPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
 
 	int cf = 5;
 
 	path1.LoadHMDTrackingData("./Video/roller.txt", corePPC);
-	VideoCapture cap("./Video/roller.MKV");
+	VideoCapture cap("./Video/roller_2000_1000.mp4");
 	if (!cap.isOpened())
 	{
 		cout << "Cannot open the video file: " << endl;
 		waitKey(100000);
 	}
 	int fps = cap.get(CAP_PROP_FPS);
-	int lastframe = 1000;
+	int lastframe = 120;
 	int segi = 0;
 	Mat ret;
 	float var[10];
@@ -991,7 +1410,7 @@ void testvideoEncodeNew4stemp(int chunDurationsec, float pan, float tilt, int ch
 				cout << chunkN << endl;
 				int sf = 0;
 				int ef = chunDurationsec * fps;
-				filename = "./Video/encodingtest/newmethod/RollerInput_";
+				filename = "./Video/encodingtest/newmethod/RollerInput2_";
 				cout << fps << ret.cols << ret.rows << " sf: " << sf << " ef: " << ef << endl;
 				videowriterhelperx(chunkN, (int)pan, (int)tilt, fps, ret.cols, ret.rows, sf, ef, encoded);
 			}
@@ -1134,6 +1553,9 @@ void videowriterhelperx(int chunkN , float pan, float tilt, int fps,int cols, in
 	for (int i = starting_frame; i < ending_frame; i++)
 	{
 		writer1.write(file2wr[i]);
+		imshow("window",file2wr[i]);
+		waitKey(30);
+
 	}
 	writer1.release();
 
@@ -1145,6 +1567,7 @@ void testrotationxyframe()
 {
 	Mat frame;
 	upload_image("./Image/360_equirectangular_800_400.JPG", frame);
+	//upload_image("http://127.0.0.5:80/1.JPG", frame);
 	if (!frame.data)                              // Check for invalid input
 	{
 		cout << "Could not open or find the image" << std::endl;
@@ -1438,10 +1861,11 @@ int testTiling() {
 
 // load  one frame and load one camera from path file and display that frame 
 
-int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
+int out_video_file()//(Mat &output_image_mat, ERI eri_image, Path path1)
 {
+	//VideoCapture cap("http://www.engr.colostate.edu/me/facil/dynamics/files/drop.avi");
 
-	VideoCapture cap(VIDEO);
+	VideoCapture cap("http://98.223.107.255:80/RollerInput_1_10_0.avi");
 	if (!cap.isOpened()) {
 		cout << "Cannot open the video file" << endl;
 		system("pause");
@@ -1461,16 +1885,12 @@ int out_video_file(Mat &output_image_mat, ERI eri_image, Path path1)
 			cout << "empty" << endl;
 			break;
 		}
-		path1.cams[fi].PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
-		eri_image.ERI2Conv(frame, output_image_mat, path1.cams[fi]);
-		imshow("MyVideo", output_image_mat);
-		fi++;
-
-		if (waitKey(1) >= 0)
-			break;
-		char c = (char)waitKey(10);
-		if (c == 27)
-			break;
+		//path1.cams[fi].PositionAndOrient(V3(0, 0, 0), V3(0, 0, 1), V3(0, 1, 0));
+		//eri_image.ERI2Conv(frame, output_image_mat, path1.cams[fi]);
+		//imshow("MyVideo", output_image_mat);
+		//fi++;
+		imshow("window",frame);
+		waitKey(20);
 	}
 	cout << "finish" << endl;
 	return 0;
