@@ -40,12 +40,13 @@ int main()
 
 	//testEncodingDecoding();
 	//testrotationxyframe();
-
+	//out_video_file();
 	//testvideoendecodenew();
 	//testvideoEncodeNew4s(4);
 	//testPlayBackHMDPathVideo();
+	//temp_calc();
 	//GenerateEncoding4AllDirectiontemp();
-	testDownloadVideoHttp();
+	testDownloadVideoHttp4thSecVar();
 
 	//testRotationxy();
 		

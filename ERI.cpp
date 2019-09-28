@@ -9,6 +9,9 @@
 
 
 using namespace cv;
+float xz2lonmap[2000][2000];
+float xz2lon[1000000];
+float xz2lat[20000];
 
 ERI::ERI(int _w, int _h) {
 
@@ -75,17 +78,90 @@ V3 ERI::Unproject(int i, int j) {
 }
 
 float ERI::GetXYZ2Latitude(V3 p)
-{
-	p= p.UnitVector();
-	
+{	
 	float lat =90.0f- asin(p[1])* 180.0f / PI;
 	return lat;
 
 }
+void ERI::xz2LatMap()
+{
+	for (int i = -10000; i < 10000; i++)
+	{
+		float ii = (float)i / 10000.0f;
+		float lat = 90.0f - asin(ii)* 180.0f / PI;
+		xz2lat[i + 10000] = Lat2PixI(lat);;
+	}
+	cout << "xz2lamap..............................." << endl;
+}
+
+void ERI::xz2LonMap()
+{
+	float lon;
+	for (int i = -1000; i < 1000; i++)
+	{
+		for (int j = -1000; j < 1000; j++)
+		{
+			float x = (float)i / 1000.0f;
+			float z = (float)j / 1000.0f;
+			if (x >= 0 && z >= 0) {    // use nested if
+				lon = atan(x / z)* 180.0f / PI;
+			}
+			else if (x < 0 && z >= 0) {
+				lon = 360.0f + (atan(x / z))* 180.0f / PI;
+			}
+			else if (x >= 0 && z < 0) {
+				lon = atan(x / z)* 180.0f / PI;
+				lon = 180 + lon;
+			}
+			else if (x < 0 && z < 0) {
+				lon = atan(x / z)* 180.0f / PI;
+				lon = 180.0f + lon;			}
+			else {
+				cout << "this not handled yet" << endl;
+				exit(0);
+			}
+			xz2lonmap[i + 1000][j + 1000] = Lon2PixJ(lon);
+		}
+	}
+	cout << "xz2lonmap..............................." << endl;
+
+}
+
+float ERI::GetXYZ2LatitudeOptimized(float p1)
+{
+	if (p1 > 1) { p1 = 1; }
+	if (p1 < -1) { p1 = -1; }
+	int p_1 = p1 * 10000+10000;
+	float latx = xz2lat[p_1];
+	return latx;
+}
+
+float ERI::GetXYZ2LongitudeOptimized(V3 p)
+{
+	float x = p[0];	
+	float z = p[2];
+	int m = x * 1000 + 1000;
+	int n = z * 1000 + 1000;
+	float lon = xz2lonmap[m][n];
+	return lon;
+}
+
+void ERI::atanvalue()
+{
+	
+	for (int i = -500000; i < 500000; i++)
+	{
+		xz2lon[i + 500000] = atan((float)i/1000.0f);
+	}
+
+
+}
+
+
 
 float ERI::GetXYZ2Longitude(V3 p)
 {
-	p= p.UnitVector();
+	p = p.UnitVector();
 	float x = p[0];
 	float y = p[1];
 	float z = p[2];
@@ -97,23 +173,24 @@ float ERI::GetXYZ2Longitude(V3 p)
 
 		lon = 360.0f + (atan(x / z))* 180.0f / PI;
 
-	}	
+	}
 	else if (x >= 0 && z < 0) {
-		lon = (atan(x/z))* 180.0f / PI;
-		lon = 180+lon;
+		lon = (atan(x / z))* 180.0f / PI;
+		lon = 180 + lon;
 	}
-	
+
 	else if (x < 0 && z < 0) {
-		lon = (atan(x/z))* 180.0f / PI;
-		lon = 180.0f+lon;
+		lon = (atan(x / z))* 180.0f / PI;
+		lon = 180.0f + lon;
 	}
-	
+
 	else {
 		cout << "this not handled yet" << endl;
 		exit(0);
 	}
 	return lon;
 }
+
 
 float ERI::TestXYZ2LatLong(V3 p)
 {

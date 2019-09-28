@@ -27,7 +27,9 @@ public:
 	float GetLatitude(int i);
 	
 	float GetXYZ2Latitude(V3 p);      // this will take a 3d point XYZ and convert to latiturde 
+	float GetXYZ2LatitudeOptimized(float x);
 	float GetXYZ2Longitude(V3 p);  //this will take a 3d point and convert to longitude 
+	float GetXYZ2LongitudeOptimized(V3 p);
 	float TestXYZ2LatLong(V3 p);
 	int Lat2PixI(float lat);
 	int Lon2PixJ(float lon);
@@ -42,6 +44,10 @@ public:
 	void getERIPixelsCount(cv::Mat &erivis, PPC *ppc, uint64 &totalEriPixel);
 	int EachPixelConv2ERItemp(PPC camera1, int u, int v, int &pixelI, int &pixelJ);
 	int ERI2Convtemp(cv::Mat &source_image_mat, cv::Mat &output_image_mat, PPC camera1);
+	void atanvalue();
+	void xz2LonMap();
+	void xz2LatMap();
+	void LatLon2RowColMap();
 };
 
 

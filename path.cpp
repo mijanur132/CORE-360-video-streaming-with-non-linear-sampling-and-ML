@@ -23,6 +23,7 @@ vector <float > nonuniformDrowrev2;
 float colMap[2000][2000];
 float rowMap[2000][2000];
 
+
 Path::Path() {
 	print("One Path created" << endl);
 }
@@ -227,7 +228,6 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	namedWindow("sample", WINDOW_NORMAL);
 	resizeWindow("sample", 800, 400);
 	imshow("sample", midcorrectedmat);
-	img_write("./Image/test_midcorrected.PNG", midcorrectedmat);
 	waitKey(1000); */
 
 	float pxl; float pxr; float pxu; float pxd;
@@ -239,7 +239,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	float PxD = pxd;
 
 
-	//cout << PxL <<" "<<PxR<<" "<<PxU<<" "<<PxD<< endl;
+	cout << PxL <<" "<<PxR<<" "<<PxU<<" "<<PxD<< endl;
 
 	//system("pause");
 	int R0R1 = PxD - PxU;
@@ -734,9 +734,13 @@ void Path::mapx()
 	}
 }
 
-void Path::CRERI2ConvOptimized(Mat CRERI, M33 & reriCS, Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam)
+void  vecP2RowColMap() 
 {
 
+}
+
+void Path::CRERI2ConvOptimized(Mat CRERI, ERI& eri, M33 & reriCS, Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam)
+{
 	int ERI_w = 2000;
 	int ERI_h = 1000;
 	float We = 150.1;
@@ -746,171 +750,42 @@ void Path::CRERI2ConvOptimized(Mat CRERI, M33 & reriCS, Mat & convPixels, int co
 	float R0R1 = ERI_h - 2 * Het*compressionfactor;
 	float R0x = We * compressionfactor;
 	float R0y = Het * compressionfactor;
-
-
-	/**********************************Recreate Mapping******************************************/
-
 	int mxrow = ERI_h - 1;
 	int mxcol = ERI_w - 1;
-	/***************************Region 01: left *****************************************/
-	// build local coordinate system of RERI
-
-	ERI eri(ERI_w, ERI_h);
 	int pixelI, pixelJ = 0;
 	float prevdx = 0;
 	float currentdx = 0;
-
-
+	//auto start = std::chrono::high_resolution_clock::now();
+	camera1.a = reriCS * camera1.a;
+	camera1.b = reriCS * camera1.b;
+	camera1.c = reriCS * camera1.c;
 	for (int v = 0; v < camera1.h; v++)
 	{
+		V3 p1 = camera1.b * v + camera1.c;
 		for (int u = 0; u < camera1.w; u++)
-		{
-			V3 p = camera1.UnprojectPixel(u, v, 1.0f);
-			p = reriCS * p;
-			int col = eri.Lon2PixJ(eri.GetXYZ2Longitude(p));
-			int	row = eri.Lat2PixI(eri.GetXYZ2Latitude(p));
-			float disty1 = rowMap[row][col];
-			float distx1 = colMap[row][col];
-			float distx, disty;
-			bilinearinterpolation(convPixels, CRERI, v, u, disty1, distx1);
-			/*
-			if ((row > R0y && row < R0y + R0R1) && (col > R0x && col < R0x + R0R4))
-			{
-				//convPixels.at<Vec3b>(v, u) = CRERI.at<Vec3b>(row - (R0y - Het), col - (R0x - We));
-				distx = col - (R0x - We);
-				disty = row - (R0y - Het);
-			}
-			else
-			{
-				float d = R0x - col;
-				float Dx = R0x - nonuniformDrev[d];
-				if (col < R0x)
-				{
-					float x1 = col * (float)R0y / (float)R0x;
-					float x2 = mxrow - (float)col*(mxrow - (R0y + R0R1)) / (float)R0x;
-					if ((row > x1) && (row < x2))
-					{
-						float dx = col;
-						float dy = row;
-						float Cx = Dx;
-						float Ex = Dx;
-						float My = dx * (float)R0y / (float)R0x;
-						float Cy = Cx * (float)R0y / (float)R0x;
-						float Ny = mxrow - (float)dx*(mxrow - R0y - R0R1) / (float)R0x;
-						float Ey = mxrow - (float)Ex*(mxrow - R0y - R0R1) / (float)R0x;
-						float Dy = Ey - (float)((Ey - Cy)*(Ny - dy)) / (float)(Ny - My);
-						distx = Dx - (R0x - We);
-						disty = Dy - (R0y - Het);
-						
-					}
-				} //end region 1
-
-				//region 3
-				if (col > R0x + R0R4)
-				{
-					float d = col - (R0x + R0R4);
-					float dx = col;
-					float Dx = nonuniformDrev[d] + (R0x + R0R4);;
-					//cout << "decode col2: " << col << " Dx: " << (Dx - (R0x - We)-We-R0R4) << endl;					
-					float y1 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
-					float y2 = mxrow + (float)(col - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
-
-					if ((row > y1) && (row < y2))
-					{
-						float dy = row;
-						float Cx = Dx;
-						float Ex = Dx;
-						float My = (float)R0y*(mxcol - dx) / (float)(mxcol - R0x - R0R4);
-						float Cy = (float)R0y*(mxcol - Dx) / (float)(mxcol - R0x - R0R4);
-						float Ny = mxrow + (float)(dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
-						float Ey = mxrow + (float)(Dx - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
-						float Dy = Ey - (float)((Ey - Cy)*(Ny - dy)) / (float)(Ny - My);
-						distx = Dx - (R0x - We);
-						disty = Dy - (R0y - Het);
-			
-						
-						
-					}
-				}  //end region 3
-
-					//region 2: top
-
-				if (row < R0y)
-				{
-					float d = R0y - row;
-					float dy = row;
-					//cout << d <<" "<<nonuniformDrev2.size()<< endl;
-					float Dy = R0y - nonuniformDrev2[d];
-					//cout << "decode r2: " << row << " Dy: " << (Dy - (R0y - Het) ) << endl;
-
-					float y1 = col * (float)R0y / (float)R0x;
-					float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
-
-					if ((row < y1) && (row < y2))
-					{
-						float dx = col;
-						float Cy = Dy;
-						float Ey = Dy;
-						float Mx = dy * (float)R0x / (float)R0y;
-						float Cx = Dy * (float)R0x / (float)R0y;;
-						float Nx = mxcol - dy * (float)(mxcol - R0x - R0R4) / (float)R0y;
-						float Ex = mxcol - Dy * (float)(mxcol - R0x - R0R4) / (float)R0y;
-						float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
-						distx = Dx - (R0x - We);
-						disty = Dy - (R0y - Het);
-									
-						
-						
-					}
-				}  //end region 2
-
-				//print("dloop3" << endl);
-				//region 4: bottom
-
-				if (row > R0y + R0R1)
-				{
-					float d = row - (R0y + R0R1);
-					float Dy = nonuniformDrev2[d] + (R0y + R0R1);
-					float x1 = (mxrow - row)*(float)R0x / (mxrow - (R0y + R0R1));
-					float x2 = mxcol + (row - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
-
-					if ((col > x1) && (col < x2))
-					{
-						float dx = col;
-						float dy = row;
-
-						float Cy = Dy;
-						float Ey = Dy;
-						float Mx = (mxrow - dy)*(float)R0x / (mxrow - (R0y + R0R1));
-						float Cx = (mxrow - Dy)*(float)R0x / (mxrow - (R0y + R0R1));
-						float Nx = mxcol + (dy - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
-						float Ex = mxcol + (Dy - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
-						float Dx = Ex - (float)((Ex - Cx)*(Nx - dx)) / (float)(Nx - Mx);
-						distx = Dx - (R0x - We);
-						disty = Dy - (R0y - Het) - 1;
-						
-
-					}
-
-				}  //end region 4
-				//	print("dloop4" << endl);			
-
-			} //
-			if (disty != disty1 || distx != distx1)
-			{
-				cout<<"row="<<row <<" col="<<col<< " disty=" << disty << " disty1=" << disty1 << " distx=" << distx << " distx1=" << distx1 << endl;
-			} */
-		//bilinearinterpolation(convPixels, CRERI, v, u, disty1, distx1);
+		{				
+			V3 p = camera1.a*u + p1;		
+			p = p.UnitVector();
+			//float longt = eri.GetXYZ2LongitudeOptimized(p); 
+			//float latt = eri.GetXYZ2LatitudeOptimized(p[1]);			
+			//int col = eri.Lon2PixJ(longt);
+			//int	row = eri.Lat2PixI(latt);
+			int col = eri.GetXYZ2LongitudeOptimized(p);
+			int row= eri.GetXYZ2LatitudeOptimized(p[1]);
+			if (row >= 2000) { row = 1999; }
+			if (col >= 2000) { col = 1999; }
+			if (row <0) { row = 0; }
+			if (col < 0) { col = 0; }
+			float disty = rowMap[row][col];
+			float distx = colMap[row][col];		
+			bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
 		}
-
-	}
-
-
-
-	return;// convPixels;
-
+	}	
+	return;
 }
-
+//auto finish = std::chrono::high_resolution_clock::now();
+//std::chrono::duration<double> elapsed = finish - start;
+//cout << "Time................=" << elapsed.count() * 1000 << endl;	
 
 
 Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, Mat& qual, struct samplingvar * var1)
