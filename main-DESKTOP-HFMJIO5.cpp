@@ -29,7 +29,7 @@ int main()
 	//testTiling();
 	//testViewDirectionAvgRotation();
 	//testWriteh264();
-	
+	//testWriteh264tiles();
 	//testtilevideo();
 	
 	//testBoundingBox();
@@ -45,10 +45,9 @@ int main()
 	//testvideoEncodeNew4s(4);
 	//testPlayBackHMDPathVideo();
 	//temp_calc();
-	//testWriteh264tiles();
 	//GenerateEncoding4AllDirection();
-	//GenerateEncoding4sVarSpecificPanTiltChunk();
-	testDownloadVideoHttp4thSecVar(0); //0 for fixed direction test 1 for hmd data sets variable direction test
+	GenerateEncoding4sVarSpecificPanTiltChunk();
+	//testDownloadVideoHttp4thSecVar();
 
 	//testRotationxy();
 		

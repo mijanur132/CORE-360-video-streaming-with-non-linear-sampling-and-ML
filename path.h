@@ -48,9 +48,9 @@ public:
 	cv::Mat EncodeNewNonLinV2(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
 	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
-	void CRERI2ConvOptimized(cv::Mat CRERI, ERI & eri, M33 & reriCS, cv::Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam);
-	void nonUniformListInit();
-	void mapx();
+	void CRERI2ConvOptimized(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam);
+	void nonUniformListInit(float var[10]);
+	void mapx(float var[10]);
 	
 };
 

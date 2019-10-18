@@ -6,6 +6,10 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
 
+//       pan means camera long increase by
+//		tilt means camera lat reduces by. 
+
+
 //using namespace cv;
 
 class ERI 

@@ -61,8 +61,9 @@ void videowriterhelperx(int chunN, float pan, float tilt, int fps, int cols, int
 cv::Mat diffimgage(cv::Mat backgroundImage, cv::Mat currentImage);
 void getssim();
 void testDownloadVideoHttp();
-void testDownloadVideoHttp4thSecVar();
+void testDownloadVideoHttp4thSecVar(int singleOrVariableVD);
 void GenerateEncoding4AllDirection();
+void GenerateEncoding4sVarSpecificPanTiltChunk();
 void GenerateEncoding4AllDirectiontemp();
 void testvideoEncodeNew4stemp(int chunDurationsec, float pan, float tilt, int chunkstart);
 int out_video_file();
