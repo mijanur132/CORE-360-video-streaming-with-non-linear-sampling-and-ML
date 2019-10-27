@@ -22,6 +22,7 @@ vector <float> nonuniformDrev2;
 vector <float > nonuniformDrowrev2;
 float colMap[3850][3850];//ch
 float rowMap[3850][3850];//ch
+int samplingRate[2000][2000];//ch
 
 
 Path::Path() {
@@ -224,7 +225,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	float PxD = pxd;
 
 
-	cout << PxL <<" "<<PxR<<" "<<PxU<<" "<<PxD<< endl;
+	//cout << PxL <<" "<<PxR<<" "<<PxU<<" "<<PxD<< endl;
 
 	//system("pause");
 	int R0R1 = PxD - PxU;
@@ -240,7 +241,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	float Heb = Het;
 
 	//print("frame size:"<<frame.size() << endl);
-	print("ror1: " << R0R1 << " ror4:" << R0R4 << " rox:" << R0x << " roy:" << R0y << " we:" << We << " het:" << Het << " heb:" << Heb);
+	//print("ror1: " << R0R1 << " ror4:" << R0R4 << " rox:" << R0x << " roy:" << R0y << " we:" << We << " het:" << Het << " heb:" << Heb);
 
 	Mat distortedframemat = Mat::zeros((Het + R0R1 + Heb), (2 * We + R0R4), frame.type());
 	Mat tmp = midcorrectedmat(Rect(R0x, R0y, R0R4, R0R1));  //midcorrected one is CRERI
@@ -333,7 +334,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 		float v = (a)*j*j + (1 - a)*j;
 		float quad_out = v * We*compressionfactorX;
 		nonuniformD.push_back(quad_out);
-		//cout << " nonuniformD "<< quad_out << endl;
+	//	cout <<"col: "<<col<<" nonuniformD: "<< quad_out << endl;
 
 	}
 
@@ -341,7 +342,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	{
 		//cout << We * compressionfactorX << " " << nonuniformD[i] << endl;
 		float x = We * compressionfactorX - nonuniformD[i];
-		//cout << x << endl;
+		//cout <<i<<" "<< x << endl;
 		nonuniformDtemp.push_back(x);
 
 	}  //*/
@@ -372,7 +373,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 		float v = (a)*j*j + (1 - a)*j;
 		float quad_out = v * Het*compressionfactorY;
 		nonuniformD2.push_back(quad_out);
-		//cout << a << " " << quad_out << endl;
+		//cout << row << " " << quad_out << endl;
 	}
 
 	for (int i = 0; i < nonuniformD2.size(); i++)
@@ -394,7 +395,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	}  //*/
 
 
-	//system("pause");
+	
 
 	//////////////
 	for (int col = 0; col < We; col++)
@@ -539,11 +540,11 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 
 void Path::nonUniformListInit(float var[10]) 
 {
-	cout << "................. "<< endl;
+	cout << ".......NU.......... "<< endl;
 	int compressionfactor = 5;
 	float R0x = var[2] * 5;
 	float R0y = var[3] * 5;
-	cout << var[2] << " " << var[3] << endl;
+	//cout << var[2] << " " << var[3] << endl;
 	for (int col = 0; col <R0x; col++)
 	{
 		float j = (float)col / (float)R0x;
@@ -566,6 +567,8 @@ void Path::nonUniformListInit(float var[10])
 		nonuniformDrev2.push_back(quad_out);
 	}
 }
+
+
 
 void Path::mapx(float var[10])
 {
@@ -595,13 +598,14 @@ void Path::mapx(float var[10])
 				disty = row - (R0y - Het);
 				distx = col - (R0x - We);
 				colMap[row][col] = distx;
-				rowMap[row][col] = disty;
+				rowMap[row][col] = disty;				
 			}
 			else
 			{
 				float d = R0x - col;
 			//	cout << "d" << " " << nonuniformDrev[d] << endl;
 				float Dx = R0x - nonuniformDrev[d];
+				//cout << "d" <<d<<" nonU "<< nonuniformDrev[d] <<" "<< nonuniformDrev[d+1]<<" Dx: "<<Dx<< endl;
 				if (col < R0x)
 				{
 					float x1 = col * (float)R0y / (float)R0x;
@@ -657,10 +661,9 @@ void Path::mapx(float var[10])
 				{
 					float d = R0y - row;
 					float dy = row;
-					//cout << d <<" "<<nonuniformDrev2.size()<< endl;
-					//cout << "d" << " " << nonuniformDrev[d] << endl;
+				
 					float Dy = R0y - nonuniformDrev2[d];
-					//cout << "decode r2: " << row << " Dy: " << (Dy - (R0y - Het) ) << endl;
+					//cout << "dy: " << d << " nonU " << nonuniformDrev2[d] << " " << nonuniformDrev2[d + 1] << " Dy: " << Dy << endl;
 
 					float y1 = col * (float)R0y / (float)R0x;
 					float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
@@ -728,10 +731,181 @@ void Path::mapx(float var[10])
 	cout << "mapx....end..........................." << endl;
 }
 
-void  vecP2RowColMap() 
+void Path:: calculateAllSamplingRateOverCreri(float var[10])
 {
+	int compressionfactor = 5;
+
+	int ERI_w = var[0];
+	int ERI_h = var[1];
+	float We = var[2];
+	float Het = var[3];
+	float Heb = Het;
+	float R0R4 = ERI_w - 2 * We*compressionfactor;
+	float R0R1 = ERI_h - 2 * Het*compressionfactor;
+	float R0x = We * compressionfactor;
+	float R0y = Het * compressionfactor;
+	int mxCrow = ERI_h - 1;
+	int mxCcol = ERI_w - 1;
+
+	int mxDcol = 2 * We + R0R4 - 1;
+	int mxDrow = 2 * Het + R0R1 - 1;
+
+	cout << R0R4 << " " << R0R1 << " "<<mxDrow<<" "<<mxDcol<<endl;
+
+	vector <float> nonUniformCol;
+	vector <float > nonUniformRow;
+
+
+	for (int col = 0; col <= We; col++)
+	{
+		float j = (float)col / (float)We;
+		float a = ((float)1 / (float)compressionfactor) - 1;
+		float v = (a)*j*j + (1 - a)*j;
+		int quad_out = round(v * We*compressionfactor);
+		nonUniformCol.push_back(quad_out);
+		//cout << "col: " << col << " nonuniformCol: " << quad_out << endl;
+
+	}
+
+	vector <float> nonuniformD2;
+	vector<float> nonuniformD2temp;
+	vector <float > nonuniformDrowcorrected2;
+
+
+	for (int row = 0; row <= Het; row++)
+	{
+		float j = (float)row / (float)Het;
+		float a = ((float)1 / (float)compressionfactor) - 1;
+		float v = (a)*j*j + (1 - a)*j;
+		int quad_out = round(v * Het*compressionfactor);
+		nonUniformRow.push_back(quad_out);
+		//cout <<"row: "<< row << "nonUniformRow " << quad_out << endl;
+	}
+
+
+	Mat output = Mat::zeros(mxDrow + 1, mxDcol + 1, 16);
+
+
+
+	for (int row = 0; row < mxDrow + 1; row++)
+	{
+		for (int col = 0; col < mxDcol + 1; col++)
+		{
+
+			if ((col >= We && col <= We + R0R4) && (row >= Het && row <= Het + R0R1))
+			{
+				samplingRate[row][col] = 1;
+
+			}
+		}
+
+
+	}
+
+
+	for (int row = 0; row < int(Het); row++)
+	{
+		int diff = nonUniformRow[row + 1] - nonUniformRow[row];
+		for (int col = 0; col < mxDcol + 1; col++)
+		{
+			float xx = (float)col / (float)row;
+			float yy = (float)We / (float)Het;
+			if (xx > yy && row < (float)(Het*(float)(mxDcol - col) / (float)(We)))
+			{
+				samplingRate[row][col] = diff;
+
+			}
+		}
+	}
+
+
+	//////////////
+	for (int col = 0; col < int(We); col++)
+	{
+		int diff = (nonUniformCol[col + 1] - nonUniformCol[col]);
+
+		for (int row = 0; row < mxDrow + 1; row++)
+		{
+			float xx = (float)col / (float)row;
+			float yy = (float)We / (float)Het;
+			if (xx < yy && col < (float)(We*(float)(mxDrow - row) / (float)(Heb)))
+			{
+				samplingRate[row][col] = diff;
+			}
+		}
+	}
+
+
+	//print("loop3" << endl);
+	for (int col = We + R0R4; col < mxDcol + 1; col++)
+	{
+		float d = mxDcol + 1 - col;
+		int diff = nonUniformCol[d] - nonUniformCol[d - 1];
+
+		for (int row = 0; row < mxDrow + 1; row++)
+		{
+			float xx = Heb * ((float)(col - mxDcol) / (float)We) + mxDrow;
+
+			if ((row < xx) && (row > (float)(Het*(float)(mxDcol - col) / (float)(We))))
+			{
+				samplingRate[row][col] = diff;
+
+
+				//	cout<<"r3: d"<<d<<" "<<row << " " << col << " " << samplingRate[row][col] << endl;
+			}
+		}
+
+	}
+
+
+
+	//print("loop4" << endl);
+	for (int row = int(Het + R0R1); row < mxDrow + 1; row++)
+	{
+		float d = mxDrow + 1 - row;
+		int diff = nonUniformRow[d - 1] - nonUniformRow[d - 2];
+
+
+		for (int col = 0; col < ERI_w; col++)
+		{
+			float xx = Heb * ((float)(col - mxDcol) / (float)We) + mxDrow;
+			if (row > xx && col > (float)(We*(float)(mxDrow - row) / (float)(Heb)))
+			{
+				samplingRate[row][col] = diff;
+
+			}
+		}
+	}
+
+
+
+
+
+	for (int row = 0; row < mxDrow + 1; row++)
+	{
+		for (int col = 0; col < mxDcol + 1; col++)
+		{
+			Vec3b color(15 * samplingRate[row][col], 0, 0);
+
+			output.at<Vec3b>(row, col) = color;
+			if (row==0 && col == 0)
+			{
+				int diff = nonUniformRow[1] - nonUniformRow[0];
+				samplingRate[row][col] = 1;//diff;ch it supposed to be the lowest, but there is a bug somewhere.
+				
+				
+			}
+	
+
+		}
+
+	}
+
+	//imshow("samplingRate",output);
+	//waitKey(100);
 
 }
+
 
 void Path::CRERI2ConvOptimized(Mat CRERI, float var[10], ERI& eri, M33 & reriCS, Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam)
 {
@@ -766,10 +940,9 @@ void Path::CRERI2ConvOptimized(Mat CRERI, float var[10], ERI& eri, M33 & reriCS,
 			//if (col >= ERI_w) { col = ERI_w-1; }//ch
 			//if (row <0) { row = 0; }
 			//if (col < 0) { col = 0; }
-			float disty = rowMap[row][col];
-			float distx = colMap[row][col];	
-			//cout << disty << " " << distx << endl;
-			bilinearinterpolation(convPixels, CRERI, v, u, disty, distx);
+			float CRERIrow = rowMap[row][col];
+			float CRERIcol= colMap[row][col];	
+			bilinearinterpolation(convPixels, CRERI, v, u, CRERIrow, CRERIcol);
 		}
 	}	
 	return;
@@ -778,6 +951,56 @@ void Path::CRERI2ConvOptimized(Mat CRERI, float var[10], ERI& eri, M33 & reriCS,
 //std::chrono::duration<double> elapsed = finish - start;
 //cout << "Time................=" << elapsed.count() * 1000 << endl;	
 
+void Path::CRERI2ConvOptimizedWithSamplingRate(Mat CRERI, float var[10], ERI& eri, M33 & reriCS, Mat & convPixels, Mat & samplingPixels, int compressionfactor, PPC camera1, PPC refcam)
+{
+	int ERI_w = var[0];
+	int ERI_h = var[1];
+	float We = var[2];
+	float Het = var[3];
+	float Heb = Het;
+	float R0R4 = ERI_w - 2 * We*compressionfactor;
+	float R0R1 = ERI_h - 2 * Het*compressionfactor;
+	float R0x = We * compressionfactor;
+	float R0y = Het * compressionfactor;
+	int mxrow = ERI_h - 1;
+	int mxcol = ERI_w - 1;
+	int pixelI, pixelJ = 0;
+	float prevdx = 0;
+	float currentdx = 0;
+	//auto start = std::chrono::high_resolution_clock::now();
+	camera1.a = reriCS * camera1.a;
+	camera1.b = reriCS * camera1.b;
+	camera1.c = reriCS * camera1.c;
+	for (int v = 0; v < camera1.h; v++)
+	{
+		V3 p1 = camera1.b * v + camera1.c;
+		for (int u = 0; u < camera1.w; u++)
+		{
+			V3 p = camera1.a*u + p1;
+			p = p.UnitVector();
+			int col = eri.GetXYZ2LongitudeOptimized(p);
+			int row = eri.GetXYZ2LatitudeOptimized(p[1]);
+			if (row >= ERI_w) { row = ERI_w-1; }//ch
+			if (col >= ERI_w) { col = ERI_w-1; }//ch
+			if (row <0) { row = 0; }
+			if (col < 0) { col = 0; }
+			float CRERIrow = rowMap[row][col];
+			float CRERIcol = colMap[row][col];
+			bilinearinterpolation(convPixels, CRERI, v, u, CRERIrow, CRERIcol);
+			samplingPixels.at<Vec3b>(v, u) = Vec3b(samplingRate[(int)(CRERIrow)][(int)(CRERIcol)] * 20, 0, 0);
+			if(samplingRate[(int)(CRERIrow)][(int)(CRERIcol)] == 0)
+			{
+				cout<<"u,v: "<<u<<" "<<v << CRERIrow << " creri row col " << CRERIcol << endl;
+			}
+			//samplingPixels.at<Vec3b>(v, u) = samplingRate[(int)(CRERIrow)][(int)(CRERIcol)];
+
+		}
+	}
+	return;
+}
+//auto finish = std::chrono::high_resolution_clock::now();
+//std::chrono::duration<double> elapsed = finish - start;
+//cout << "Time................=" << elapsed.count() * 1000 << endl;	
 
 Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, Mat& qual, struct samplingvar * var1)
 {
@@ -809,10 +1032,9 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 		float a = 1 - (float)1 / (float)compressionfactorX - 0;
 		float b = (1 - a);
 		a = a * (-1);
-		float quad_out = R0x * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorX);
-		//cout << a << " " << b << " " << quad_out << endl;
+		int quad_out = R0x * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorX);
+		cout<<"col 0 to rox: j= " << j << " col= " << col << " out= " << quad_out << endl;
 		nonuniformDrev.push_back(quad_out);
-
 	}
 
 	vector <float> nonuniformDrev2;
@@ -825,12 +1047,11 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 		float a = 1 - ((float)1 / (float)compressionfactorY);
 		float b = (1 - a);
 		a = a * (-1);
-		float quad_out = R0y * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorY);
-		//cout << a << " " << b << " " << quad_out << endl;
+		int quad_out = R0y * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorY);
+		cout << "rw 0 to roy: j= " << j << " row= " << row << " out= " << quad_out << endl;
 		nonuniformDrev2.push_back(quad_out);
-
 	}
-
+	STOP;
 	int mxrow = ERI_h - 1;
 	int mxcol = ERI_w - 1;
 	/***************************Region 01: left *****************************************/
@@ -1145,6 +1366,240 @@ Mat Path::CRERI2Conv(Mat CRERI, float var[10], int compressionfactor, PPC camera
 	resizeWindow("sample1", 800, 400);
 	imshow("qual", qual);
 	waitKey(1000); */
+	var1->vtin = vtin;
+	var1->vto = vto;
+	var1->avg = average;
+	var1->min = minv;
+
+	return convPixels;
+
+}
+
+Mat Path::CRERI2ConvQual(Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, Mat& qual, struct samplingvar * var1)
+{
+	float compressionfactorX = compressionfactor;
+	float compressionfactorY = (float)compressionfactor / (float)1;
+	int ERI_w = var[0];
+	int ERI_h = var[1];
+	float We = var[2];
+	float Het = var[3];
+	float Heb = Het;
+	float R0R4 = ERI_w - 2 * We*compressionfactorX;
+	float R0R1 = ERI_h - 2 * Het*compressionfactorY;
+	float R0x = We * compressionfactor;
+	float R0y = Het * compressionfactor;
+
+
+	/**********************************Recreate Mapping******************************************/
+
+	vector <float> nonuniformDrev;
+	vector <float > nonuniformDrowrev;
+	//to understand logic for this two loop, print them somewhere and see with 
+	//increasing col quad_out keep increasing the gap. this d here is not our real d.
+	//read d starts from the R0R1 and go towards QQ1. So we need to turn the array top to bottom
+
+
+	for (int col = 0; col < R0x; col++)
+	{
+		float j = (float)col / (float)R0x;
+		float a = 1 - (float)1 / (float)compressionfactorX - 0;
+		float b = (1 - a);
+		a = a * (-1);
+		float quad_out = R0x * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorX);
+		//cout << "col 0 to rox: j= " << j << " col= " << col << " out= " << quad_out << endl;
+		nonuniformDrev.push_back(quad_out);
+	}
+
+	vector <float> nonuniformDrev2;
+	vector <float > nonuniformDrowrev2;
+
+
+	for (int row = 0; row < R0y; row++)
+	{
+		float j = (float)row / (float)R0y;
+		float a = 1 - ((float)1 / (float)compressionfactorY);
+		float b = (1 - a);
+		a = a * (-1);
+		float quad_out = R0y * (b - (float)sqrt(b*b - 4 * a*j)) / (float)(2 * a*compressionfactorY);
+		//cout << "rw 0 to roy: j= " << j << " row= " << row << " out= " << quad_out << endl;
+		nonuniformDrev2.push_back(quad_out);
+	}
+	
+	int mxrow = ERI_h - 1;
+	int mxcol = ERI_w - 1;
+	/***************************Region 01: left *****************************************/
+
+	// build local coordinate system of RERI
+	V3 xaxis = refcam.a.UnitVector();
+	V3 yaxis = refcam.b.UnitVector()*-1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+	M33 reriCS;
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
+
+
+	ERI eri(ERI_w, ERI_h);
+	int pixelI, pixelJ = 0;
+	Mat convPixels(camera1.h, camera1.w, CRERI.type());
+
+	float prevdx = 0;
+	float currentdx = 0;
+	float a = (float)1 / (float)compressionfactor - 1;
+	float b = 1 - a;
+	float vto = abs((float)(2 * a) / (float)(2 * a + b));
+	float vtin = abs((float)(2 * a) / (float)(b));
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			V3 p = camera1.UnprojectPixel(u, v, 1.0f);
+			p = reriCS * p;
+			int col = eri.Lon2PixJ(eri.GetXYZ2Longitude(p));
+			int	row = eri.Lat2PixI(eri.GetXYZ2Latitude(p));
+
+			if ((row > R0y && row < R0y + R0R1) && (col > R0x && col < R0x + R0R4))
+			{
+				qual.at<float>(v, u) = vtin;
+			//	cout <<"vin "<< v << " u: " << u << " row: " << row << " col: " << col << " " << 10 * vtin << endl;
+			}
+			else
+			{
+				float d = R0x - col;
+				float Dx = R0x - nonuniformDrev[d];
+				//cout << "decode col_r1: " << col << " Dx: " << (Dx - (R0x - We)) << endl;
+
+				if (col < R0x)
+				{
+					float x1 = col * (float)R0y / (float)R0x;
+					float x2 = mxrow - (float)col*(mxrow - (R0y + R0R1)) / (float)R0x;
+					if ((row > x1) && (row < x2))
+					{
+						
+						float t = (float)d / (float)R0x;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout<<"vl: " << v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<float>(v, u) = vt;
+
+
+					}
+				} //end region 1
+
+				//print("dloop1" << endl);
+				//region 3
+
+
+				if (col > R0x + R0R4)
+				{
+					float d = col - (R0x + R0R4);
+					float dx = col;
+					float Dx = nonuniformDrev[d] + (R0x + R0R4);;
+					//cout << "decode col2: " << col << " Dx: " << (Dx - (R0x - We)-We-R0R4) << endl;					
+					float y1 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
+					float y2 = mxrow + (float)(col - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
+
+					if ((row > y1) && (row < y2))
+					{
+						
+						float t = (float)d / (float)R0x;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout <<"vr: "<< v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<float>(v, u) = vt;
+					}
+				}  //end region 3
+
+
+				//	print("dloop2" << endl);
+
+					//region 2: top
+
+				if (row < R0y)
+				{
+					float d = R0y - row;
+					float dy = row;
+					//cout << d <<" "<<nonuniformDrev2.size()<< endl;
+					float Dy = R0y - nonuniformDrev2[d];
+					//cout << "decode r2: " << row << " Dy: " << (Dy - (R0y - Het) ) << endl;
+
+					float y1 = col * (float)R0y / (float)R0x;
+					float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
+
+					if ((row < y1) && (row < y2))
+					{
+						
+						float t = (float)d / (float)R0y;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout <<"vt: "<< v << " u: " << u << " row: " << row << " col: " << col << " t: " << t << " " << 10 * vt << endl;
+						qual.at<float>(v, u) = vt;
+
+					}
+				}  //end region 2
+
+				//print("dloop3" << endl);
+				//region 4: bottom
+
+				if (row > R0y + R0R1)
+				{
+					float d = row - (R0y + R0R1);
+					float Dy = nonuniformDrev2[d] + (R0y + R0R1);
+					float x1 = (mxrow - row)*(float)R0x / (mxrow - (R0y + R0R1));
+					float x2 = mxcol + (row - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
+
+					if ((col > x1) && (col < x2))
+					{
+						
+						float t = (float)d / (float)R0y;
+						float vt = abs((float)2 * a / (float)(2 * a*t + b));
+						//cout <<"vb: "<<v<<" u: "<<u<<" row: "<<row<<" col: "<<col<<" t: "<< t << " " << 10*vt << endl;
+						qual.at<float>(v, u) = vt;
+
+					}
+
+				}  //end region 4
+				//	print("dloop4" << endl);			
+
+			}
+		}
+
+	}
+
+	float minv = 0;
+	float sum = 0;
+	int number = 0;
+	float bb;
+
+	cout << vtin << " " << vto << endl;
+
+	for (int i = 0; i < camera1.h; i++)
+	{
+		for (int jj = 0; jj < camera1.w; jj++)
+		{
+			bb = qual.at<float>(i, jj);
+			if (bb == 0) { bb = vtin; }
+			if (bb > minv)
+			{
+				minv = (float)vtin / (float)(bb);
+				//cout <<jj<<" bb: "<< bb<<" minv: "<< minv << endl;
+			}
+			sum = sum + bb;
+			number++;
+		}
+	}
+	float average = (float)(vtin*number) / (float)(sum);
+	cout << "avg: "<<average << " min: " << minv << endl;
+
+
+	
+	ofstream output("./Video/encodingtest/qual.txt");
+	output << qual << endl;
+	output.close();
+	
+	namedWindow("sample1", WINDOW_NORMAL);
+	resizeWindow("sample1", 800, 400);
+	imshow("qual", qual);
+	waitKey(100); 
 	var1->vtin = vtin;
 	var1->vto = vto;
 	var1->avg = average;
@@ -1499,27 +1954,23 @@ void Path::WriteH264(char* fname, int lastFrame, int codec)
 	int fps = cap.get(CAP_PROP_FPS);
 
 	std::ostringstream oss;
-	oss << fname<<codec <<".avi";
+	oss << fname << ".avi";
 	string filename = oss.str();
 
-	//string filename = "./Video/rollerh264.avi";
 	VideoWriter writer;
-
-	//int codec = VideoWriter::fourcc('X','V','I','D');
 	writer.set(VIDEOWRITER_PROP_QUALITY,20);
-	writer.open(filename, codec, fps,Size(frame_width,frame_height), true);
-	
-	//cout<<writer.get(VIDEOWRITER_PROP_QUALITY)<<endl;
-
+	writer.open(filename, codec, fps,Size(frame_width,frame_height), true);	
 	if (!writer.isOpened())
 	{
 		cerr << "Could not open the output video file for write\n";
 		return;
 	}
 
-	cout << "Writing videofile: " << filename << codec << endl;
+	cout << "Quality: " << writer.get(VIDEOWRITER_PROP_QUALITY)<<endl;
 
-	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	cout << "Writing videofile: " << filename << endl;
+
+	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
 	for (int fi = 0; fi <= lastFrame; fi++)
 	{
@@ -1535,9 +1986,9 @@ void Path::WriteH264(char* fname, int lastFrame, int codec)
 		
 		writer.write(frame);		
 	}
-	high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(t2 - t1).count();
-	cout << "time single: " << duration << endl;
+	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	//auto duration = duration_cast<microseconds>(t2 - t1).count();
+	//cout << "time single: " << duration << endl;
 	writer.release();
 
 }

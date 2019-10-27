@@ -1,0 +1,1 @@
+ffmpeg -i "C:\inetpub\wwwroot\4thSecVar\diving\tempAndroid\4s\diving_10_10_40.mp4" -vcodec libx264 -crf 40 "C:\inetpub\wwwroot\4thSecVar\diving\tempAndroid\4s\divingCR40_10_10_40.mp4"

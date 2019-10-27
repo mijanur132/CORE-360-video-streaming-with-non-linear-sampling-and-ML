@@ -37,7 +37,9 @@ int main()
 	//getcheckerboard();
 
 	//getssim();
+	//testRotationxy();
 
+	//testbilinear();
 	//testEncodingDecoding();
 	//testrotationxyframe();
 	//out_video_file();
@@ -47,12 +49,17 @@ int main()
 	//temp_calc();
 	//testWriteh264tiles();
 	//GenerateEncoding4AllDirection();
+	//testvideodecodeNqual();
 	//GenerateEncoding4sVarSpecificPanTiltChunk();
-	testDownloadVideoHttp4thSecVar(0); //0 for fixed direction test 1 for hmd data sets variable direction test
-
-	//testRotationxy();
-		
-	//testbilinear();
+	GenerateEncodingRegularSpecificPanTiltChunk();
+	//testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
+										//second 0 for only default output, 1 if we want to calculate sampling rate 
+										//and frame rate values: mx, min and average over all the frames of the video
+	
+										
+ //testDownloadVideoHttp();
+	
+	
 	system("pause");
 	return 0;
 }
