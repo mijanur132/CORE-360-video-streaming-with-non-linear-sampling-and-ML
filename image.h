@@ -60,7 +60,7 @@ void testvideodecodeNqual();
 void videowriterhelperx(int chunN, float pan, float tilt, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<cv::Mat> file2wr);
 cv::Mat diffimgage(cv::Mat backgroundImage, cv::Mat currentImage);
 void getssim();
-void testDownloadVideoHttp();
+void testDownloadVideoHttp(int singleOrVariableVD, int samplingValueCalculate);
 void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate);
 void GenerateEncoding4AllDirection();
 void GenerateEncoding4sVarSpecificPanTiltChunk();

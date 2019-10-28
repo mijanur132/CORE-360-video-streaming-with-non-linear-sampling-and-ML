@@ -51,13 +51,13 @@ int main()
 	//GenerateEncoding4AllDirection();
 	//testvideodecodeNqual();
 	//GenerateEncoding4sVarSpecificPanTiltChunk();
-	GenerateEncodingRegularSpecificPanTiltChunk();
-	//testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
+	//GenerateEncodingRegularSpecificPanTiltChunk();
+	testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
 										//second 0 for only default output, 1 if we want to calculate sampling rate 
 										//and frame rate values: mx, min and average over all the frames of the video
 	
 										
- //testDownloadVideoHttp();
+	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
 	
 	
 	system("pause");
