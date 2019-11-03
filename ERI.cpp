@@ -243,7 +243,7 @@ int ERI::TestLatLon2Pixel(float lat, float lon, int source_H, int source_W)
 int ERI:: EachPixelConv2ERI(PPC camera1, int u, int v, int &pixelI, int &pixelJ)
 {
 	
-	V3 p = camera1.GetUnitRay(0.5f + u, 0.5f + v);	//this focul length needs to go way	
+	V3 p = camera1.GetUnitRay(0.5f + u, 0.5f + v);	
 	//p = p.UnitVector();
 	pixelI = Lat2PixI(GetXYZ2Latitude(p));
 	pixelJ = Lon2PixJ(GetXYZ2Longitude(p));

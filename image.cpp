@@ -25,12 +25,16 @@ std::string filename;
 int Is_MInv_calculated;
 M33 M_Inv;
 vector<vector <Mat>> frameQvec;
+vector<vector<vector <Mat>>>frameQvecTiles;
+
 float samplingRate[2000][2000];
 
 int NextChunkDownloaded=0;
 int decodeCount=0;
-void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int ChnkN);
+void makeVideo4thSecVarSpecificPanTiltChunkN(char* fileName, float pan, float tilt, int ChnkN, int extraFrame, int extraSec);
+void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec);
 void makeVideoRegularSpecificPanTiltChunkN(float pan, float tilt, int chunkN);
+void videowriterhelperxWithFileNameWithExtraSec(char* filename, int extraSec, int chunkN, float pan, float tilt, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr);
 auto startDisplaying = std::chrono::high_resolution_clock::now();
 
 void displayImage(Mat ret1)
@@ -100,13 +104,14 @@ private:
 }frameQ;
 
 
-void DownLoadChunk4thSecVar(string filename, int chunkD, int fps, int timeNeededms, int chunkN)
+void DownLoadChunk4thSecVar(string filename, int chunkD, int fps, int extraFrame, int timeNeededms, int chunkN)
 {	
 	
 	auto start = std::chrono::high_resolution_clock::now();
 	Mat frame;
 	
  	VideoCapture cap1(filename);
+
 	if (!cap1.isOpened())
 	{
 		cout << "**********************************" << endl;
@@ -115,40 +120,86 @@ void DownLoadChunk4thSecVar(string filename, int chunkD, int fps, int timeNeeded
 		STOP;
 	}
 		
-	for (int j = 0; j < 120; j++)
+	for (int j = 0; j < fps*chunkD+extraFrame; j++)
 	{
 
 		cap1 >> frame;
-		fps = 30;
+		
 		if (!frame.empty())
 		{
 			frameQvec[chunkN][j]=frame.clone();
 		}
 		else
 		{
-			cout << "Cannot open, the video file has no frame: " << endl;
+			cout << "Cannot open, the video file has no frame: " <<j<< endl;
 			break;
 		}
 	}
-	cap1.release();
+	//cap1.release();
 	auto finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsedms = (finish - start)*1000;
-
-	cout << "Time forcasted and needed to load................=" <<timeNeededms<<" "<< elapsedms.count() << endl;
 	while (elapsedms.count() < timeNeededms)
 	{
 		finish = std::chrono::high_resolution_clock::now();
 		elapsedms = (finish - start)*1000;
 		//cout << "Time inside.......................=" << elapsedms.count() << endl;
 	}
-	
 	NextChunkDownloaded = NextChunkDownloaded+ 1;
 	decodeCount = 0;
-	//cout << "All frame Loaded for: " << filename << endl;
+	cout <<" dl= "<< chunkN <<" "<< frameQvec[chunkN].size()<< endl;
+	cout << " Downloaded=" << filename << " NextChunkDownloaded= "<< NextChunkDownloaded<<endl;
+	cout << "Time forcasted and needed to load= " << timeNeededms << " " << elapsedms.count() << endl;
 	return;
 
 }
 
+void DownLoadTilesChunk(string filename, int chunkN, int chunkD, int tileN, int fps, int timeNeededms)
+{
+	auto start = std::chrono::high_resolution_clock::now();
+	Mat frame;
+
+	VideoCapture cap1(filename);
+
+	if (!cap1.isOpened())
+	{
+		cout << "**********************************" << endl;
+		cout << "Cannot open the video file: " << filename << endl;
+		waitKey(100);
+		STOP;
+	}
+
+	for (int j = 0; j < fps*chunkD; j++)
+	{
+
+		cap1 >> frame;
+
+		if (!frame.empty())
+		{
+			frameQvecTiles[tileN][chunkN][j] = frame.clone();
+		}
+		else
+		{
+			cout << "Cannot open, the video file has no frame: " << j << endl;
+			break;
+		}
+	}
+	//cap1.release();
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsedms = (finish - start) * 1000;
+	while (elapsedms.count() < timeNeededms)
+	{
+		finish = std::chrono::high_resolution_clock::now();
+		elapsedms = (finish - start) * 1000;
+		//cout << "Time inside.......................=" << elapsedms.count() << endl;
+	}
+	NextChunkDownloaded = NextChunkDownloaded + 1;
+	decodeCount = 0;
+	//cout << " dl= " << chunkN << " " << frameQvec[tileN][chunkN].size() << endl;
+	cout << " Downloaded=" << filename << " NextChunkDownloaded= " << NextChunkDownloaded << endl;
+	cout << "Time forcasted and needed to load= " << timeNeededms << " " << elapsedms.count() << endl;
+	return;
+
+}
 
 void DownLoadChunk(string filename, int chunkD, int fps, int timeNeededms)
 {	
@@ -296,6 +347,14 @@ string getChunkNametoReqnRefCamOptimized(PPC &camera1, M33 & reriCS, string srcB
 	return ofilename;
 }
 
+string getChunkNametoReq4mTiles(string srcBaseAddr, int chunkN, int tileN)
+{
+	std::ostringstream oss1;
+	oss1 << srcBaseAddr << "_" << chunkN << "_" << tileN << ".avi";
+	string ofilename = oss1.str();
+	return ofilename;
+}
+
 void thredProcessFrame(PPC camera2, Path path1, int MxchunkN, int chunkD, int fps, int cf, struct samplingvar& svar, float var[10], vector <Mat>& conv)
 {
 	//waitKey(5000);
@@ -400,37 +459,40 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	Path path1;
 	float var[10];
 	vector<float> frameRate4allFrames;
-	
+	string srcBaseAddr;
+
+	float howManySecondsfor4thSec = 5;
+	int extraFrameN = 30;
+	int mxChunkN = 5;// var[4];
+	int chunkD = 4;//var[5]; //read from variable	
+	int nextDlChunkSec = 1;
+	int chunkSizeKB = 500;
 
 
-	LoadBWTraceData("./bwLogs/AttLteDriving646KB2Min.txt"); //check inside for scaling up and down. There is a multiplication factor there.
+	LoadBWTraceData("./bwLogs/Tmobile3g235kB.txt"); //check inside for scaling up and down. There is a multiplication factor there.
 	string datax = fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/diving/4kDivingEncodingVariable.txt");
-	//string srcBaseAddr = "http://127.0.0.5:80/4thSecVar/diving/tempAndroid/4s/divingCR40";
-	string srcBaseAddr = "http://127.0.0.5:80/4thSecVar/diving/segment4rollerVD/4s/crf40/divingCR40";
+	if (singleOrVariableVD == 1) {
+		 srcBaseAddr = "http://127.0.0.5:80/3vid2crf3trace/cr40/rollerCR40";
+	}
+	else {
+		 srcBaseAddr = "http://127.0.0.5:80/4thSecVar/diving/tempAndroid/4s/divingCR40";
+	}
+	
 
 	char* hmdFileName;
 	if (singleOrVariableVD == 1) {
+		//hmdFileName = "./Video/source/roller.txt";
 		hmdFileName = "./Video/source/roller.txt";
 	}
 	else {
 		hmdFileName = "./Video/source/rollerSingleVD.txt";
 	}
 	
-	for (int chunk = 0; chunk < 50; chunk++) 
-	{
-		vector <Mat> temp;
-		for (int i = 0; i < 120; i++)
-		{
-			Mat m;
-			temp.push_back(m);
-			m.release();
-		}
-		frameQvec.push_back(temp);
-	}
-	vector <float> nonUniformList;
-	float howManySecondsfor4thSec = 5;
 	
-	temp_calc(nonUniformList, howManySecondsfor4thSec);
+	vector <float> nonUniformList;
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN);
+
+	STOP;
 	
 	/*IMP*/	
 	std::istringstream f(datax);
@@ -454,16 +516,13 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	PPC refCam(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	path1.LoadHMDTrackingData(hmdFileName, camera2);
-
-	int mxChunkN = 5;// var[4];
-	int chunkD = 4;//var[5]; //read from variable	
 	int compressionFactor = 5;// var[6];  //read from variable file
 
 	int frameStarted = 0;
 	
 	int chunkN = 0;
 	int fps = 30;
-	int nextDlChunkSec = 3;
+	
 	Mat firstScene;
 	upload_image("./Video/source/startScene.PNG", firstScene);
 
@@ -482,6 +541,21 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	int ERI_w = frameLen;   
 	int ERI_h = frameWidth;    
 	ERI eri(ERI_w, ERI_h);
+
+	
+
+	for (int chunk = 0; chunk <= mxChunkN+1; chunk++)
+	{
+		vector <Mat> temp;
+		for (int i = 0; i < (fps*chunkD+extraFrameN); i++)
+		{
+			Mat m;
+			temp.push_back(m);
+			m.release();
+		}
+		frameQvec.push_back(temp);
+	}
+
 	eri.atanvalue();
 	eri.xz2LonMap();
 	eri.xz2LatMap();
@@ -515,18 +589,16 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			bwIglobal++;
 		}
 
-		packetNeeded = 500 * 1024 / 1500;  //500 KB file size approximate
+		packetNeeded = chunkSizeKB * 1024 / 1500;  //500 KB file size approximate
 		bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 		cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
 		
 	}
 
 	//************* BW simulation****************//
-
-
-
+	   
 	cout << elapsed1.count() << " " << bwTimeNeeded << endl;	
-	DownLoadChunk4thSecVar(filename, chunkD, fps, bwTimeNeeded, chunkN);
+	DownLoadChunk4thSecVar(filename, chunkD, fps,extraFrameN, bwTimeNeeded, chunkN);
 	int returningFromExtra = 0;
 	while (NextChunkDownloaded == 0)
 	{
@@ -541,18 +613,18 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	{
 		
 		frameCount++; //0->
-		if (frameCount == (90 * mxChunkN-1+0)) //add 449 for last 5 second extension
+		if (frameCount == (fps*chunkD * mxChunkN-1+0)) //add 449 for last 5 second extension
 		{
 			condition = 0;
 		}
 
-		int currentChunk = (frameCount) / 90+1;
+		int currentChunk = (frameCount) / (fps*chunkD)+1;
 		if (currentChunk > mxChunkN+1)
 		{
 			currentChunk = mxChunkN + 1;
 		}
-		int playIndex= frameCount-(currentChunk-1)* 90; //0-89
-		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << endl;
+		int playIndex= frameCount-(currentChunk-1)* (fps*chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex <<" "<<NextChunkDownloaded<< endl;
 		if (currentChunk == NextChunkDownloaded)
 		{
 			Mat frame;				
@@ -585,17 +657,14 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			outputFrame2SAve.push_back(convPixels.clone());
 
 
-			if ((playIndex) == 59)
+			if ((playIndex) == fps*(chunkD-nextDlChunkSec))
 			{
 				int reqChunkN = currentChunk+1; 
-				if (currentChunk > mxChunkN + 1)
-				{
-					currentChunk = mxChunkN + 1;
-				}
+				
 				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
 				VD = path1.cams[cam_index].GetVD();						
 				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, reqChunkN, VD, tiltAngle);
-				//cout << "New Req. " << filename << endl;				
+				cout << "New Req. " << filename << endl;				
 				finish1 = std::chrono::high_resolution_clock::now();
 				elapsed1 = finish1 - start;
 				if (samplingValueCalculate == 1)
@@ -609,21 +678,22 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 
 				   //************* BW simulation****************//
 				}
-				cout << elapsed1.count() << " third " << bwTimeNeeded << endl;
-				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, bwTimeNeeded, reqChunkN));
+				
+				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps,extraFrameN, bwTimeNeeded, reqChunkN));
 
 			}
 		
 		}	
 
-		if (after90Index >= 30)
+		if (after90Index >= extraFrameN)
 		{
-			//cout << "Network disconnected, try again...................................." << endl;
+			cout << "Network disconnected, try again...................................." << endl;
 			auto playFinish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> playElapsed = playFinish - playStart;
 			cout << "Total Play Time:................> " << playElapsed.count()*1000 << endl;
-				STOP;
-				condition = 0;
+			condition = 0;
+			STOP;
+				
 		}
 		
 		if(((currentChunk) > NextChunkDownloaded) && currentChunk>1)
@@ -640,34 +710,31 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				if (i > 0) {
 					frameCount++;
 				}
-				currentChunk = (frameCount) / 90+1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
-				if (currentChunk > mxChunkN + 1)
-				{
-					currentChunk = mxChunkN + 1;
-				}
-				playIndex = frameCount - (currentChunk-1) * 90;
-				cout << "89CuntChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex <<"NUindx="<<89+index<< endl;
+				currentChunk = (frameCount) / (fps*chunkD)+1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
+			
+				playIndex = frameCount - (currentChunk-1) * (fps*chunkD);
+				cout << "119CuntChunkN=" << currentChunk-1 << " frmcount=" << frameCount << " plCnt=" << playIndex <<" after90indx="<<119+index<<" "<<NextChunkDownloaded<< endl;
 				cam_index = path1.GetCamIndex(frameCount-1, fps, cam_index);
 				
 				if (samplingValueCalculate == 1)
 				{
-					path1.CRERI2ConvOptimizedWithSamplingRate(frameQvec[currentChunk - 1][89 + after90Index], var, eri, reriCS, convPixels, samplingPixels, compressionFactor, path1.cams[cam_index], refCam);
+					path1.CRERI2ConvOptimizedWithSamplingRate(frameQvec[currentChunk - 1][(fps*chunkD-1) + after90Index], var, eri, reriCS, convPixels, samplingPixels, compressionFactor, path1.cams[cam_index], refCam);
 					outputSamplingRate2Save.push_back(samplingPixels.clone());
 					float frameRateTemp = diffIndex;
 					//cout << "sampling less than 1: " << frameRateTemp << endl;
 					frameRate4allFrames.push_back(frameRateTemp);
 				}
 				else {
-					path1.CRERI2ConvOptimized(frameQvec[currentChunk - 1][89 + after90Index], var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
+					path1.CRERI2ConvOptimized(frameQvec[currentChunk - 1][(fps*chunkD - 1) + after90Index], var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
 					
 				}
 				
-				
+				//cout<<frameQvec[currentChunk - 1].size() << endl;
 				
 				displayImage(convPixels);
 				outputFrame2SAve.push_back(convPixels.clone());				
 				//displayImage(samplingPixels);
-				if (playIndex == 59)
+				if (playIndex == (fps*(chunkD-nextDlChunkSec)))
 				{
 					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
 					
@@ -690,7 +757,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 
 				   //************* BW simulation****************//
 					cout << elapsed1.count() << " third " << bwTimeNeeded << endl;
-					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, bwTimeNeeded, reqChunkN));
+					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
 					
 					
 				}
@@ -728,10 +795,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 		}
 
 		cout << "Minimum Sampling Rate: " << minTemp << " averageSamplingRate: " << totalTemp / frameRate4allFrames.size() << endl;
-
-
-
-
+					
 
 		float overallMin = 10;
 		float overallMax = 0;
@@ -784,7 +848,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	int sf = 0;
 	int ef = outputFrame2SAve.size();
 	cout << "SAving-> sf:ef " << sf << " " << ef << endl;	
-	cout << fps << outputSamplingRate2Save[0].cols << outputSamplingRate2Save[0].rows << " sf: " << sf << " ef: " << ef << endl;
+	//cout << fps << outputFrame2SAve[0].cols << outputSamplingRate2Save[0].rows << " sf: " << sf << " ef: " << ef << endl;
 	videowriterhelperx(chunkN, 0, 0, fps, outputFrame2SAve[1].cols, outputFrame2SAve[1].rows, sf, ef, outputFrame2SAve);
 	if (samplingValueCalculate == 1)
 	{
@@ -1100,6 +1164,221 @@ void testDownloadVideoHttp(int singleOrVariableVD, int samplingValueCalculate)
 
 
 }
+
+void getTilesNumber2req(vector<int> & tileBitMap, PPC camera, ERI & eri, int m, int n)
+{
+
+
+	int pixelI, pixelJ = 0;
+	for (int v = 0; v < camera.h; v++)
+	{
+		for (int u = 0; u < camera.w; u++)
+		{
+			eri.EachPixelConv2ERI(camera, u, v, pixelI, pixelJ);
+			int Xtile = floor(pixelJ*m / eri.w); //m*n col and row
+			int Ytile = floor(pixelI*n / eri.h);
+			int vectorindex = (Ytile)*m + Xtile;
+			tileBitMap.at(vectorindex) = 1;
+
+		}
+
+	}
+
+}
+
+void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculate)
+{
+
+	Path path1;
+	float var[10];
+	/*IMP*/
+	LoadBWTraceData("./bwLogs/AttLteDriving646KB.txt"); //check inside for scaling up and down. There is a multiplication factor there.
+	string datax = fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/diving/4kDivingEncodingVariable.txt");
+	string srcBaseAddr = "http://127.0.0.5:80/3vid2crf3trace/tiles/diving";
+	std::istringstream f(datax);
+	std::string line;
+	int i = 0;
+	while (std::getline(f, line))
+	{
+		var[i] = stoi(line);
+		cout << var[i] << '\n';
+		i++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+	float corePredictionMargin = 0.7;
+	int w = frameCol * hfov / 360; //add frameLen and Width into the variable file also totalChunkN
+	int h = frameRow * hfov / 360;  //540 for perfect 2160 p but here we have 2048
+	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	char* hmdFileName;
+	if (singleOrVariableVD == 1) {
+		hmdFileName = "./Video/source/roller.txt";
+	}
+	else {
+		hmdFileName = "./Video/source/rollerSingleVD.txt";
+	}
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+	int mxChunkN = 3;// var[4];
+	int chunkD = 4;//var[5]; //read from variable	
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("./Video/source/startScene.PNG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol*tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps*chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200; //500 ms default value, without any trace
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = 4;
+	int tileColN = 6;
+	auto start = std::chrono::high_resolution_clock::now();
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+	displayImage(firstScene);
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN*tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+
+	getTilesNumber2req(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+
+	for (int i = 0; i < tileRowN*tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	while (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		cout << "looping..." << endl;
+	}
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int tileCondition = 1;
+	while (tileCondition)
+	{
+
+		for (int i = 0; i < fps*chunkD; i++)
+		{
+			cout << i << " " << chunkN << endl;
+			cam_index = path1.GetCamIndex(i + (chunkN - 1)*chunkD*fps, fps, cam_index);
+			if (i == 90)
+			{
+				vector <int> tileBitMap2;
+
+				for (int i = 0; i < tileRowN*tileColN; i++)
+				{
+					tileBitMap2.push_back(0);
+				}
+				getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+
+				for (int i = 0; i < tileRowN*tileColN; i++)
+				{
+					//cout << i << "--" << tileBitMap2[i] << endl;
+					int reqChunkN = chunkN + 1;
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+					}
+				}
+			}
+
+			for (int j = 1; j < reqTiles[chunkN].size(); j++)
+			{
+				int tileNo = reqTiles[chunkN][j];
+				int startCol = tileColLen * (tileNo % tileColN);
+				int startRow = tileRowLen * (tileNo / tileColN);
+				//cout << reqTiles[j] << " " << startCol << " " << startRow << endl;
+				Mat tileFrame = frameQvecTiles[reqTiles[chunkN][j]][chunkN][i];
+				//displayImage(tileFrame);
+
+				tileFrame.copyTo(blankCanvas(Rect(startCol, startRow, tileColLen, tileRowLen)));
+
+			}
+
+			Mat convPixelsTmp(camera2.h, camera2.w, firstScene.type());
+			//	eri.ERI2Conv4tiles(convPixelsTmp, frameQvecTiles, reqTiles, path1.cams[cam_index], tileColN, tileRowN, chunkN, i);
+			//	displayImage(blankCanvas);
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed = finish - start;
+			cout << "Time=" << elapsed.count() * 1000 << endl;
+			start = finish;
+			eri.ERI2Conv(blankCanvas, convPixelsTmp, path1.cams[cam_index]);
+			displayImage(convPixelsTmp);
+			convPixelsTmp.release();
+
+		}
+		chunkN = chunkN + 1;
+	}
+
+}
+
+
+
 
 Mat diffimgage(Mat backgroundImage, Mat currentImage) {
 	cv::Mat diffImage;
@@ -1464,14 +1743,14 @@ int testViewDirectionAvgRotation()
 }
 
 
-int testWriteh264() {
+int Writeh264VideoUptoNframes() {
+
 	Path path1;
-	int lastframe = 100;
+	int lastframe = 900;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
-	//path1.WriteH264("./Video/roller.mkv", lastframe, codec);
-	//path1.WriteH264("./Video/paris.mkv", lastframe,codec);
-	//path1.WriteH264("./Video/ny.mkv", lastframe, codec);
-	path1.WriteH264("./Video/diving.mkv", lastframe, codec);
+	path1.WriteH264("./Video/source/roller.mkv", lastframe, codec);
+	path1.WriteH264("./Video/source/rhino.WEBM", lastframe, codec);
+	path1.WriteH264("./Video/source/diving.mkv", lastframe, codec);
 
 	return 0;
 }
@@ -1626,21 +1905,379 @@ void testEncodingDecoding()
 }
 
 void GenerateEncoding4sVarSpecificPanTiltChunk()
-{
-	float tilt = -10;
-	float pan=-120;
-	for (int i = 5; i < 6; i++)
-	{
-		int chunkN = i;
-		makeVideo4thSecVarSpecificPanTiltChunkN(pan, tilt, chunkN);
-	}
+{	
+	char* fileName4s = "./Video/source/4sBase/diving_1_10_-180.AVI";
+	char* fileName1s = "./Video/source/1s/diving.AVI1_1_10_-180.AVI";
+	char* fileName2s = "./Video/source/2s/diving.AVI2_1_10_-180.AVI";
+	char* fileName3s = "./Video/source/3s/diving.AVI3_1_10_-180.AVI";
 	
+	/*
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_2_10_-160.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_2_10_-160.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_2_10_-160.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_2_10_-160.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_2_10_-180.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_2_10_-180.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_2_10_-180.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_2_10_-180.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_3_10_160.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_3_10_160.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_3_10_160.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_3_10_160.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_3_10_-180.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_3_10_-180.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_3_10_-180.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_3_10_-180.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/diving_4_-10_80.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_4_-10_80.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_4_-10_80.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_4_-10_80.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_4_-10_100.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_4_-10_100.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_4_-10_100.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_4_-10_100.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_4_-10_120.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_4_-10_120.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_4_-10_120.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_4_-10_120.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_4_10_140.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_4_10_140.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_4_10_140.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_4_10_140.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/diving_5_-30_12.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_5_-30_12.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_5_-30_12.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_5_-30_12.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/diving_5_-30_84.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_5_-30_84.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_5_-30_84.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_5_-30_84.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s); 
+
+	fileName4s = "./Video/source/4sBase/diving_5_-50_44.AVI";
+	fileName1s = "./Video/source/1s/diving.AVI1_5_-50_44.AVI";
+	fileName2s = "./Video/source/2s/diving.AVI2_5_-50_44.AVI";
+	fileName3s = "./Video/source/3s/diving.AVI3_5_-50_44.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s); 
+	
+	*/
+
+	fileName4s = "./Video/source/4sBase/rhino_1_-10_-80.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_1_-10_-80.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_1_-10_-80.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_1_-10_-80.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+	
+	STOP;
+
+	fileName4s = "./Video/source/4sBase/rhino_2_-10_-80.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_2_-10_-80.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_2_-10_-80.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_2_-10_-80.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/rhino_3_-10_-60.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_3_-10_-60.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_3_-10_-60.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_3_-10_-60.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/rhino_3_-10_-80.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_3_-10_-80.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_3_-10_-80.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_3_-10_-80.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/rhino_4_-10_-20.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_4_-10_-20.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_4_-10_-20.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_4_-10_-20.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s); 
+
+	fileName4s = "./Video/source/4sBase/rhino_4_-10_-60.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_4_-10_-60.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_4_-10_-60.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_4_-10_-60.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/rhino_5_-10_60.AVI";
+	fileName1s = "./Video/source/1s/rhino.WEBM1_5_-10_60.AVI";
+	fileName2s = "./Video/source/2s/rhino.WEBM2_5_-10_60.AVI";
+	fileName3s = "./Video/source/3s/rhino.WEBM3_5_-10_60.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/roller_1_10_40.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_1_10_40.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_1_10_40.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_1_10_40.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/roller_2_-10_0.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_2_-10_0.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_2_-10_0.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_2_-10_0.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/roller_2_-10_20.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_2_-10_20.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_2_-10_20.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_2_-10_20.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/roller_2_10_40.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_2_10_40.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_2_10_40.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_2_10_40.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/roller_3_-10_-20.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_3_-10_-20.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_3_-10_-20.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_3_-10_-20.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/roller_4_-10_-40.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_4_-10_-40.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_4_-10_-40.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_4_-10_-40.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	fileName4s = "./Video/source/4sBase/roller_4_-10_-120.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_4_-10_-120.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_4_-10_-120.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_4_-10_-120.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/roller_5_-10_-180.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_5_-10_-180.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_5_-10_-180.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_5_-10_-180.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+	fileName4s = "./Video/source/4sBase/roller_5_-10_180.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_5_-10_180.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_5_-10_180.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_5_-10_180.AVI";
+	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+
+
+	STOP;
+	
+	int extraFrame;
+	int extraSec;
+	
+	for (int i = 0; i < 3; i++)
+	{
+		if (i == 0)
+		{
+			extraFrame = 5;
+			extraSec = 1;
+		}
+		if (i == 1)
+		{
+			extraFrame = 10;
+			extraSec = 2;
+		}
+		if (i == 2)
+		{
+			extraFrame = 15;
+			extraSec = 3;
+
+		}
+
+		char* fileName = "./Video/source/rhino.WEBM";
+
+		int chunkN = 1;
+		float tilt = -10;
+		float pan = -80;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		/*
+
+		int chunkN = 2;
+		float tilt = -10;
+		float pan = -80;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 3;
+		tilt = -10;
+		pan = -60;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 3;
+		tilt = -10;
+		pan = -80;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 4;
+		tilt = -10;
+		pan = -20;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 4;
+		tilt = -10;
+		pan = -60;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 5;
+		tilt = -10;
+		pan = 60;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		fileName = "./Video/source/roller.MKV";
+
+		chunkN = 1;
+		tilt = 10;
+		pan = 40;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 2;
+		tilt = -10;
+		pan = 0;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 2;
+		tilt = -10;
+		pan = 20;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 2;
+		tilt = 10;
+		pan = 40;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+	
+		chunkN = 3;
+		tilt = -10;
+		pan = -20;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+		
+		chunkN = 4;
+		tilt = -10;
+		pan = -40;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+	
+		
+		chunkN = 4;
+		tilt = -10;
+		pan = -120;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 5;
+		tilt = -10;
+		pan = 180;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+	
+		chunkN = 5;
+		tilt = -10;
+		pan = -180;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		fileName = "./Video/source/diving.AVI";
+
+
+		chunkN = 1;
+		tilt = 10;
+		pan = -180;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 2;
+		tilt = 10;
+		pan = -160;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 2;
+		tilt = 10;
+		pan = -180;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 3;
+		tilt = 10;
+		pan = 160;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 3;
+		tilt = 10;
+		pan = -180;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+
+		chunkN = 4;
+		tilt = -10;
+		pan = 80;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 4;
+		tilt = -10;
+		pan = 100;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 4;
+		tilt = -10;
+		pan = 120;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 4;
+		tilt = 10;
+		pan = 140;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 5;
+		tilt = -30;
+		pan = 84;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 5;
+		tilt = -30;
+		pan = 12;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		chunkN = 5;
+		tilt = -50;
+		pan = 44;
+		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+		*/
+	}
+
 }
 void GenerateEncodingRegularSpecificPanTiltChunk()
 {
-	float tilt = -10;
-	float pan = -120;
-	for (int i = 4; i < 5; i++)
+	float tilt = 10;
+	float pan = 40;
+	for (int i = 1; i < 2; i++)
 	{
 		int chunkN = i;
 		makeVideoRegularSpecificPanTiltChunkN(pan, tilt, chunkN);
@@ -1736,7 +2373,7 @@ void makeVideoRegularSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 	
 }
 
-void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
+void makeVideo4thSecVarSpecificPanTiltChunkN(char* fileName,float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec)
 {
 	vector<Mat> downloadedFrame;
 	vector <Mat> bufferedFrame;
@@ -1749,11 +2386,13 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
 	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	int cf = 5;
-	VideoCapture cap("./Video/source/diving.MKV");
+	VideoCapture cap(fileName);
 
 	vector <float> nonUniformList;
-	float howManySecondsfor4thSec = 5;
-	temp_calc(nonUniformList, howManySecondsfor4thSec);
+	//float howManySecondsfor4thSec = 5;//5
+	//int extraFrame = 30; //
+
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrame);
 
 	
 	if (!cap.isOpened())
@@ -1766,9 +2405,9 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 	int segi = 0;
 	Mat ret;
 	float var[10];
-	int chunDurationsec = 3;
+	int chunDurationsec = 4;
 	Mat frame;
-	for (int fi = 0; fi < (chunkN)*fps*chunkN*chunDurationsec+ nonUniformList[29]+500; fi++)
+	for (int fi = 0; fi < (chunkN)*fps*chunkN*chunDurationsec+ nonUniformList[extraFrame-1]; fi++)
 	{
 		cap >> frame;
 		if (frame.empty())
@@ -1777,7 +2416,7 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 			cout << "Can not read video frame: " << endl;
 			break;
 		}
-		if (fi >= (chunkN - 1)*chunDurationsec*fps+400 && fi <( 400+chunkN*chunDurationsec*fps+nonUniformList[29]))
+		if (fi >= (chunkN - 1)*chunDurationsec*fps && fi <(chunkN*chunDurationsec*fps+nonUniformList[extraFrame - 1]))
 		{
 			print("enFi: " << fi << endl);
 			displayImage(frame);
@@ -1802,7 +2441,7 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 		ret.release();
 		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)
 		{
-			for (int i = 1; i < 31; i++)
+			for (int i = 1; i < extraFrame+1; i++)
 			{
 				addI = fi + (int)nonUniformList[i - 1];				
 				ret = path1.EncodeNewNonLinV2(downloadedFrame[addI], &encodevar, core1PPC, encodeRefPPC, cf);							
@@ -1811,12 +2450,12 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 				cout << "; fi-" << fi << " addI-" << addI << endl;
 			}			
 			cout << chunkN << endl;
-			int sf = bufferedFrame.size() - 120;
+			int sf = bufferedFrame.size() - (fps*chunDurationsec+extraFrame);
 			int ef = bufferedFrame.size();
 			cout <<"SAving-> sf:ef "<< sf << " " << ef << endl;
-			filename = "./Video/diving_";
+			
 			//cout << fps << ret.cols << ret.rows << " sf: " << sf << " ef: " << ef << endl;
-			videowriterhelperx(chunkN, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
+			videowriterhelperxWithFileName(fileName, chunkN, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
 
 		}
 
@@ -1834,6 +2473,88 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(float pan, float tilt, int chunkN)
 	output << var[2] << endl;
 	output << var[3] << endl;
 	output.close();
+}
+
+void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec)
+{
+	vector<Mat> downloadedFrame;
+	vector <Mat> bufferedFrame;
+	struct var encodevar;
+	Path path1;
+	float hfov = 90.0f;
+	float corePredictionMargin = 1.2;
+	int w = 960;
+	int h = 512;
+	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
+	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
+	int cf = 5;
+	VideoCapture cap(fileName);
+	vector <float> nonUniformList;
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrame);
+
+
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		STOP;
+	}
+	int fps = 30;
+	int lastframe = 910;
+	int segi = 0;
+	Mat ret;
+	float var[10];
+	int chunDurationsec = 4;
+	Mat frame;
+	for (int fi = 0; fi < (chunkN)*fps*chunkN*chunDurationsec + nonUniformList[extraFrame - 1]; fi++)
+	{
+		cap >> frame;
+		if (frame.empty())
+		{
+
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+		if (fi >= (chunkN - 1)*chunDurationsec*fps && fi < (chunkN*chunDurationsec*fps + nonUniformList[extraFrame - 1]))
+		{
+			print("enFi: " << fi << endl);
+			displayImage(frame);
+			downloadedFrame.push_back(frame);
+		}
+		frame.release();
+	}
+	
+
+	float addI;
+	core1PPC.Pan(pan);
+	core1PPC.Tilt(tilt);
+
+	for (int fi = 0; fi < chunDurationsec*fps; fi++)
+	{
+		cout << " fi: " << fi << endl;
+
+		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)
+		{
+			for (int i = 1; i < extraFrame + 1; i++)
+			{
+				addI = fi + (int)nonUniformList[i - 1];
+				ret = path1.EncodeNewNonLinV2(downloadedFrame[addI], &encodevar, core1PPC, encodeRefPPC, cf);
+				bufferedFrame.push_back(ret);
+				displayImage(ret);
+				ret.release();
+				
+				cout << "; fi-" << fi << " addI-" << addI << endl;
+			}
+			cout << chunkN << endl;
+			int sf = bufferedFrame.size() - (extraFrame);
+			int ef = bufferedFrame.size();
+			cout << "SAving-> sf:ef " << sf << " " << ef << endl;			
+			videowriterhelperxWithFileNameWithExtraSec(fileName, chunkN, extraSec, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
+
+		}
+
+
+	}
+
 }
 
 
@@ -1876,15 +2597,17 @@ void GenerateEncoding4AllDirectiontemp()
 	STOP;
 }
 
-void temp_calc(vector <float>& nonUniformList, float n)
-{	
-	for (int col = 1; col < 31; col++)
+void temp_calc(vector <float>& nonUniformList, float n, int extraFrame)
+{
+	float finalValue = n * 30;
+	float finalIndex = extraFrame;
+	for (int col = 1; col < extraFrame+1; col++)
 	{
 		float b = 1;
 		float x=col;
-		float a = float((30*n-30*b)/900.0f);
+		float a = float((finalValue-finalIndex*b)/(finalIndex*finalIndex));
 		int u_x = a * x*x+b*x;
-		//cout<<"Nonuniform list->" <<"after90Index= "<< x << "  NonuniformIndex=" << u_x<<endl;
+		cout<<"Nonuniform list->" <<"after90Index= "<< x << "  NonuniformIndex=" << u_x<<endl;
 		nonUniformList.push_back(u_x);
 
 	}
@@ -1943,7 +2666,8 @@ void makeVideo4thSecVar(float pan, float tilt)
 
 	vector <float> nonUniformList;
 	float howManySecondsfor4thSec = 5;
-	temp_calc(nonUniformList, howManySecondsfor4thSec);
+	int extraFrame = 30;
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrame);
 	float addI;
 	for (int fi = 0; fi < 640; fi++)
 	{
@@ -2172,13 +2896,71 @@ void videowriterhelperx(int chunkN , float pan, float tilt, int fps,int cols, in
 	
 	
 	std::ostringstream oss1;
-	oss1 << filename << chunkN <<"_"<<tilt<<"_"<<pan<< ".avi";
+	oss1 << chunkN <<"_"<<tilt<<"_"<<pan<< ".avi";
 	string ofilename = oss1.str();
 	VideoWriter writer1;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
 	writer1.set(VIDEOWRITER_PROP_QUALITY, 10);
 	cout << writer1.get(VIDEOWRITER_PROP_QUALITY);
 	cout << "Writing videofile: " << ofilename << codec << endl;	
+	writer1.open(ofilename, codec, fps, Size(cols, rows), true);
+
+	if (!writer1.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+	for (int i = starting_frame; i < ending_frame; i++)
+	{
+		writer1.write(file2wr[i]);
+
+	}
+	writer1.release();
+
+
+}
+
+void videowriterhelperxWithFileName(char* filename, int chunkN, float pan, float tilt, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr)
+{
+
+
+	std::ostringstream oss1;
+	oss1 << filename << chunkN << "_" << tilt << "_" << pan << ".avi";
+	string ofilename = oss1.str();
+	VideoWriter writer1;
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	writer1.set(VIDEOWRITER_PROP_QUALITY, 10);
+	cout << writer1.get(VIDEOWRITER_PROP_QUALITY);
+	cout << "Writing videofile: " << ofilename << endl;
+	writer1.open(ofilename, codec, fps, Size(cols, rows), true);
+
+	if (!writer1.isOpened())
+	{
+		cerr << "Could not open the output video file for write\n";
+		return;
+	}
+	for (int i = starting_frame; i < ending_frame; i++)
+	{
+		writer1.write(file2wr[i]);
+
+	}
+	writer1.release();
+
+
+}
+
+void videowriterhelperxWithFileNameWithExtraSec(char* filename, int extraSec, int chunkN, float pan, float tilt, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr)
+{
+
+
+	std::ostringstream oss1;
+	oss1 << filename << chunkN << "_" << extraSec<<"_"<< tilt << "_" << pan << ".avi";
+	string ofilename = oss1.str();
+	VideoWriter writer1;
+	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+	writer1.set(VIDEOWRITER_PROP_QUALITY, 10);
+	cout << writer1.get(VIDEOWRITER_PROP_QUALITY);
+	cout << "Writing videofile: " << ofilename <<endl;
 	writer1.open(ofilename, codec, fps, Size(cols, rows), true);
 
 	if (!writer1.isOpened())
@@ -2435,7 +3217,52 @@ void testvideodecodeNqual()
 
 
 }
+void createSmallTilesFromLongTiles(char* fileName)
+{
 
+	vector <Mat> frameS;
+	
+	int fps = 30;
+	int chunkD = 4;
+	
+	VideoCapture cap(fileName);
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		waitKey(100000);
+	}
+
+	for (int fi = 0; fi < 900; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+		if (fi > 450)
+		{
+			frameS.push_back(frame);
+		}
+
+	}
+
+	for (int i = 0; i < frameS.size(); i++)
+	{
+		if ((i+1)%(fps*chunkD)==0 && i>0)
+		{
+			int sf = i+1 - 120;
+			int ef =i+1;
+			int chunkN = (i + 1) / (fps * chunkD);
+			cout << "SAving-> sf:ef " << sf << " " << ef << endl;
+			videowriterhelperxWithFileName(fileName, chunkN, 0, 0, fps, frameS[1].cols, frameS[1].rows, sf, ef, frameS);
+
+		}
+
+	}
+}
 int testTiling() {
 	PPC camera1(cFoV, cameraW, cameraH);
 	PPC camera2(cFoV, cameraW, cameraH);
@@ -2632,6 +3459,110 @@ void testvideoendecodenew() {
 		writer1.write(conv[i]);
 	}
 	writer1.release();
+}
+
+void video4sBaseAndExtraSec(char* fileName4s, char* fileName1s, char* fileName2s, char* fileName3s) {
+
+	vector <Mat> frame4s1s;
+	vector <Mat> frame4s2s;
+	vector <Mat> frame4s3s;
+	int fps = 30;
+	int chunkD = 4;
+	int extra1sLength = 5;
+	int extra2sLength = 10;
+	int extra3sLength = 15;
+
+
+	VideoCapture cap(fileName4s);
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << endl;
+		waitKey(100000);
+	}
+	   
+	for (int fi = 0; fi < fps*chunkD; fi++)
+	{
+		Mat frame;
+		cap >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+		
+		frame4s1s.push_back(frame);
+		frame4s2s.push_back(frame);
+		frame4s3s.push_back(frame);
+		
+	}
+
+	VideoCapture cap1s(fileName1s);
+	for (int fi = 0; fi < extra1sLength; fi++)
+	{
+		Mat frame;
+		cap1s >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+
+		frame4s1s.push_back(frame);
+
+	}
+
+	VideoCapture cap2s(fileName2s);
+	for (int fi = 0; fi < extra2sLength; fi++)
+	{
+		Mat frame;
+		cap2s >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+
+		frame4s2s.push_back(frame);
+
+	}
+
+	VideoCapture cap3s(fileName3s);
+	for (int fi = 0; fi < extra3sLength; fi++)
+	{
+		Mat frame;
+		cap3s >> frame;
+		if (frame.empty())
+		{
+			cout << fi << endl;
+			cout << "Can not read video frame: " << endl;
+			break;
+		}
+
+		frame4s3s.push_back(frame);
+
+	}
+
+	
+	int sf = frame4s1s.size() - (fps*chunkD+extra1sLength);
+	int ef = frame4s1s.size();
+	cout << "SAving-> sf:ef " << sf << " " << ef << endl;
+	videowriterhelperxWithFileNameWithExtraSec(fileName4s, 100, extra1sLength, 0, 0, fps, frame4s1s[1].cols, frame4s1s[1].rows, sf, ef, frame4s1s);
+
+	sf = frame4s2s.size() - (fps*chunkD + extra2sLength);
+	ef = frame4s2s.size();
+	cout << "SAving-> sf:ef " << sf << " " << ef << endl;
+	videowriterhelperxWithFileNameWithExtraSec(fileName4s, 200, extra2sLength, 0, 0, fps, frame4s1s[2].cols, frame4s1s[2].rows, sf, ef, frame4s2s);
+
+
+	sf = frame4s3s.size() - (fps*chunkD + extra3sLength);
+	ef = frame4s3s.size();
+	cout << "SAving-> sf:ef " << sf << " " << ef << endl;
+	videowriterhelperxWithFileNameWithExtraSec(fileName4s, 300, extra3sLength, 0, 0, fps, frame4s1s[3].cols, frame4s1s[3].rows, sf, ef, frame4s3s);
+
+	
 }
 
 

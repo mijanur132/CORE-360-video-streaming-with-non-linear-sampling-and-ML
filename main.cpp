@@ -28,9 +28,9 @@ int main()
 	//testPlayBackHMDPathVideoPixelInterval();   //play only one frame of the video
 	//testTiling();
 	//testViewDirectionAvgRotation();
-	//testWriteh264();
+	//Writeh264VideoUptoNframes();
 	
-	//testtilevideo();
+	
 	
 	//testBoundingBox();
 
@@ -50,15 +50,20 @@ int main()
 	//testWriteh264tiles();
 	//GenerateEncoding4AllDirection();
 	//testvideodecodeNqual();
-	//GenerateEncoding4sVarSpecificPanTiltChunk();
 	//GenerateEncodingRegularSpecificPanTiltChunk();
-	testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
+
+	//GenerateEncoding4sVarSpecificPanTiltChunk();
+	
+	//testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
 										//second 0 for only default output, 1 if we want to calculate sampling rate 
 										//and frame rate values: mx, min and average over all the frames of the video
 	
 										
 	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
-	
+	testDownloadVideoHttpTile(1, 1);
+	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_9_24.AVI");
+	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_15_24.AVI");
+	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_14_24.AVI");
 	
 	system("pause");
 	return 0;

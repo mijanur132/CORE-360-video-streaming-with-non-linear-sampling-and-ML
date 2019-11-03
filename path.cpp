@@ -1966,11 +1966,9 @@ void Path::WriteH264(char* fname, int lastFrame, int codec)
 		return;
 	}
 
-	cout << "Quality: " << writer.get(VIDEOWRITER_PROP_QUALITY)<<endl;
 
 	cout << "Writing videofile: " << filename << endl;
 
-	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
 	for (int fi = 0; fi <= lastFrame; fi++)
 	{
@@ -1984,11 +1982,10 @@ void Path::WriteH264(char* fname, int lastFrame, int codec)
 			return;
 		}
 		
+
 		writer.write(frame);		
 	}
-	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	//auto duration = duration_cast<microseconds>(t2 - t1).count();
-	//cout << "time single: " << duration << endl;
+
 	writer.release();
 
 }
