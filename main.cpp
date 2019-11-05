@@ -52,18 +52,17 @@ int main()
 	//testvideodecodeNqual();
 	//GenerateEncodingRegularSpecificPanTiltChunk();
 
-	//GenerateEncoding4sVarSpecificPanTiltChunk();
+	//GenerateEncoding4sVarSpecificPanTiltChunk();																		//dl//extraSec
 	
-	//testDownloadVideoHttp4thSecVar(1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
+	testDownloadVideoHttp4thSecVar(1,1, "http://127.0.0.5:80/3vid2crf3trace/1s/4s1s/diving", "./bwLogs/bw1962kB.txt", "./Video/source/diving.txt",1,1); //0 for fixed direction test 1 for hmd data sets variable direction test,
 										//second 0 for only default output, 1 if we want to calculate sampling rate 
 										//and frame rate values: mx, min and average over all the frames of the video
-	
+	//testDownloadVideoHttp4thSecVar(1, 1, "http://127.0.0.5:80/3vid2crf3trace/1s/4s1s/roller", "./bwLogs/bw235kB.txt", "./Video/source/roller.txt", 2, 5, 1); //0 for fixed direction test 1 for hmd data sets variable direction test,
 										
 	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
-	testDownloadVideoHttpTile(1, 1);
-	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_9_24.AVI");
-	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_15_24.AVI");
-	//createSmallTilesFromLongTiles("./Video/Tiles/diving/20/24/diving_original.mkv1145656920_14_24.AVI");
+	//testDownloadVideoHttpTile(1, 1);
+	//createSmallTilesFromLongTiles("./Video/Tiles/roller/20/24/roller.mkv1145656920_0_24.AVI");
+	
 	
 	system("pause");
 	return 0;

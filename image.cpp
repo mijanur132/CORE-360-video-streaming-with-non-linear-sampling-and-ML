@@ -51,6 +51,20 @@ void displayImage(Mat ret1)
 
 }
 
+void displayImage33ms()
+{
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - startDisplaying;
+	while (elapsed.count()*1000 < 33)
+	{
+		finish = std::chrono::high_resolution_clock::now();
+		elapsed = finish - startDisplaying; 
+		//cout << "While we are wasting time...........................wait--->" << endl;
+	}
+	cout << "imTime=" << elapsed.count()*1000 << endl;
+	startDisplaying = std::chrono::high_resolution_clock::now();
+}
+
 //................................... http.................................//
 string datax;
 size_t download(char* buf, size_t size, size_t nmemb, void* userP)
@@ -329,7 +343,7 @@ string getChunkNametoReqnRefCamOptimized(PPC &camera1, M33 & reriCS, string srcB
 	//reqtilt = -10;  //dlt 
 	//reqpann = 0;    //dlt
 
-	oss1 << srcBaseAddr << "_" << chunkN << "_" << reqtilt << "_" << reqpann << ".mp4";
+	oss1 << srcBaseAddr << "_" << chunkN << "_" << reqtilt << "_" << reqpann << ".avi";
 	PPC camera = camera1;
 	//cout <<"ref cam direction"<< camera1.GetVD() << endl;
 	camera.Pan(reqpann);
@@ -448,7 +462,7 @@ void LoadBWTraceData(char* filename)
 
 }
 
-void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate)
+void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec,int extraSec)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	vector <Mat> conv;
@@ -459,41 +473,48 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	Path path1;
 	float var[10];
 	vector<float> frameRate4allFrames;
-	string srcBaseAddr;
+	//string srcBaseAddr;
 
-	float howManySecondsfor4thSec = 5;
-	int extraFrameN = 30;
+	float howManySecondsfor4thSec = extraSec;
+	int extraFrameN =5*extraSec;
 	int mxChunkN = 5;// var[4];
 	int chunkD = 4;//var[5]; //read from variable	
-	int nextDlChunkSec = 1;
-	int chunkSizeKB = 500;
+	//int nextDlChunkSec = 1;
+	vector<float> chunkSizeKB; 
+	chunkSizeKB.push_back(0);
+	chunkSizeKB.push_back(1*1024);
+	chunkSizeKB.push_back(1*1024);
+	chunkSizeKB.push_back(1*1024);
+	chunkSizeKB.push_back(1*1024);
+	chunkSizeKB.push_back(1 * 1024);
+	chunkSizeKB.push_back(1 * 1024);
 
 
-	LoadBWTraceData("./bwLogs/Tmobile3g235kB.txt"); //check inside for scaling up and down. There is a multiplication factor there.
+	//LoadBWTraceData("./bwLogs/Tmobile3g235kB.txt"); 
+	LoadBWTraceData(bwLog);
 	string datax = fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/diving/4kDivingEncodingVariable.txt");
 	if (singleOrVariableVD == 1) {
-		 srcBaseAddr = "http://127.0.0.5:80/3vid2crf3trace/cr40/rollerCR40";
+		// srcBaseAddr = "http://127.0.0.5:80/3vid2crf3trace/cr40/rollerCR40";
 	}
 	else {
-		 srcBaseAddr = "http://127.0.0.5:80/4thSecVar/diving/tempAndroid/4s/divingCR40";
+		// srcBaseAddr = "http://127.0.0.5:80/4thSecVar/diving/tempAndroid/4s/divingCR40";
 	}
 	
 
-	char* hmdFileName;
+	//char* hmdFileName;
 	if (singleOrVariableVD == 1) {
 		//hmdFileName = "./Video/source/roller.txt";
-		hmdFileName = "./Video/source/roller.txt";
+	//	hmdFileName = "./Video/source/roller.txt";
 	}
 	else {
-		hmdFileName = "./Video/source/rollerSingleVD.txt";
+		//hmdFileName = "./Video/source/rollerSingleVD.txt";
 	}
 	
 	
 	vector <float> nonUniformList;
-	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN);
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN+1);  //n datapoint e n-1 gap hoy, ajonno +1 add koresi jate n ta gap e hoy
 
-	STOP;
-	
+		
 	/*IMP*/	
 	std::istringstream f(datax);
 	std::string line;
@@ -580,16 +601,24 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	int bwDuration;
 	int bwIglobal;
 	int packetNeeded;
+	int bwShift = 0;
+	if (!strcmp(bwLog, "./bwLogs/bw235kB.txt"))
+	{
+		bwShift = 15000;
+		cout << "bwShift" << endl;
+	}
+	
 	//************* BW simulation****************//
 	if (samplingValueCalculate == 1)
 	{
-		 bwDuration = elapsed1.count() * 1000;
+		bwDuration = elapsed1.count() * 1000 + bwShift;
 		 bwIglobal = 0;
 		while (bwDuration > byteVec[bwIglobal]) {
 			bwIglobal++;
 		}
 
-		packetNeeded = chunkSizeKB * 1024 / 1500;  //500 KB file size approximate
+		cout << "pckSize: " << chunkSizeKB[chunkN] << endl;
+		packetNeeded = chunkSizeKB[chunkN] * 1024 / 1500;  //500 KB file size approximate
 		bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 		cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
 		
@@ -597,18 +626,22 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 
 	//************* BW simulation****************//
 	   
-	cout << elapsed1.count() << " " << bwTimeNeeded << endl;	
+	cout << "First DL req Time:------>" << elapsed1.count() << " bwStartIndx---> " <<bwIglobal<<" bwEndIndex-->"<< bwIglobal+ bwTimeNeeded << endl;
+	auto playStart = std::chrono::high_resolution_clock::now();
+	
 	DownLoadChunk4thSecVar(filename, chunkD, fps,extraFrameN, bwTimeNeeded, chunkN);
+	//futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, chunkN));
 	int returningFromExtra = 0;
 	while (NextChunkDownloaded == 0)
 	{
-		displayImage(firstScene);
+		//displayImage(firstScene);
 	}
 	Mat convPixels(camera2.h, camera2.w, firstScene.type());
 	Mat samplingPixels(camera2.h, camera2.w, firstScene.type());
 	cout << camera2.h << " cam " << camera2.w << endl;
 	frameCount = -1;
-	auto playStart = std::chrono::high_resolution_clock::now();
+
+	int firstPlayTime;
 	while (condition)
 	{
 		
@@ -625,7 +658,8 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 		}
 		int playIndex= frameCount-(currentChunk-1)* (fps*chunkD); //0-(fps*chunkD-1)
 		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex <<" "<<NextChunkDownloaded<< endl;
-		if (currentChunk == NextChunkDownloaded)
+		//cout << frameCount << endl;
+		if (currentChunk <= NextChunkDownloaded)
 		{
 			Mat frame;				
 			frame = frameQvec[currentChunk][playIndex];			
@@ -635,25 +669,26 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			
 			if (samplingValueCalculate==1)
 			{ 
-				path1.CRERI2ConvOptimizedWithSamplingRate(frame, var, eri, reriCS, convPixels, samplingPixels, compressionFactor, path1.cams[cam_index], refCam);
-				outputSamplingRate2Save.push_back(samplingPixels.clone());
-				frameRate4allFrames.push_back(1);
 				if (frameCount < 1)
 				{
 					auto firstFrame = std::chrono::high_resolution_clock::now();
-					 std::chrono::duration<double> elapsed = firstFrame-start;
-					 cout << "Time=..............>" << elapsed.count()*1000 << endl;
+					std::chrono::duration<double> elapsedFirst = firstFrame - start;
+					firstPlayTime = elapsedFirst.count() * 1000;
+					playStart = std::chrono::high_resolution_clock::now();
+
 				}
+				path1.CRERI2ConvOptimizedWithSamplingRate(frame, var, eri, reriCS, convPixels, samplingPixels, compressionFactor, path1.cams[cam_index], refCam);
+				outputSamplingRate2Save.push_back(samplingPixels.clone());
+				frameRate4allFrames.push_back(1);
+				
 			}
 			else {
 				path1.CRERI2ConvOptimized(frame, var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
 			
-			}
+			}			
 			
-			
-			
-			displayImage(convPixels);
-			//displayImage(samplingPixels);
+			//displayImage(convPixels);	
+			displayImage33ms();
 			outputFrame2SAve.push_back(convPixels.clone());
 
 
@@ -670,15 +705,17 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				if (samplingValueCalculate == 1)
 				{
 					//************* BW simulation****************//
-					bwDuration = elapsed1.count() * 1000;
+					bwDuration = elapsed1.count() * 1000+ bwShift;
 					while (bwDuration > byteVec[bwIglobal]) {
 						bwIglobal++;
 					}
+					packetNeeded = chunkSizeKB[reqChunkN] * 1024 / 1500;
+					cout << "pckSize: " << chunkSizeKB[reqChunkN] << endl;
 					bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 
 				   //************* BW simulation****************//
 				}
-				
+				cout << "Later DLs req Time:------>" << elapsed1.count() << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
 				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps,extraFrameN, bwTimeNeeded, reqChunkN));
 
 			}
@@ -691,8 +728,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			auto playFinish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> playElapsed = playFinish - playStart;
 			cout << "Total Play Time:................> " << playElapsed.count()*1000 << endl;
-			condition = 0;
-			STOP;
+			condition = 0;			
 				
 		}
 		
@@ -704,16 +740,20 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			int index2 = nonUniformList[after90Index + 1];
 			
 			int diffIndex = index2 - index;
-			
+			if (diffIndex>100 || diffIndex<0)
+			{
+				condition=0;
+					break;
+			}
 			for (int i = 0; i < diffIndex; i++)
 			{
 				if (i > 0) {
 					frameCount++;
 				}
 				currentChunk = (frameCount) / (fps*chunkD)+1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
-			
 				playIndex = frameCount - (currentChunk-1) * (fps*chunkD);
-				cout << "119CuntChunkN=" << currentChunk-1 << " frmcount=" << frameCount << " plCnt=" << playIndex <<" after90indx="<<119+index<<" "<<NextChunkDownloaded<< endl;
+				//cout << "119CuntChunkN=" << currentChunk-1 << " frmcount=" << frameCount << " plCnt=" << playIndex <<" after90indx="<<index<<" "<<NextChunkDownloaded<< endl;
+				cout << frameCount << endl;
 				cam_index = path1.GetCamIndex(frameCount-1, fps, cam_index);
 				
 				if (samplingValueCalculate == 1)
@@ -721,7 +761,6 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 					path1.CRERI2ConvOptimizedWithSamplingRate(frameQvec[currentChunk - 1][(fps*chunkD-1) + after90Index], var, eri, reriCS, convPixels, samplingPixels, compressionFactor, path1.cams[cam_index], refCam);
 					outputSamplingRate2Save.push_back(samplingPixels.clone());
 					float frameRateTemp = diffIndex;
-					//cout << "sampling less than 1: " << frameRateTemp << endl;
 					frameRate4allFrames.push_back(frameRateTemp);
 				}
 				else {
@@ -731,9 +770,9 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				
 				//cout<<frameQvec[currentChunk - 1].size() << endl;
 				
-				displayImage(convPixels);
-				outputFrame2SAve.push_back(convPixels.clone());				
-				//displayImage(samplingPixels);
+				//displayImage(convPixels);
+				displayImage33ms();
+				outputFrame2SAve.push_back(convPixels.clone());	
 				if (playIndex == (fps*(chunkD-nextDlChunkSec)))
 				{
 					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
@@ -747,16 +786,18 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 					//************* BW simulation****************//
 					if (samplingValueCalculate == 1)
 					{
-						bwDuration = elapsed1.count() * 1000;
+						bwDuration = elapsed1.count() * 1000+bwShift;
 						while (bwDuration > byteVec[bwIglobal]) {
 							bwIglobal++;
 						}
+						cout << "pckSize: " << chunkSizeKB[reqChunkN] << endl;
+						packetNeeded = chunkSizeKB[reqChunkN] * 1024 / 1500;
 						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 					}
 
 
 				   //************* BW simulation****************//
-					cout << elapsed1.count() << " third " << bwTimeNeeded << endl;
+					//cout << elapsed1.count() << " third " << bwTimeNeeded << endl;
 					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
 					
 					
@@ -770,10 +811,10 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 
 	}
 
-	auto playFinish = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> playElapsed = playFinish - playStart;
-	cout << "Total Play Time:................> " << playElapsed.count() * 1000 << endl;
-	
+	auto playFinishAll = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> playElapsed = playFinishAll - playStart;
+	cout << "FPS:................> " << playElapsed.count() * 1000/frameCount << endl;
+	cout << "Frist frame Appear Time=..............>" << firstPlayTime << endl;
 	vector<int>frameWiseMin;
 	vector<int>frameWiseMax;
 	vector<int>frameWiseAvg;
@@ -794,7 +835,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			}
 		}
 
-		cout << "Minimum Sampling Rate: " << minTemp << " averageSamplingRate: " << totalTemp / frameRate4allFrames.size() << endl;
+		cout << "Minimum Frame Rate: " << minTemp << " averageFrameRate: " << totalTemp / frameRate4allFrames.size() << endl;
 					
 
 		float overallMin = 10;
@@ -842,7 +883,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			frameWiseAvg.push_back(avg);
 			
 		}	
-		cout << "overall: " << "min-> " << overallMin << " max-> " << overallMax << " avg->" << ovrallAvgTotal / frameWiseAvg.size() << endl;
+		cout << "overall Pixel Sampling RAte: " << "min-> " << overallMin << " max-> " << overallMax << " avg->" << ovrallAvgTotal / frameWiseAvg.size() << endl;
 	}
 
 	int sf = 0;
@@ -1188,11 +1229,17 @@ void getTilesNumber2req(vector<int> & tileBitMap, PPC camera, ERI & eri, int m, 
 
 void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculate)
 {
-
+	auto start = std::chrono::high_resolution_clock::now();
 	Path path1;
 	float var[10];
 	/*IMP*/
-	LoadBWTraceData("./bwLogs/AttLteDriving646KB.txt"); //check inside for scaling up and down. There is a multiplication factor there.
+
+	vector<float> chunkSizeKB;
+	chunkSizeKB.push_back(0);
+	chunkSizeKB.push_back(100*1.024);
+	chunkSizeKB.push_back(110*1.024);
+
+	LoadBWTraceData("./bwLogs/bw646KB.txt"); //check inside for scaling up and down. There is a multiplication factor there.
 	string datax = fetchTextOverHttp("http://127.0.0.5:80/4thSecVar/diving/4kDivingEncodingVariable.txt");
 	string srcBaseAddr = "http://127.0.0.5:80/3vid2crf3trace/tiles/diving";
 	std::istringstream f(datax);
@@ -1214,7 +1261,7 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	char* hmdFileName;
 	if (singleOrVariableVD == 1) {
-		hmdFileName = "./Video/source/roller.txt";
+		hmdFileName = "./Video/source/diving.txt";
 	}
 	else {
 		hmdFileName = "./Video/source/rollerSingleVD.txt";
@@ -1261,7 +1308,7 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 	int bwIglobal;
 	int packetNeeded;
 	Mat convPixels(camera2.h, camera2.w, firstScene.type());
-	auto playStart = std::chrono::high_resolution_clock::now();
+	
 
 	Mat blankCanvas(frameRow, frameCol, firstScene.type());
 
@@ -1278,7 +1325,6 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 	int tileCond = 1;
 	int tileRowN = 4;
 	int tileColN = 6;
-	auto start = std::chrono::high_resolution_clock::now();
 
 	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
 	displayImage(firstScene);
@@ -1292,6 +1338,8 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 
 	getTilesNumber2req(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
 
+	auto playStart = std::chrono::high_resolution_clock::now();
+
 	for (int i = 0; i < tileRowN*tileColN; i++)
 	{
 		cout << i << "--" << tileBitMap[i] << endl;
@@ -1300,6 +1348,19 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
 			cout << filename << endl;
 			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			cout << "pckSize: " << chunkSizeKB[chunkN] << endl;
+			packetNeeded = chunkSizeKB[chunkN]*4 * 1024 / 1500; 
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+
 			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
 		}
 	}
@@ -1308,6 +1369,7 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 	int tileRowLen = frameRow / tileRowN;
 	cout << "t: " << tileColLen << " " << tileRowLen << endl;
 	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInside;
 	while (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
 	{
 		cout << "looping..." << endl;
@@ -1337,12 +1399,27 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 				{
 					//cout << i << "--" << tileBitMap2[i] << endl;
 					int reqChunkN = chunkN + 1;
-					if (tileBitMap2[i] == 1)
+					if (reqChunkN <= mxChunkN)
 					{
-						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
-						cout << filename << endl;
-						reqTiles[reqChunkN].push_back(i);
-						futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						if (tileBitMap2[i] == 1)
+						{
+							filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+							cout << filename << endl;
+							reqTiles[reqChunkN].push_back(i);
+							auto finish1 = std::chrono::high_resolution_clock::now();
+							std::chrono::duration<double> elapsed1 = finish1 - start;
+							bwDuration = elapsed1.count() * 1000;
+							bwIglobal = 0;
+							while (bwDuration > byteVec[bwIglobal]) {
+								bwIglobal++;
+							}
+
+							cout << "pckSize: " << chunkSizeKB[chunkN] << endl;
+							packetNeeded = chunkSizeKB[chunkN] * 4 * 1024 / 1500;
+							bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+							cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+							futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						}
 					}
 				}
 			}
@@ -1361,20 +1438,31 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 			}
 
 			Mat convPixelsTmp(camera2.h, camera2.w, firstScene.type());
-			//	eri.ERI2Conv4tiles(convPixelsTmp, frameQvecTiles, reqTiles, path1.cams[cam_index], tileColN, tileRowN, chunkN, i);
+			eri.ERI2Conv4tiles(convPixelsTmp, frameQvecTiles, reqTiles[chunkN], path1.cams[cam_index], tileColN, tileRowN, chunkN, i, totalInside);
+			//eri.ERI2Conv(blankCanvas, convPixelsTmp, path1.cams[cam_index]);
 			//	displayImage(blankCanvas);
-			auto finish = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> elapsed = finish - start;
-			cout << "Time=" << elapsed.count() * 1000 << endl;
-			start = finish;
-			eri.ERI2Conv(blankCanvas, convPixelsTmp, path1.cams[cam_index]);
 			displayImage(convPixelsTmp);
-			convPixelsTmp.release();
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed = finish - playStart;
+			cout << "Time=" << elapsed.count() * 1000 << endl;
+		
 
 		}
 		chunkN = chunkN + 1;
+		if (chunkN > mxChunkN)
+		{
+			tileCondition = 0;
+		}
 	}
-
+	long sumTotalInside;
+	for (int i = 0; i <totalInside.size();  i++)
+	{
+		sumTotalInside = sumTotalInside + totalInside[i];
+	}
+	cout << sumTotalInside << endl;
+	cout << totalInside.size()*camera2.w*camera2.h << endl;
+	double avgTotalInside = sumTotalInside /(double) (totalInside.size()*camera2.w*camera2.h);
+	cout << "avgTotalInside: " << avgTotalInside << endl;
 }
 
 
@@ -1982,7 +2070,7 @@ void GenerateEncoding4sVarSpecificPanTiltChunk()
 	fileName3s = "./Video/source/3s/diving.AVI3_5_-50_44.AVI";
 	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s); 
 	
-	*/
+	
 
 	fileName4s = "./Video/source/4sBase/rhino_1_-10_-80.AVI";
 	fileName1s = "./Video/source/1s/rhino.WEBM1_1_-10_-80.AVI";
@@ -2053,15 +2141,15 @@ void GenerateEncoding4sVarSpecificPanTiltChunk()
 	fileName2s = "./Video/source/2s/roller.MKV2_2_10_40.AVI";
 	fileName3s = "./Video/source/3s/roller.MKV3_2_10_40.AVI";
 	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
+	*/
 
-
-	fileName4s = "./Video/source/4sBase/roller_3_-10_-20.AVI";
-	fileName1s = "./Video/source/1s/roller.MKV1_3_-10_-20.AVI";
-	fileName2s = "./Video/source/2s/roller.MKV2_3_-10_-20.AVI";
-	fileName3s = "./Video/source/3s/roller.MKV3_3_-10_-20.AVI";
+	fileName4s = "./Video/source/4sBase/roller_3_-10_0.AVI";
+	fileName1s = "./Video/source/1s/roller.MKV1_3_-10_0.AVI";
+	fileName2s = "./Video/source/2s/roller.MKV2_3_-10_0.AVI";
+	fileName3s = "./Video/source/3s/roller.MKV3_3_-10_0.AVI";
 	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
 
-
+	/*
 	fileName4s = "./Video/source/4sBase/roller_4_-10_-40.AVI";
 	fileName1s = "./Video/source/1s/roller.MKV1_4_-10_-40.AVI";
 	fileName2s = "./Video/source/2s/roller.MKV2_4_-10_-40.AVI";
@@ -2087,8 +2175,8 @@ void GenerateEncoding4sVarSpecificPanTiltChunk()
 	fileName3s = "./Video/source/3s/roller.MKV3_5_-10_180.AVI";
 	video4sBaseAndExtraSec(fileName4s, fileName1s, fileName2s, fileName3s);
 
-
-	STOP;
+	*/
+	STOP;  
 	
 	int extraFrame;
 	int extraSec;
@@ -2112,11 +2200,11 @@ void GenerateEncoding4sVarSpecificPanTiltChunk()
 
 		}
 
-		char* fileName = "./Video/source/rhino.WEBM";
+		char* fileName = "./Video/source/roller.MKV";
 
-		int chunkN = 1;
+		int chunkN = 3;
 		float tilt = -10;
-		float pan = -80;
+		float pan = 0;
 		makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileName, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
 
 		/*
@@ -3242,7 +3330,7 @@ void createSmallTilesFromLongTiles(char* fileName)
 			cout << "Can not read video frame: " << endl;
 			break;
 		}
-		if (fi > 450)
+		if (fi > 0)
 		{
 			frameS.push_back(frame);
 		}

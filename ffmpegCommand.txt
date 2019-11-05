@@ -1,1 +1,1 @@
-ffmpeg -i "C:\inetpub\wwwroot\3vid2crf3trace\diving_10_10_40.mp4" -vcodec libx264 -crf 40 "C:\inetpub\wwwroot\3vid2crf3trace\cr40\divingCR40_10_10_40.mp4"
+ffmpeg -i "C:\inetpub\wwwroot\3vid2crf3trace\1s\4s1s\diving_1_10_-180.avi" -vcodec libx264 -crf 40 "C:\inetpub\wwwroot\3vid2crf3trace\\1s\4s1s\divingCR40_1_10_-180.avi"

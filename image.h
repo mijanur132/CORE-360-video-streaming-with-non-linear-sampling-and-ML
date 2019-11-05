@@ -62,7 +62,8 @@ void videowriterhelperx(int chunN, float pan, float tilt, int fps, int cols, int
 cv::Mat diffimgage(cv::Mat backgroundImage, cv::Mat currentImage);
 void getssim();
 void testDownloadVideoHttp(int singleOrVariableVD, int samplingValueCalculate);
-void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate);
+//void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate);
+void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec);
 void GenerateEncoding4AllDirection();
 void GenerateEncoding4sVarSpecificPanTiltChunk();
 void GenerateEncodingRegularSpecificPanTiltChunk();

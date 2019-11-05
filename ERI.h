@@ -52,6 +52,7 @@ public:
 	void xz2LonMap();
 	void xz2LatMap();
 	void LatLon2RowColMap();
+	int ERI2Conv4tiles(cv::Mat &output_image_mat, vector<vector<vector <cv::Mat>>> & frameQvecTiles, vector <int> & reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec);
 };
 
 

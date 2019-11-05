@@ -305,6 +305,47 @@ int ERI::ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
 	return 0;
 }
 
+int ERI::ERI2Conv4tiles(Mat &output_image_mat, vector<vector<vector <Mat>>> & frameQvecTiles, vector <int> & reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec)
+{
+	int pixelI, pixelJ = 0;
+	int tileColLen = 640;
+	int tileRowLen = 512;
+	int totalInside = 0;
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+			for (int i = 0; i < reqTiles.size(); i++)
+			{
+
+				int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+				int Ytile = floor(pixelI / tileRowLen);
+				int tileIndex = (Ytile)*m + Xtile;
+				//	cout << Xtile << " " << Ytile << endl;
+				if (tileIndex == reqTiles[i])
+				{
+					int newI = pixelI - Ytile * tileRowLen;
+					int newJ = pixelJ - (Xtile)* tileColLen;
+					//cout <<v<<" "<<u<<" "<< pixelI << " " << pixelJ << " " << newI << " " << newJ <<" "<<reqTiles[i]<< endl;
+					output_image_mat.at<cv::Vec3b>(v, u) = frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
+					totalInside++;
+					break;
+				}
+			}
+
+			//	output_image_mat.at<cv::Vec3b>(v, u) = source_image_mat.at<cv::Vec3b>(pixelI, pixelJ);
+
+		}
+	}
+	cout << "totalInside: " << totalInside << endl;
+	totalInsideVec.push_back(totalInside);
+
+	return 0;
+}
 
 
 int ERI::ERI2Convtemp(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
