@@ -75,3 +75,6 @@ void temp_calc(vector <float> &nonUniformList, float n, int extraFrame);
 void video4sBaseAndExtraSec(char* fileName4s, char* fileName1s, char* fileName2s, char* fileName3s);
 void createSmallTilesFromLongTiles(char* fileName);
 void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculate);
+void testBugInSR(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec);
+void run10simulations();
+void testCPUtime(string srcBaseAddr);

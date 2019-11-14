@@ -1,1 +1,4 @@
 ffmpeg -i "C:\inetpub\wwwroot\3vid2crf3trace\1s\4s1s\diving_1_10_-180.avi" -vcodec libx264 -crf 40 "C:\inetpub\wwwroot\3vid2crf3trace\\1s\4s1s\divingCR40_1_10_-180.avi"
+
+for /f "tokens=1 delims=." %a in ('dir /B *.avi') do ffmpeg -i "%a.avi" -vcodec libx264 -crf 40 "%a_40.avi"
+for /f "tokens=1" %a in ('dir /b') do ffmpeg -i "%a" -vcodec libx264 -crf 30 "%a_30.avi"

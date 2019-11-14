@@ -49,7 +49,8 @@ public:
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
 	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
 	void CRERI2ConvOptimized(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam);
-	void CRERI2ConvOptimizedWithSamplingRate(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat & convPixels, cv::Mat & samplingPixels, int compressionfactor, PPC camera1, PPC refcam);
+	void CRERI2ConvOptimizedWithSamplingRate(cv::Mat CRERI, float var[10], ERI& eri, M33& reriCS, cv::Mat& convPixels, cv::Mat& samplingPixels, int compressionfactor, PPC camera1, PPC refcam);
+	void CRERI2ConvOptimizedWithSamplingRateVec(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat& samplingPixels, vector <float> & srVec,  int compressionfactor, PPC camera1, PPC refcam);
 	void nonUniformListInit(float var[10]);
 	void mapx(float var[10]);
 	void calculateAllSamplingRateOverCreri(float var[10]);
