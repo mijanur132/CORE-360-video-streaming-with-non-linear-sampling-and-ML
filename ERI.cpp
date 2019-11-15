@@ -325,15 +325,16 @@ int ERI::ERI2Conv4tiles(Mat &output_image_mat, vector<vector<vector <Mat>>> & fr
 				int Xtile = floor(pixelJ / tileColLen); //m*n col and row
 				int Ytile = floor(pixelI / tileRowLen);
 				int tileIndex = (Ytile)*m + Xtile;
-				//	cout << Xtile << " " << Ytile << endl;
+				
 				if (tileIndex == reqTiles[i])
 				{
+					//cout << "XYtile: " << Xtile << " " << Ytile << endl;
 					int newI = pixelI - Ytile * tileRowLen;
 					int newJ = pixelJ - (Xtile)* tileColLen;
-					//cout <<v<<" "<<u<<" "<< pixelI << " " << pixelJ << " " << newI << " " << newJ <<" "<<reqTiles[i]<< endl;
-					output_image_mat.at<cv::Vec3b>(v, u) = frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
+					//cout<<"camY: " <<v<<"camX: "<<u<<" PxI: "<< pixelI << " PxJ: " << pixelJ << " tileI: " << newI << " tileJ:" << newJ <<" "<<reqTiles[i]<<" "<<i<< endl;
+					output_image_mat.at<cv::Vec3b>(v, u)=frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
 					totalInside++;
-					break;
+					
 				}
 			}
 
@@ -341,8 +342,8 @@ int ERI::ERI2Conv4tiles(Mat &output_image_mat, vector<vector<vector <Mat>>> & fr
 
 		}
 	}
-	cout << "totalInside: " << totalInside << endl;
-	totalInsideVec.push_back(totalInside);
+	//cout << "totalInside: " << totalInside << endl;
+	//totalInsideVec.push_back(totalInside);
 
 	return 0;
 }

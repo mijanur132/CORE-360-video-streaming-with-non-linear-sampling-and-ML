@@ -78,3 +78,4 @@ void testDownloadVideoHttpTile(int singleOrVariableVD, int samplingValueCalculat
 void testBugInSR(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec);
 void run10simulations();
 void testCPUtime(string srcBaseAddr);
+void testCPUtimeTiles(string fileName);
