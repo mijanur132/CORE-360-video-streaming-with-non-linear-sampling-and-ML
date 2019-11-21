@@ -305,45 +305,49 @@ int ERI::ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
 	return 0;
 }
 
-int ERI::ERI2Conv4tiles(Mat &output_image_mat, vector<vector<vector <Mat>>> & frameQvecTiles, vector <int> & reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec)
+int ERI::ERI2Conv4tiles(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totaloutsideVec)
 {
 	int pixelI, pixelJ = 0;
 	int tileColLen = 640;
 	int tileRowLen = 512;
-	int totalInside = 0;
+	int totaloutside = 0;
+
+	//cout << "reqtiles size at convfunction: " << reqTiles.size() << endl;
+
+	Mat mx;
 
 	for (int v = 0; v < camera1.h; v++)
 	{
 		for (int u = 0; u < camera1.w; u++)
 		{
-
 			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
 
-			for (int i = 0; i < reqTiles.size(); i++)
-			{
+			int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+			int Ytile = floor(pixelI / tileRowLen);
+			int tileIndex = (Ytile)*m + Xtile;
 
-				int Xtile = floor(pixelJ / tileColLen); //m*n col and row
-				int Ytile = floor(pixelI / tileRowLen);
-				int tileIndex = (Ytile)*m + Xtile;
-				
+			for (int i = 1; i < reqTiles.size(); i++)
+			{
 				if (tileIndex == reqTiles[i])
 				{
-					//cout << "XYtile: " << Xtile << " " << Ytile << endl;
 					int newI = pixelI - Ytile * tileRowLen;
-					int newJ = pixelJ - (Xtile)* tileColLen;
-					//cout<<"camY: " <<v<<"camX: "<<u<<" PxI: "<< pixelI << " PxJ: " << pixelJ << " tileI: " << newI << " tileJ:" << newJ <<" "<<reqTiles[i]<<" "<<i<< endl;
-					output_image_mat.at<cv::Vec3b>(v, u)=frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
-					totalInside++;
-					
+					int newJ = pixelJ - (Xtile)*tileColLen;
+					output_image_mat.at<cv::Vec3b>(v, u) = frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
+					totaloutside++;
 				}
+				
 			}
-
-			//	output_image_mat.at<cv::Vec3b>(v, u) = source_image_mat.at<cv::Vec3b>(pixelI, pixelJ);
-
 		}
 	}
-	//cout << "totalInside: " << totalInside << endl;
-	//totalInsideVec.push_back(totalInside);
+	for (int i = 1; i < reqTiles.size(); i++)
+	{	if (chunkN>1)
+			{
+				frameQvecTiles[reqTiles[i]][chunkN-1][fi] = mx;
+			}			
+	}
+
+	cout << "totaloutside: " << totaloutside << endl;
+	totaloutsideVec.push_back(totaloutside);
 
 	return 0;
 }

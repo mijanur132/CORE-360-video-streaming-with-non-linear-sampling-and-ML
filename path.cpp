@@ -1097,7 +1097,7 @@ void Path::CRERI2ConvOptimizedWithSamplingRateVec(Mat CRERI, float var[10], ERI&
 	}
 	float localAvg = totalSR / (camera1.h * camera1.w);
 	srVec.push_back(localAvg);
-	cout << "localAvg: " << localAvg << endl;
+	//cout << "localAvg: " << localAvg << endl;
 	return;
 }
 
@@ -2094,7 +2094,7 @@ void Path::WriteH264(char* fname, int lastFrame, int codec)
 void Path::WriteH264tiles(char* fname, int chunkN, int m, int n, int codec)
 {
 	
-	int chunkD = 4;
+	int chunkD = 1;
 	VideoCapture cap(fname);
 	if (!cap.isOpened())
 	{
@@ -2130,8 +2130,7 @@ void Path::WriteH264tiles(char* fname, int chunkN, int m, int n, int codec)
 		
 		
 	}
-
-
+	
 	int Npx = frame_width / m;
 	int Npy = frame_height / n;
 

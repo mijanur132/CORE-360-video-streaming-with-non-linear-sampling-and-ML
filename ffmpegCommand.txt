@@ -19,4 +19,4 @@ C:\Users\pmija\OneDrive\Desktop\temp\newfolder>ren "*.avi_30" "*."
 C:\Users\pmija\OneDrive\Desktop\temp\newfolder>ren "*.avi50_1000_0_0" "*.avi"
 
 list all file sizes:
-@For /f %A in ('dir /B') Do @Echo %~fA- %~zA >>filelist.txt
+@For /f %A in ('dir /B') Do @Echo %~fA %~zA >>chunkSizes.txt

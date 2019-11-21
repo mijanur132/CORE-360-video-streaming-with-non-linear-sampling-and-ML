@@ -80,3 +80,7 @@ void testBugInSR(int singleOrVariableVD, int samplingValueCalculate, char* srcBa
 void run10simulations();
 void testCPUtime(string srcBaseAddr);
 void testCPUtimeTiles(string fileName);
+void testNtileDecodeTimeSeperateVsOnAsingleFrame();
+void testCombineMultipleTileIntoSingleFrame();
+void testSeperateCoREinto4tiles();
+void testCoREtileDecodeTimeSeperateVsOnAsingleFrame();
