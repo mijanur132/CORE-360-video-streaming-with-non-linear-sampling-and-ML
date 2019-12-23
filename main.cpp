@@ -19,7 +19,7 @@ using namespace std::chrono;
 using namespace cv;
 
 
-int main()
+int main(int argc, char* argv[])
 {
 	//playstillmanually();
 	//testforwardbackward();
@@ -29,8 +29,8 @@ int main()
 	//testTiling();
 	//testViewDirectionAvgRotation();
 	//Writeh264VideoUptoNframes();
-	
-	
+	//
+	//STOP;
 	
 	//testBoundingBox();
 
@@ -41,6 +41,7 @@ int main()
 
 	//testbilinear();
 	//testEncodingDecoding();
+	//STOP;
 	//testrotationxyframe();
 	//out_video_file();
 	//testvideoendecodenew();
@@ -48,7 +49,17 @@ int main()
 	//testPlayBackHMDPathVideo();
 	//temp_calc();
 	//testWriteh264tiles();
-	//GenerateEncoding4AllDirection();
+	//STOP;
+	//makeVideo4thSecVar(10, 0); //reqtime=chunkN, avgSize=initial skip
+	/*
+	for (int i = 1; i < 5; i++)
+	{
+		makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/rhino.webm", 10, 0, i, 100); //reqtime=chunkN, avgSize=initial skip //0 for 1s, 10 for 4s
+	}
+	
+	STOP;
+		*/																															   //makeVideoRegularSpecificPanTiltChunkN("./Video/source/diving.avi", 10, 0, 1, 0); //reqtime=chunkN, avgSize=initial skip
+//	GenerateEncoding4AllDirection();
 	//testvideodecodeNqual();
 	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
 
@@ -57,9 +68,19 @@ int main()
 	//testSeperateCoREinto4tiles();
 	//testCoREtileDecodeTimeSeperateVsOnAsingleFrame();
 
-	testWriteh264tiles();
+	//testWriteh264tiles();
+	
+	/*
 
-	//STOP;
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 4, 400); //reqtime=chunkN, avgSize=initial skip
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 5, 400); //reqtime=chunkN, avgSize=initial skip
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 6, 400); //reqtime=chunkN, avgSize=initial skip
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 7, 400); //reqtime=chunkN, avgSize=initial skip
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 8, 400); //reqtime=chunkN, avgSize=initial skip
+	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 9, 400); //reqtime=chunkN, avgSize=initial skip
+	
+	*/
+
 
 	//testCombineMultipleTileIntoSingleFrame();
 	//testNtileDecodeTimeSeperateVsOnAsingleFrame();
@@ -68,22 +89,115 @@ int main()
 
 	
 	//GenerateEncodingRegularSpecificPanTiltChunk();
-	//GenerateEncoding4sVarSpecificPanTiltChunk();																		//dl//extraSec
+	//GenerateEncoding4sVarSpecificPanTiltChunk(10,10,1);																		//dl//extraSec
+	
+	//testSrAccrossSpecificFrame("http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving", "./bwLogs/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingS.txt", 2, 10, 1500);
+	//testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/rollerD.txt", 1, 4, 6);
+
+	//testDownloadVideoHttp4thSecVarAndroid("http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/android.txt", 2, 6,1500);
+	
+	//testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "./bwLogs/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/rollerD.txt", 1, 4, 6);
+	//STOP;
+	//Tiles:FoV
+	//testCPUtimeTiles("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/diving.avi");
+	//testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingD.txt", 1, 4, 6);
+	
+	GenerateEncoding4AllDirection();
+	
+	STOP;
+
+
+	/*
+	testDownloadVideoHttpTileBlankPixelMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "./bwLogs/bw646kB.txt", "./Video/source/diving.txt", 1, 4, 6);
+	testDownloadVideoHttpTileDelayMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/rhino.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/rhino.txt",  1, 4, 6);
+	testDownloadVideoHttpTileQualChngLineMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/roller.txt", 1, 4, 6);
+	
+	//FovPlus
+	testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "./bwLogs/bw646kB.txt", "./Video/source/diving.txt", 1, 4, 6);
+	testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/rhino.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/rhino.txt", 1, 4, 6);
+	testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/roller.txt", 1, 4, 6);
+	*/
 	
 	
-	//testDownloadVideoHttp4thSecVar(1, 1, "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving", "./bwLogs/bw646kB.txt", "./Video/source/diving.txt", 1, 3);
+	string videoFile(argv[1]);
+	const char* videoF = videoFile.c_str();
+	string bwFile(argv[2]);
+	const char* bwF = bwFile.c_str();
+	string dvFile(argv[3]);
+	const char* dvF = dvFile.c_str();
+	string argv4(argv[4]);
+	int functionSelect = stoi(argv4);
+	string argv5(argv[5]);
+	int reqTime = stoi(argv5);
+
+	string argv6(argv[6]);
+	int avgSize = stoi(argv6);
+
 	
 
+	if (functionSelect==1)
+	{
+		testDownloadVideoHttpTileBlankPixelMeasurementFoV((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+		
+	else if (functionSelect == 2)
+	{
+		testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+	else if (functionSelect == 3)
+	{
+		testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+
+	else if (functionSelect == 4)
+	{
+		testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+
+	else if (functionSelect == 5)
+	{
+		testDownloadVideoHttpTileDelayMeasurementFoV((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+
+	else if (functionSelect == 6)  //final
+	{
+		testDownloadVideoHttpTileDelayMeasurementFoVPlus((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+	else if (functionSelect == 7)  //final
+	{
+		testDownloadVideoHttpTileDelayMeasurementFoVOnly((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}
+	
+	else if (functionSelect == 11) 
+	{		
+		//testDownloadVideoHttp4thSecVarDelayFRmeasurement((char*)videoF, (char*)bwF, (char*)dvF, reqTime, 3,100);
+	}
+
+	else if (functionSelect == 12) //final
+	{
+		testDownloadVideoHttp4thSecVar((char*)videoF, (char*)bwF, (char*)dvF, reqTime, 6,avgSize);
+	}
+
+	else if (functionSelect == 13) {	
+		cout << "this one selected" << endl;
+		
+		makeVideoRegularSpecificPanTiltChunkN((char*)videoF, -180,10, 1, avgSize); //reqtime=chunkN, avgSize=initial skip
+	}
+
+
+	else { cout << "No option selected...." << endl; }
+	
+	
+		//testDownloadVideoHttpTileMeasurement((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
 										
-	//testDownloadVideoHttpTile("http://127.0.0.5:80/3vid2crf3trace/tiles/diving.avi", "./bwLogs/bw1962kB.txt", "./Video/source/diving.txt",4,4, 6);
-	//testDownloadVideoHttpTileMeasurement("http://127.0.0.5:80/3vid2crf3trace/tiles/crf30/diving.avi", "./bwLogs/bw1962kB.txt", "./Video/source/diving.txt", 1, 4, 6);
-//	testCPUtime("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf18/diving_1_10_-180.avi");
+	//testDownloadVideoHttpTile("http://127.0.0.5:80/3vid2crf3trace/tiles/diving.avi", "C:/inetpub/wwwroot/3vid2crf3trace/bwLogs/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/diving.txt",4,4, 6);
+	
+	//testCPUtime("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf18/diving_1_10_-180.avi");
 	//testCPUtimeTiles("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/diving.avi");
 	
 	
-	//run10simulations();
-	
-	system("pause");
+	//run10simulations();   
+		
 	return 0;
 }
 

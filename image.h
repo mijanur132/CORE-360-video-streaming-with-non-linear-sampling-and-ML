@@ -34,9 +34,9 @@ void testforwardbackward();
 void img_write(const char *s1, cv::InputArray s2);
 void playstillmanually();
 
-int out_video_file(cv::Mat &output_image_mat, ERI eri_image, Path path1);
+void SaveAtRandomText(int count, int argv[]);
 void check_interpolation();
-
+void timeInterval(std::chrono::time_point<std::chrono::high_resolution_clock> time);
 int testPlayBackHMDPathStillImage();
 int testPlayBackManualPathStillImage();
 int testPlayBackHMDPathVideo();
@@ -63,9 +63,14 @@ cv::Mat diffimgage(cv::Mat backgroundImage, cv::Mat currentImage);
 void getssim();
 void testDownloadVideoHttp(int singleOrVariableVD, int samplingValueCalculate);
 //void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate);
-void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec);
+void testDownloadVideoHttp4thSecVar(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size);
+void testDownloadVideoHttp4thSecVarAndroid(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size);
+void testSrAccrossSpecificFrame(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size);
+void testDownloadVideoHttp4thSecVarDelayFRmeasurement(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size);
 void GenerateEncoding4AllDirection();
-void GenerateEncoding4sVarSpecificPanTiltChunk();
+void GenerateEncoding4sVarSpecificPanTiltChunk(int pan, int tilt, int chunkN);
+void GenerateEncoding4sVarSpecificPanTiltChunk4mFileName();
+void EncodeVideoWithExtensionSpecificPanTiltChunkN(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec);
 void GenerateEncodingRegularSpecificPanTiltChunk();
 void GenerateEncoding4AllDirectiontemp();
 void testvideoEncodeNew4stemp(int chunDurationsec, float pan, float tilt, int chunkstart);
@@ -75,8 +80,19 @@ void temp_calc(vector <float> &nonUniformList, float n, int extraFrame);
 void video4sBaseAndExtraSec(char* fileName4s, char* fileName1s, char* fileName2s, char* fileName3s);
 void createSmallTilesFromLongTiles(char* fileName);
 void testDownloadVideoHttpTile(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
-void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+
+void testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+void testDownloadVideoHttpTileDelayMeasurementFoVOnly(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+void testDownloadVideoHttpTileDelayMeasurementFoVOnlyAndroid(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+
+void testDownloadVideoHttpTileDelayMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+void testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+
+void testDownloadVideoHttpTileBlankPixelMeasurementFoV(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+void testDownloadVideoHttpTileDelayMeasurementFoV(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+
 void testBugInSR(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec);
+void makeVideoRegularSpecificPanTiltChunkN(string fName, float pan, float tilt, int chunkN, int beginFrame);
 void run10simulations();
 void testCPUtime(string srcBaseAddr);
 void testCPUtimeTiles(string fileName);

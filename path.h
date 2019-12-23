@@ -25,7 +25,6 @@ public:
 	void PlayBackPathVideo(char* frame, cv::Mat convPixels, int lastFrame);
 	void PlayBackPathVideoPixelInterval(char* frame, cv::Mat convPixels, int lastFrame);
 	void LoadHMDTrackingData(char* fileName, PPC ppc0);
-	//void LoadVideoFile();
 	void ConvPixel2ERITile(char *fname, int lastFrame, int m, int n, int t);
 	void VDrotationAvg();
 	void WriteH264(char* fname, int lastFrame, int codec);
@@ -44,15 +43,23 @@ public:
 	void BuildERI2RERIVideo(cv::Mat origninalERI, PPC camera1);
 	void RotateXYaxisERI2RERI(cv::Mat origninalERI, cv::Mat& newERI, V3 pb, V3 pa, M33 reriCS);//direction based
 	void RotateXaxisERI2RERI(cv::Mat originERI, cv::Mat& newERI, PPC camera1);
-	void DrawBoundinigBoxframe(cv::Mat frame, PPC camera, float& pXl, float& pxr, float&pxu, float &pxd);
+	void DrawBoundinigBoxframe(cv::Mat & frame, PPC camera, float& pXl, float& pxr, float&pxu, float &pxd);
 	cv::Mat EncodeNewNonLinV2(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
+	cv::Mat EncodeNewNonLinV2Optimized(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
 	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
 	void CRERI2ConvOptimized(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam);
 	void CRERI2ConvOptimizedWithSamplingRate(cv::Mat CRERI, float var[10], ERI& eri, M33& reriCS, cv::Mat& convPixels, cv::Mat& samplingPixels, int compressionfactor, PPC camera1, PPC refcam);
 	void CRERI2ConvOptimizedWithSamplingRateVec(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat& samplingPixels, vector <float> & srVec,  int compressionfactor, PPC camera1, PPC refcam);
+	
+	void CRERI2ConvOptimizedWithSamplingRateVecMinAvg(cv::Mat CRERI, float var[10], ERI& eri, M33& reriCS, cv::Mat& samplingPixels, vector <float>& srVec, vector <float>& srVecMins, int compressionfactor, PPC camera1, PPC refcam); 
 	void nonUniformListInit(float var[10]);
+	void EncodingNonUniformListInit(float var[10]);
+	void CRERI2ConvOptimizedWithPerFrameSamplingRateVecMinAvg(cv::Mat CRERI, float var[10], ERI& eri, M33& reriCS, cv::Mat& samplingPixels, vector <float>& srVec, vector <float>& srVecMins, int compressionfactor, PPC camera1, PPC refcam);
+
 	void mapx(float var[10]);
+	void mapxEncoding(float var[10]);
+	
 	void calculateAllSamplingRateOverCreri(float var[10]);
 	cv::Mat CRERI2ConvQual(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
 	

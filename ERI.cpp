@@ -305,16 +305,17 @@ int ERI::ERI2Conv(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
 	return 0;
 }
 
-int ERI::ERI2Conv4tiles(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totaloutsideVec)
+int ERI::ERI2Conv4tiles(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInSideVec)
 {
 	int pixelI, pixelJ = 0;
 	int tileColLen = 640;
 	int tileRowLen = 512;
-	int totaloutside = 0;
+	int totalInSide = 0;
 
 	//cout << "reqtiles size at convfunction: " << reqTiles.size() << endl;
 
 	Mat mx;
+	
 
 	for (int v = 0; v < camera1.h; v++)
 	{
@@ -333,12 +334,13 @@ int ERI::ERI2Conv4tiles(Mat& output_image_mat, vector<vector<vector <Mat>>>& fra
 					int newI = pixelI - Ytile * tileRowLen;
 					int newJ = pixelJ - (Xtile)*tileColLen;
 					output_image_mat.at<cv::Vec3b>(v, u) = frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
-					totaloutside++;
+					totalInSide++;
 				}
 				
 			}
 		}
 	}
+	
 	for (int i = 1; i < reqTiles.size(); i++)
 	{	if (chunkN>1)
 			{
@@ -346,12 +348,376 @@ int ERI::ERI2Conv4tiles(Mat& output_image_mat, vector<vector<vector <Mat>>>& fra
 			}			
 	}
 
+	cout << "totalInSide: " << 100*totalInSide/(camera1.h*camera1.w) << endl;
+	totalInSideVec.push_back(100 * totalInSide / (camera1.h * camera1.w));
+
+	return 0;
+}
+
+int ERI::ERI2Conv4tilesTotalPixelBorderingQualChange(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<vector<float>>& qual)
+{
+	int pixelI, pixelJ = 0;
+	int tileColLen = 640;
+	int tileRowLen = 512;
+	int totalInSide = 0;
+
+	cout << "reqtiles size at convfunction: "<< endl;
+
+	Mat mx;
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			output_image_mat.at<cv::Vec3b>(v, u) = Vec3b(0, 0, 245);
+		}
+	}
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+			int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+			int Ytile = floor(pixelI / tileRowLen);
+			int tileIndex = (Ytile)*m + Xtile;
+
+			for (int i = 1; i < reqTiles.size(); i++)
+			{
+				if (tileIndex == reqTiles[i])
+				{
+					int newI = pixelI - Ytile * tileRowLen;
+					int newJ = pixelJ - (Xtile)*tileColLen;
+					output_image_mat.at<cv::Vec3b>(v, u) = Vec3b(150, 150, 150);// frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
+					totalInSide++;
+				}
+			
+			}
+				
+		}
+	}
+
+	int borderingPixel=0;
+	
+	for (int v = 2; v < camera1.h-2; v++)
+	{
+		for (int u = 2; u < camera1.w-2; u++)
+		{
+			if(output_image_mat.at<cv::Vec3b>(v, u)==Vec3b(0,0,245))
+			{
+				if (output_image_mat.at<cv::Vec3b>(v, u+1) == Vec3b(150, 150, 150) || output_image_mat.at<cv::Vec3b>(v, u - 1) == Vec3b(150, 150, 150) || output_image_mat.at<cv::Vec3b>(v - 1, u) == Vec3b(150, 150, 150) || output_image_mat.at<cv::Vec3b>(v + 1, u) == Vec3b(150, 150, 150))
+				{				
+				  borderingPixel++;			
+				}
+			}
+		}
+	}
+	cout <<" BorderingPixel:  "<< borderingPixel << endl;
+
+	for (int i = 1; i < reqTiles.size(); i++)
+	{
+		if (chunkN > 1)
+		{
+			frameQvecTiles[reqTiles[i]][chunkN - 1][fi] = mx;
+		}
+	}
+
+	
+//	totalInSideVec.push_back( borderingPixel);
+
+	return borderingPixel;
+}
+
+
+int ERI::ERI2Conv4tilesWithSrFrDelay(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, float& blankP, float& sRavG, float& sRmiN)
+{
+	int pixelI, pixelJ = 0;
+	int tileColLen = 640;
+	int tileRowLen = 512;
+	int totalInSide = 0;
+
+	//cout << "reqtiles size at convfunction: " << reqTiles.size() << endl;
+
+	Mat mx;
+
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		for (int u = 0; u < camera1.w; u++)
+		{
+			EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+			int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+			int Ytile = floor(pixelI / tileRowLen);
+			int tileIndex = (Ytile)*m + Xtile;
+
+			for (int i = 1; i < reqTiles.size(); i++)
+			{
+				if (tileIndex == reqTiles[i])
+				{
+					int newI = pixelI - Ytile * tileRowLen;
+					int newJ = pixelJ - (Xtile)*tileColLen;
+					output_image_mat.at<cv::Vec3b>(v, u) = frameQvecTiles[reqTiles[i]][chunkN][fi].at<cv::Vec3b>(newI, newJ);
+					totalInSide++;
+				}
+
+			}
+		}
+	}
+
+	for (int i = 1; i < reqTiles.size(); i++)
+	{
+		if (chunkN > 1)
+		{
+			frameQvecTiles[reqTiles[i]][chunkN - 1][fi] = mx;
+		}
+	}
+
+	totalInSide = 100.0f * totalInSide /(float) (camera1.h * camera1.w);
+	blankP = 100 - totalInSide;
+	sRavG = (100 - blankP);
+	sRmiN = 100;
+	if (blankP > 0)
+	{
+		sRmiN=0;
+	}
+
+	return 0;
+}
+
+int ERI::ERI2Conv4tilesQualChngLine(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalQualBorderVec, vector<int>& totalQualPopescuVec)
+{
+	int pixelI, pixelJ = 0;
+	int tileColLen = 640;
+	int tileRowLen = 512;
+	int totalQualBorder = 0;
+	int totalQualPopescu = 0;
+	int maxR8u = 0;
+	int maxR8d = 0;
+	int maxDnR = 0;
+	int maxDnL = 0;
+	int minUpLeft = camera1.w;
+	int minDownLeft = camera1.w;
+	int minLeftDown = camera1.h;
+	int minRightDown = camera1.h;
+	Mat mx;
+
+	for (int v = 0; v < camera1.h; v++)
+	{
+		int u = 0;
+		EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+		int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+		int Ytile = floor(pixelI / tileRowLen);
+		int tileIndex = (Ytile)*m + Xtile;
+		
+		for (int i = 1; i < reqTiles.size(); i++)
+		{
+			if (tileIndex == reqTiles[i])
+			{
+				//cout << "tileIndex: " << tileIndex << endl;
+				int newI = pixelI - Ytile * tileRowLen;
+				int newJ = pixelJ - (Xtile)*tileColLen;					
+				totalQualBorder++;	
+				if (v>maxDnL)
+				{
+					maxDnL = v;
+				}
+				if (v < minLeftDown - 1)
+				{
+					minLeftDown = v;
+				}
+			}
+
+		}
+	}
+	for (int v = 0; v < camera1.h; v++)
+	{
+		int u = camera1.w-1;
+		EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+		int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+		int Ytile = floor(pixelI / tileRowLen);
+		int tileIndex = (Ytile)*m + Xtile;
+		
+		for (int i = 1; i < reqTiles.size(); i++)
+		{
+			if (tileIndex == reqTiles[i])
+			{
+				//cout << "tileIndex: " << tileIndex << endl;
+				int newI = pixelI - Ytile * tileRowLen;
+				int newJ = pixelJ - (Xtile)*tileColLen;
+				totalQualBorder++;
+				if (v > maxDnR)
+				{
+					maxDnR = v;
+				}
+				if (v < minRightDown - 1)
+				{
+					minRightDown = v;
+				}
+			
+			}
+
+		}
+	}
+
+	for (int u = 0; u < camera1.w; u++)
+	{
+		int v = 0;
+		EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+		int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+		int Ytile = floor(pixelI / tileRowLen);
+		int tileIndex = (Ytile)*m + Xtile;
+		
+		for (int i = 1; i < reqTiles.size(); i++)
+		{
+			if (tileIndex == reqTiles[i])
+			{
+				//cout << "tileIndex: " << tileIndex << endl;
+				int newI = pixelI - Ytile * tileRowLen;
+				int newJ = pixelJ - (Xtile)*tileColLen;
+				totalQualBorder++;
+				if (u > maxR8u)
+				{
+					maxR8u = u;
+				}
+				if (u< minUpLeft)
+				{
+					minUpLeft = u;
+
+				}
+			}
+
+		}
+	}
+	for (int u = 0; u < camera1.w; u++)
+	{
+		int v = camera1.h - 1;
+		EachPixelConv2ERI(camera1, u, v, pixelI, pixelJ);
+
+		int Xtile = floor(pixelJ / tileColLen); //m*n col and row
+		int Ytile = floor(pixelI / tileRowLen);
+		int tileIndex = (Ytile)*m + Xtile;
+		
+		for (int i = 1; i < reqTiles.size(); i++)
+		{
+			if (tileIndex == reqTiles[i])
+			{
+				//cout << "tileIndex: " << tileIndex << endl;
+				int newI = pixelI - Ytile * tileRowLen;
+				int newJ = pixelJ - (Xtile)*tileColLen;
+				totalQualBorder++;
+				if (u > maxR8d)
+				{
+					maxR8d = u;
+				}
+				if (u < minDownLeft)
+				{
+					minDownLeft = u;
+
+				}
+			}
+
+
+		}
+	}
+
+	//cout << "maxDnL: " << maxDnL << "mxDnR: " << maxDnR << endl;
+	//cout << "maxR8u: " << maxR8u << "mxR8d: " << maxR8d << endl;
+	//cout << "minUpLeft: " << minUpLeft << "minDownLeft: " << minDownLeft << endl;
+	//cout << "minLeftDown: " << minLeftDown << "minRightDown: " << minRightDown << endl;
+
+	if (maxR8u != camera1.w-1 && maxR8d != camera1.w - 1)
+	{
+		totalQualPopescu = sqrt((maxR8u - maxR8d) * (maxR8u - maxR8d) + (camera1.h- 1) * (camera1.h - 1));
+		//cout << "lenX: " << len << endl;
+	}
+	if (maxDnL != camera1.h - 1 && maxDnR != camera1.h - 1)
+	{
+		totalQualPopescu = sqrt((maxDnL - maxDnR) * (maxDnL - maxDnR) + (camera1.w - 1) * (camera1.w - 1));
+		//cout << "lenY: " << len << endl;
+	}
+
+	if (minUpLeft!=0 && minDownLeft != 0)
+	{
+		totalQualPopescu = sqrt((minDownLeft - minUpLeft) * (minDownLeft - minUpLeft) + (camera1.h - 1) * (camera1.h - 1));
+		//cout << "lenminX: " << len << endl;
+	}
+
+	if (minLeftDown!=0 && minRightDown != 0)
+	{
+		totalQualPopescu = sqrt((minLeftDown - minRightDown) * (minLeftDown - minRightDown) + (camera1.w - 1) * (camera1.w - 1));
+		//cout << "lenminY: " << len << endl;
+	}
+
+	if (minLeftDown != 0 && minLeftDown != camera1.h && minUpLeft != 0 && minUpLeft !=camera1.w)
+	{
+		totalQualPopescu = sqrt((minLeftDown) * (minLeftDown)+(minUpLeft) * (minUpLeft));
+		//cout << "lenXY1: " << len << endl;
+	}
+
+	if (minRightDown != 0 && minRightDown != camera1.h && maxR8u != camera1.w - 1 && maxR8u !=0)
+	{
+		totalQualPopescu = sqrt((minRightDown) * (minRightDown) + (camera1.w - 1 - maxR8u) * (camera1.w - 1 - maxR8u));
+		//cout << "lenXY2: " << len << endl;
+	}
+
+	if (maxDnR != camera1.h-1 && maxR8d !=camera1.w-1 && maxDnR !=0 && maxR8d !=0 )
+	{
+		totalQualPopescu = sqrt((camera1.h-1- maxDnR) * (camera1.h-1 - maxDnR) + (camera1.w - 1-maxR8d) * (camera1.w - 1-maxR8d));
+		//cout << "lenXY3: " << len << endl;
+	}
+
+	if (maxDnL != camera1.h-1 && minDownLeft != 0 && minDownLeft != camera1.h && maxDnL !=0 )
+	{
+		totalQualPopescu = sqrt((camera1.h - 1-maxDnL) * (camera1.h - 1 - maxDnL) +(minDownLeft) * (minDownLeft));
+		//cout << "lenXY4: " << len << endl;
+	}
+
+	for (int i = 1; i < reqTiles.size(); i++)
+	{
+		if (chunkN > 1)
+		{
+			frameQvecTiles[reqTiles[i]][chunkN - 1][fi] = mx;
+		}
+	}
+	int diagon = sqrt((camera1.w * camera1.w) + (camera1.h * camera1.h));
+	float totalBorderLine = 100 * (2 * (camera1.h + camera1.w) - totalQualBorder) / (2 * (camera1.h + camera1.w));
+	float totalPopescu = totalQualPopescu;
+	//cout << "totaBorderlLine:......................................... " << totalBorderLine << endl;
+	//cout << "totaPopesculLine:........................................ " << totalPopescu << endl;
+	totalQualBorderVec.push_back(totalBorderLine);
+	totalQualPopescuVec.push_back(totalPopescu);
+
+	return 0;
+}
+
+int ERI::ERI2Conv4tilesDoNothing(Mat& output_image_mat, vector<vector<vector <Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totaloutsideVec)
+{
+	int pixelI, pixelJ = 0;
+	int tileColLen = 640;
+	int tileRowLen = 512;
+	int totaloutside = 0;
+
+	//cout << "reqtiles size at convfunction: " << reqTiles.size() << endl;
+
+	Mat mx;
+	
+	for (int i = 1; i < reqTiles.size(); i++)
+	{
+		if (chunkN > 1)
+		{
+			frameQvecTiles[reqTiles[i]][chunkN - 1][fi] = mx;
+		}
+	}
+
 	cout << "totaloutside: " << totaloutside << endl;
 	totaloutsideVec.push_back(totaloutside);
 
 	return 0;
 }
-
 
 int ERI::ERI2Convtemp(Mat &source_image_mat, Mat &output_image_mat, PPC camera1)
 {

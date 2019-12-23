@@ -129,13 +129,13 @@ void compute_quality_metrics(char * file1, char * file2, int block_size)
 
 	if (!img_src.data)                              // Check for invalid input
 	{
-		cout << "Could not open or find the image" << std::endl;
+		cout << "ssim:Could not open or find the image" << std::endl;
 		STOP;
 	}
 
 	if (!img_compressed.data)                              // Check for invalid input
 	{
-		cout << "Could not open or find the image2" << std::endl;
+		cout << "ssim:Could not open or find the image2" << std::endl;
 		STOP;
 	}
 

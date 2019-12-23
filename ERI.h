@@ -53,6 +53,10 @@ public:
 	void xz2LatMap();
 	void LatLon2RowColMap();
 	int ERI2Conv4tiles(cv::Mat &output_image_mat, vector<vector<vector <cv::Mat>>> & frameQvecTiles, vector <int> & reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec);
+	int ERI2Conv4tilesTotalPixelBorderingQualChange(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<vector<float>>& totalInsideVec);
+	int ERI2Conv4tilesWithSrFrDelay(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, float& blankP, float& sRavG, float& sRmiN);
+	int ERI2Conv4tilesDoNothing(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec);
+	int ERI2Conv4tilesQualChngLine(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec, vector<int>& totalQualPopescuVec);
 };
 
 

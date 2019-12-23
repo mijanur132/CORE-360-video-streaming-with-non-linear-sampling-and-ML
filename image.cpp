@@ -12,6 +12,7 @@
 #include <queue>
 #include<iostream>
 #include <filesystem>
+#include<math.h>
 
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>
@@ -36,7 +37,7 @@ int NextChunkDownloaded=0;
 int decodeCount=0;
 void makeVideo4thSecVarSpecificPanTiltChunkN(char* fileName, float pan, float tilt, int ChnkN, int extraFrame, int extraSec);
 void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec);
-void makeVideoRegularSpecificPanTiltChunkN(string fName, float pan, float tilt, int chunkN,int beginFrame);
+
 void videowriterhelperxWithFileNameWithExtraSec(char* filename, int extraSec, int chunkN, float pan, float tilt, int fps, int cols, int rows, int starting_frame, int ending_frame, vector<Mat> file2wr);
 void makeVideoRegularSpecificPanTiltChunkNAllSameFrame(string fileName, float pan, float tilt, int chunkN, int beginFrame);
 auto startDisplaying = std::chrono::high_resolution_clock::now();
@@ -55,6 +56,27 @@ void displayImage(Mat ret1)
 
 }
 
+void timeInterval(std::chrono::time_point<std::chrono::high_resolution_clock> start) {
+
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	cout << "time: " << elapsed.count() * 1000 << endl;
+}
+
+void SaveAtRandomText(int argc, int argv[])
+{
+	ofstream os1;
+	os1.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/RandomText.txt", std::ios::out | std::ios::app);
+	for (int i = 0; i < argc; i++)
+	{
+		os1 << argv[i] << ";";
+	}
+	os1 << endl;
+	os1.close();
+
+}
+
+
 void displayImage33ms()
 {
 	auto finish = std::chrono::high_resolution_clock::now();
@@ -65,7 +87,7 @@ void displayImage33ms()
 		elapsed = finish - startDisplaying; 
 		//cout << "While we are wasting time...........................wait--->" << endl;
 	}
-	cout << "displayingTime=" << elapsed.count()*1000 << endl;
+	//cout << "displayingTim......................................e=" << elapsed.count()*1000 << endl;
 	startDisplaying = std::chrono::high_resolution_clock::now();
 }
 
@@ -129,7 +151,7 @@ void DownLoadChunk4thSecVar(string filename, int chunkD, int fps, int extraFrame
 	auto start = std::chrono::high_resolution_clock::now();
 	Mat frame;
 	
- 	VideoCapture cap1(filename);
+ 	VideoCapture cap1("http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_1_10_0.avi");  /// just for android test, must replace with cap1(filename)
 
 	if (!cap1.isOpened())
 	{
@@ -226,7 +248,6 @@ void DownLoadTilesChunk(string filename, int chunkN, int chunkD, int tileN, int 
 	auto start = std::chrono::high_resolution_clock::now();
 	Mat frame;
 	cout << endl;
-	cout << "request for CN: " << chunkN << " tileN: " << tileN << endl;
 	VideoCapture cap1(filename);
 
 	if (!cap1.isOpened())
@@ -265,7 +286,7 @@ void DownLoadTilesChunk(string filename, int chunkN, int chunkD, int tileN, int 
 	decodeCount = 0;
 	//cout << " dl= " << chunkN << " " << frameQvec[tileN][chunkN].size() << endl;
 	cout << " Downloaded=" << filename << " NextChunkDownloaded= " << NextChunkDownloaded << endl;
-	cout << "Time forcasted and needed to load= " << timeNeededms << " " << elapsedms.count() << endl;
+	//cout << "Time forcasted and needed to load= " << timeNeededms << " " << elapsedms.count() << endl;
 	return;
 
 }
@@ -360,6 +381,29 @@ string getChunkNametoReqnRefCam(PPC &camera, string srcBaseAddr, int chunkN, V3 
 	camera.Tilt(reqtilt);	   
 	string ofilename = oss1.str();
 	return ofilename;
+}
+string getChunkNametoReqAndroid(PPC& camera1, M33& reriCS, string srcBaseAddr, int chunkN, int pan)
+{
+
+	std::ostringstream oss1;
+	oss1 << srcBaseAddr << "_" << chunkN << "_" << 0 << "_" << pan << ".avi";
+	filename = oss1.str();
+	cout << "ReqF=" << filename << endl;
+
+	PPC camera = camera1;
+	//cout <<"ref cam direction"<< camera1.GetVD() << endl;
+	camera.Pan(pan);
+	camera.Tilt(0);
+
+	V3 xaxis = camera.a.UnitVector();
+	V3 yaxis = camera.b.UnitVector() * -1.0f;
+	V3 zaxis = xaxis ^ yaxis;
+
+	reriCS[0] = xaxis;
+	reriCS[1] = yaxis;
+	reriCS[2] = zaxis;
+
+	return filename;
 }
 string getChunkNametoReqnRefCamOptimized(PPC &camera1, M33 & reriCS, string srcBaseAddr, int chunkN, V3 cameraDirection, int tiltAngle)
 {
@@ -512,13 +556,15 @@ void LoadBWTraceData(char* filename)
 		//byte = byte*25;
 		byteVec.push_back(byte);
 		//cout <<"bwTrace: "<< times << " " << byte << endl;
-		//cout <<"bwTrace: "<< byte << endl;
+	//	cout <<"bwTrace: "<< byte << endl;
 	}
 
 }
 
-void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCalculate, char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec)
+void testDownloadVideoHttp4thSecVarDelayFRmeasurement(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size)
 {
+	int singleOrVariableVD = 1;
+	int samplingValueCalculate = 1;
 	auto start = std::chrono::high_resolution_clock::now();
 	vector <Mat> conv;	vector <Mat> outputFrame2SAve;	vector<Mat> outputSamplingRate2Save;
 	vector<float> frameRate4allFrames;	vector <float>srVec; 	vector <float> nonUniformList;
@@ -527,8 +573,10 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	int compressionFactor = 5;	int frameStarted = 0;		int chunkN = 0;	int fps = 30;
 	float var[10];	float howManySecondsfor4thSec = extraSec;	int extraFrameN = 5 * extraSec;	int mxChunkN = 15;	int chunkD = 4;//
 
+	float minFR = 30.0f;
+
 	vector<float> chunkSizeKB; vector<string>chunkName;
-	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf40/chunkSizes.txt");
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf30/chunkSizes.txt");
 	if (!file1)
 	{
 		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
@@ -553,11 +601,11 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 		chunkSizeKB.push_back(KB);
 		chunkName.push_back(name);
 		
-		cout << name << " " << KB << endl;
+		//cout << name << " " << KB << endl;
 		
 	}
 
-	ifstream  file("./Video/source/4kDivingEncodingVariable.txt");
+	ifstream  file("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
 	if (!file)
 	{
 		print("error: can't open file: " << filename << endl);		system("pause");
@@ -580,7 +628,793 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	path1.LoadHMDTrackingData(hmdFileName, camera2);
 
 
-	Mat firstScene;	upload_image("./Video/source/startScene.PNG", firstScene);
+	Mat firstScene;	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+	Mat samplingPixels(camera2.h, camera2.w, firstScene.type());
+	cout << camera2.h << " cam " << camera2.w << endl;
+
+	int firstPlayTime;	int condition = 1;	int cam_index = 0;	int tiltAngle = 20;
+	string filename;
+	V3 VD;
+	int frameCount = 0;	int startIndex = 0;	int after90Index = -1; int noFind = 0;
+	int realFrameCount = 0;;
+	int minChunkAvgFR = 30;
+	std::vector<std::future<void>> futures;
+	int delayTotal = 0;
+
+	for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+	{
+		vector <Mat> temp;
+		for (int i = 0; i < (fps * chunkD + extraFrameN); i++)
+		{
+			Mat m;	temp.push_back(m);	m.release();
+		}
+		frameQvec.push_back(temp);
+	}
+
+
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN + 1);
+	LoadBWTraceData(bwLog);	eri.atanvalue();	eri.xz2LonMap();	eri.xz2LatMap();
+	path1.nonUniformListInit(var);		path1.mapx(var);
+	
+
+	cout << "Very first Chunk, no frame yet......" << endl;
+
+
+	cam_index = path1.GetCamIndex(1, fps, cam_index);		VD = path1.cams[cam_index].GetVD();
+	chunkN++;
+	filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkN, VD, tiltAngle);
+	cout << "ReqF=" << filename << endl;
+	
+	NextChunkDownloaded = 0;
+
+	auto finish1 = std::chrono::high_resolution_clock::now();	std::chrono::duration<double> elapsed1 = finish1 - start;
+	
+	int bwTimeNeeded = 200; int bwDuration;	int bwIglobal;	int packetNeeded;	int bwShift = 0;
+	//************* BW simulation****************//
+	if (samplingValueCalculate == 1)
+	{
+		bwDuration = elapsed1.count() * 1000 + bwShift;
+		bwIglobal = 0;
+		while (bwDuration > byteVec[bwIglobal]) {
+			bwIglobal++;
+		}
+		string name = filename;
+		cout << filename << endl;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '/');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		cout << name <<" "<< chunkName[0]<< endl;
+		int namePos = 0;
+		while((name.compare(chunkName[namePos])) && namePos <=152)
+		{
+			namePos++;
+		}
+		//packetNeeded = chunkSizeKB[namePos] *1024 / 1500; //1500 for diving
+		if (namePos==153)
+		{
+			noFind++;
+			cout << "noFind.............>>>"<<noFind << endl;
+			packetNeeded = 1620 * 1024 / 1500;
+			filename="http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_10_-10_-80.avi";
+
+		}
+		
+		bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+		cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+
+	}
+	//************* BW simulation****************//
+
+	cout << "First DL req Time:------>" << elapsed1.count() << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	DownLoadChunk4thSecVar(filename, chunkD, fps, extraFrameN, bwTimeNeeded, chunkN);
+
+	while (NextChunkDownloaded == 0)
+	{
+		displayImage(firstScene);
+	}
+
+	frameCount = -1;
+	while (condition)
+	{
+
+		frameCount++; 
+		realFrameCount++;
+		if (frameCount == (fps * chunkD * mxChunkN - 1 + 0))
+		{
+			condition = 0;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		if (currentChunk > mxChunkN + 1)
+		{
+			currentChunk = mxChunkN + 1;
+		}
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << " " << NextChunkDownloaded << endl;
+
+		if (playIndex == 30 && currentChunk > 1)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < 2; i++)
+			{
+				Mat m;		temp.push_back(m);	m.release();
+			}
+			frameQvec[currentChunk - 1] = temp;
+			cout << "memory erased..................." << endl;
+		}
+
+
+		if (currentChunk <= NextChunkDownloaded)
+		{
+			if (currentChunk == NextChunkDownloaded && currentChunk > 1)
+			{
+				if (ChngReriCS == 1)
+				{
+					reriCS = reriCScopy;cout << "reriCS updated............................" << endl;	ChngReriCS = 0;
+				}
+			}
+
+			Mat frame;	frame = frameQvec[currentChunk][playIndex];
+
+			after90Index = -1;
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			V3 vdTemp = path1.cams[cam_index].GetVD();			//cout<<"longt: "<<eri.GetXYZ2Longitude(vdTemp)<<endl;
+			
+			
+			if (frameCount < 1)
+			{
+				auto firstFrame = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<double> elapsedFirst = firstFrame - start; firstPlayTime = elapsedFirst.count() * 1000;
+				playStart = std::chrono::high_resolution_clock::now();
+
+			}
+			frameRate4allFrames.push_back(1);
+			Mat mx;
+			frameQvec[currentChunk][playIndex] = mx;
+		
+		
+
+			
+			displayImage33ms();
+
+
+			if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+			{
+				int reqChunkN = currentChunk + 1;
+				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+				reriCScopy = reriCS;
+				VD = path1.cams[cam_index].GetVD();
+
+				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+				cout << "New Req. " << filename << endl;
+				finish1 = std::chrono::high_resolution_clock::now();
+				elapsed1 = finish1 - start;
+				if (samplingValueCalculate == 1)
+				{
+					//************* BW simulation****************//
+					//bwDuration = elapsed1.count() * 1000+ bwShift; //real time spend
+					bwDuration = frameCount * 33 + firstPlayTime;   //forced assumption that all frame is 33ms play time, even though they are not.
+					while (bwDuration > byteVec[bwIglobal]) {
+						bwIglobal++;
+					}
+					string name = filename;
+					const char* nameChr = name.c_str();
+					const char* positionMarker = strrchr(nameChr, '/');
+					int start = int(positionMarker - nameChr) + 1;
+					name = name.substr(start, name.size() - start);
+					int namePos = 0;
+				
+					while ((name.compare(chunkName[namePos])) && namePos <= 152)
+					{
+						namePos++;
+					}
+				//	packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
+					if (namePos == 153)
+					{
+						noFind++;
+						cout << "noFind.............>>>" << noFind << endl;
+						packetNeeded = 1620 * 1024 / 1500;
+						filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_10_-10_-80.avi";
+
+					}
+					
+					bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+					//************* BW simulation****************//
+				}
+
+				cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+			}
+
+		}
+
+		if (after90Index >=( extraFrameN-1))
+		{
+			frameCount--;  //reverse framecount here, cause no frame came
+			currentChunk = (frameCount) / (fps * chunkD) + 1;
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			auto delayEnd = std::chrono::high_resolution_clock::now();;
+			std::chrono::duration<double> delayElapsed = delayEnd - delayStart;
+			int duration=delayElapsed.count()*1000;
+			while (duration < 33)
+			{
+				delayEnd = std::chrono::high_resolution_clock::now();;
+				delayElapsed = delayEnd - delayStart;
+				duration = delayElapsed.count() * 1000;
+			}
+			delayTotal = delayTotal + 33;
+			cout << "delayTotal: " << delayTotal << endl;
+		}
+
+		if (((currentChunk) > NextChunkDownloaded) && currentChunk > 1 && after90Index <extraFrameN-1)
+		{
+			after90Index++; //0->
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			int index = nonUniformList[after90Index];
+			int index2 = nonUniformList[after90Index + 1];
+
+			int diffIndex = index2 - index;
+			if (diffIndex > 100 || diffIndex < 0)
+			{
+				cout <<"diffIndex: "<< diffIndex << endl;
+				condition = 0;
+				break;
+			}
+			
+			if (30.0f/diffIndex<minFR)
+			{
+				minFR = 30.0f / diffIndex;
+			}
+			
+			realFrameCount++;
+			int chunkWiseFRMin = 30.0f*realFrameCount / frameCount;
+			if (chunkWiseFRMin < minChunkAvgFR)
+			{
+				minChunkAvgFR =chunkWiseFRMin;
+			}
+			cout << "diffIndex: " << diffIndex << "minFR: " << minFR <<"CWM: "<<chunkWiseFRMin<< endl;
+			
+			frameRate4allFrames.push_back(1);
+			for (int i = 0; i < diffIndex; i++)
+			{
+				if (i > 0) {
+					frameCount++;
+				}
+				currentChunk = (frameCount) / (fps * chunkD) + 1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
+				playIndex = frameCount - (currentChunk - 1) * (fps * chunkD);
+				cout << "119CuntChunkN=" << currentChunk - 1 << " frmcount=" << frameCount << " plCnt=" << playIndex << " after90indx=" << after90Index << " crntChnk: " << NextChunkDownloaded << endl;
+				//	cout << frameCount << endl;
+				cam_index = path1.GetCamIndex(frameCount - 1, fps, cam_index);
+				Mat frame1;
+				frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1) + after90Index];
+				float frameRateTemp = diffIndex;
+
+				displayImage33ms();
+				Mat mx1;
+				frameQvec[currentChunk - 1][(fps * chunkD - 1) + after90Index]=mx1;
+				if (playIndex == (fps * (chunkD - nextDlChunkSec)))
+				{
+					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
+
+					cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+					VD = path1.cams[cam_index].GetVD();
+					reriCScopy = reriCS;
+
+					filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+					cout << "NewR: " << filename << endl;
+					finish1 = std::chrono::high_resolution_clock::now();
+					elapsed1 = finish1 - start;
+					//************* BW simulation****************//
+					if (samplingValueCalculate == 1)
+					{
+						//bwDuration = elapsed1.count() * 1000+bwShift;
+						bwDuration = frameCount * 33 + firstPlayTime;   //forced assumption that all frame is 33ms play time, even though they are not.
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+						string name = filename;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+					}
+					cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+
+					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+
+				}
+
+
+			}
+
+		}
+		
+	}
+
+	auto playFinishAll = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> playElapsed = playFinishAll - playStart;
+	cout << "FPS:................> " << playElapsed.count() * 1000 / frameCount << endl;
+	cout << "Frist frame Appear Time=..............>" << firstPlayTime << endl;
+	float delayOldWay = playElapsed.count() * 1000 - frameCount * 33;
+
+
+	float totalTemp = 0;
+	for (int i = 0; i < frameRate4allFrames.size(); i++)
+	{
+		float tempValue = frameRate4allFrames[i];
+		totalTemp = totalTemp + tempValue;
+		
+	}
+
+	cout << totalTemp << " " << realFrameCount <<" "<<noFind<< endl;
+
+	float avgFrameRate = 30*totalTemp / frameCount;
+
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/CoREfDelay.txt", std::ios::out | std::ios::app);
+	output << "File," << srcBaseAddr << ",MinFR,"<<minFR<<",avgFR,"<< avgFrameRate<< ",Delay,"<<delayTotal<< ",firstFrame,"<< firstPlayTime <<endl;
+	output.close();
+	cout << "File," << srcBaseAddr << ",MinFR," << minFR << ",chunkWiseMin," << minChunkAvgFR << ",avgFrameRate," << avgFrameRate << ",totDely," << delayTotal << ",firstFrame," << firstPlayTime << endl;
+
+
+}
+
+void testDownloadVideoHttp4thSecVarAndroid(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size)
+{
+	int singleOrVariableVD = 1;
+	int samplingValueCalculate = 1;
+	auto start = std::chrono::high_resolution_clock::now();
+	vector <Mat> conv;	vector <Mat> outputFrame2SAve;	vector<Mat> outputSamplingRate2Save; vector <int> panVec;
+	vector<float> frameRate4allFrames;	vector <float>srVec; vector <float>srVecMin;	vector <float> nonUniformList;
+	vector <int> srRealT;	vector <int> srMinRealT; vector <int> frRealT;
+	struct samplingvar svar; Mat ret1;	Path path1;
+	M33 reriCS;	M33 reriCScopy;
+	int compressionFactor = 5;	int frameStarted = 0;		int chunkN = 0;	int fps = 30;
+	float var[10];	float howManySecondsfor4thSec = extraSec;	int extraFrameN = 5 * extraSec;	int mxChunkN = 7;	int chunkD = 4;//
+	Mat tempP;
+
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	int mahimahiPackSize = 1400;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf30/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		if (extraSec == 1) { KB = KB / 1024.0f * (0.93 * 1.05); }
+		else if (extraSec == 2) { KB = KB / 1024.0f * (0.93 * 1.12); }
+		else if (extraSec == 3) { KB = KB / 1024.0f * (0.83 * 1.17); }
+		else if (extraSec == 6) { KB = KB / 1024.0f * (1 * 1.33); }
+		else { KB = KB / 1024.0f * (0.93 * 1.52); }
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+
+		//cout << name << " " << KB << endl;
+
+	}
+	Size = Size * 1;
+	ifstream  file("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	if (!file)
+	{
+		print("error: can't open file: " << filename << endl);		system("pause");
+	}
+	string line;
+	int ii = 0;
+	while (getline(file, line))
+	{
+		var[ii] = stoi(line);		cout << var[ii] << '\n';		ii++;
+	}
+
+
+	int frameLen = var[0];	int frameWidth = var[1];		float hfov = 90.0f;
+	float corePredictionMargin = 0.6;	int w = frameLen * hfov / 360; 	int h = frameWidth * hfov / 360;
+
+	int ERI_w = frameLen;	int ERI_h = frameWidth;	ERI eri(ERI_w, ERI_h);
+
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	PPC refCam(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	//path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+
+	Mat firstScene;	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+	Mat samplingPixels(camera2.h, camera2.w, firstScene.type());
+	cout << camera2.h << " cam " << camera2.w << endl;
+
+	int firstPlayTime;	int condition = 1;	int cam_index = 0;	int tiltAngle = 20;
+	string filename;
+	V3 VD;
+	int frameCount = 0;	int startIndex = 0;	int after90Index = -1;
+	std::vector<std::future<void>> futures;
+	int delayTotal = 0;
+
+	for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+	{
+		vector <Mat> temp;
+		for (int i = 0; i < (fps * chunkD + extraFrameN); i++)
+		{
+			Mat m;	temp.push_back(m);	m.release();
+		}
+		frameQvec.push_back(temp);
+	}
+
+	/*android hmd loaded*/
+
+	ifstream  filex(hmdFileName);
+	if (!filex)
+	{
+		print("error: can't open file: " << hmdFileName << endl);
+		system("pause");
+	}
+	string   line2;
+	while (getline(filex, line2))
+	{
+		stringstream  linestream(line2);		
+		int byte;
+		linestream >> byte;
+		panVec.push_back(byte);
+		//cout << byte << endl;
+	}
+
+	/* android hmd loaded done*/
+	
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN + 1);
+	LoadBWTraceData(bwLog);	
+	eri.atanvalue();	eri.xz2LonMap();	eri.xz2LatMap();
+	path1.nonUniformListInit(var);		path1.mapx(var);
+
+
+	cout << "Very first Chunk, no frame yet......" << endl;
+
+
+
+	int minFR = 30.0f;
+	//cam_index = path1.GetCamIndex(1, fps, cam_index);		VD = path1.cams[cam_index].GetVD();
+	chunkN++;
+	filename = getChunkNametoReqAndroid(refCam, reriCS, srcBaseAddr, chunkN, panVec[0]);
+		
+
+	NextChunkDownloaded = 0;
+
+	auto finish1 = std::chrono::high_resolution_clock::now();	std::chrono::duration<double> elapsed1 = finish1 - start;
+
+	int bwTimeNeeded = 200; int bwDuration;	int bwIglobal;	int packetNeeded;	int bwShift = 0;
+
+
+	cout << "First DL req Time:------>" << elapsed1.count() << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	DownLoadChunk4thSecVar(filename, chunkD, fps, extraFrameN, bwTimeNeeded, chunkN);
+
+	while (NextChunkDownloaded == 0)
+	{
+		displayImage(firstScene);
+	}
+
+	frameCount = -1;
+	while (condition)
+	{
+
+		frameCount++; //0->
+		if (frameCount == (fps * chunkD * mxChunkN - 1 + 0)) //add 449 for last 5 second extension
+		{
+			condition = 0;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		if (currentChunk > mxChunkN + 1)
+		{
+			currentChunk = mxChunkN + 1;
+		}
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << " " << NextChunkDownloaded << endl;
+
+		if (playIndex == 30 && currentChunk > 1)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < 2; i++)
+			{
+				Mat m;		temp.push_back(m);	m.release();
+			}
+			frameQvec[currentChunk - 1] = temp;
+			cout << "memory erased..................." << endl;
+		}
+
+
+		if (currentChunk <= NextChunkDownloaded)
+		{
+			if (currentChunk == NextChunkDownloaded && currentChunk > 1)
+			{
+				if (ChngReriCS == 1)
+				{
+					reriCS = reriCScopy; cout << "reriCS updated............................" << endl;	ChngReriCS = 0;
+				}
+			}
+
+			Mat frame;	frame = frameQvec[currentChunk][playIndex];
+
+			after90Index = -1;
+			PPC camerax = refCam;
+			int pan = panVec[frameCount];
+			camerax.Pan(pan);
+			cout << "119CuntChunkN=" << currentChunk - 1 << " frmcount=" << frameCount << " plCnt=" << playIndex << " after90indx=" << after90Index << " crntChnk: " << NextChunkDownloaded << "pan: " << pan << endl;
+			path1.CRERI2ConvOptimizedWithSamplingRateVecMinAvg(frame, var, eri, reriCS, convPixels, srVec, srVecMin, compressionFactor, camerax, refCam);
+			
+
+			displayImage(convPixels);
+			cout << "SR:........ >" << srVec[srVec.size() - 1] << endl;
+			srRealT.push_back(srVec[srVec.size() - 1]);
+			srMinRealT.push_back(srVecMin[srVecMin.size() - 1]);
+		
+			//displayImage33ms();
+			//outputFrame2SAve.push_back(convPixels.clone());
+
+
+			if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+			{
+				int reqChunkN = currentChunk + 1;
+				//cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+				reriCScopy = reriCS;
+				//VD = path1.cams[cam_index].GetVD();
+
+				filename = getChunkNametoReqAndroid(refCam, reriCScopy, srcBaseAddr, reqChunkN, pan);
+				//outputFileName << filename << endl;
+				cout << "New Req. " << filename << endl;
+				finish1 = std::chrono::high_resolution_clock::now();
+				elapsed1 = finish1 - start;
+			
+
+				cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+			}
+
+		}
+
+		if (after90Index >= (extraFrameN - 1))
+		{
+			frameCount--;  //reverse framecount here, cause no frame came
+			frRealT.push_back(0);
+			srRealT.push_back(0);
+			srMinRealT.push_back(0);
+			currentChunk = (frameCount) / (fps * chunkD) + 1;
+			//cout << currentChunk<<" currentChunk: Next " <<NextChunkDownloaded<< endl;
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			auto delayEnd = std::chrono::high_resolution_clock::now();;
+			std::chrono::duration<double> delayElapsed = delayEnd - delayStart;
+			int duration = delayElapsed.count() * 1000;
+			while (duration < 30)
+			{
+				delayEnd = std::chrono::high_resolution_clock::now();;
+				delayElapsed = delayEnd - delayStart;
+				duration = delayElapsed.count() * 1000;
+			}
+			delayTotal = delayTotal + 30;
+			cout << "delayTotal: " << delayTotal << endl;
+		}
+
+		if (((currentChunk) > NextChunkDownloaded) && currentChunk > 1 && after90Index < extraFrameN - 1)
+		{
+			after90Index++; //0->
+			int index = nonUniformList[after90Index];
+			int index2 = nonUniformList[after90Index + 1];
+
+			int diffIndex = index2 - index;
+
+			float currentFR = 30.0f / diffIndex;
+			if (currentFR < minFR)
+			{
+				minFR = 30.0f / diffIndex;
+			}
+
+			cout << "diffIndex: " << diffIndex << "minFR: " << minFR << endl;
+
+			frameRate4allFrames.push_back(1);
+
+			if (diffIndex > 100 || diffIndex < 0)
+			{
+				cout << "diffIndex: " << diffIndex << endl;
+				condition = 0;
+				break;
+			}
+			cout << "diffIndex: " << diffIndex << endl;
+			for (int i = 0; i < diffIndex; i++)
+			{
+				if (i > 0) {
+					frameCount++;
+				}
+				currentChunk = (frameCount) / (fps * chunkD) + 1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
+				playIndex = frameCount - (currentChunk - 1) * (fps * chunkD);
+				
+				//	cout << frameCount << endl;
+				int pan=panVec[frameCount - 1];
+				Mat frame1;
+	
+				frame1 = tempP;
+				float frameRateTemp = diffIndex;
+
+				PPC camerax = refCam;
+				camerax.Pan(pan);
+				cout << "119CuntChunkN=" << currentChunk - 1 << " frmcount=" << frameCount << " plCnt=" << playIndex << " after90indx=" << after90Index << " crntChnk: " << NextChunkDownloaded << "pan: "<<pan<<endl;
+				path1.CRERI2ConvOptimizedWithSamplingRateVec(frame1, var, eri, reriCS, convPixels, srVec, compressionFactor, camerax, refCam);
+
+				cout << "SR:........ >" << srVec[srVec.size() - 1] << endl;
+				srRealT.push_back(srVec[srVec.size() - 1]);
+				srMinRealT.push_back(srVecMin[srVecMin.size() - 1]);
+				displayImage(convPixels);
+				displayImage33ms();
+
+
+				if (playIndex == (fps * (chunkD - nextDlChunkSec)))
+				{
+					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
+
+					int pan = panVec[frameCount];
+					reriCScopy = reriCS;
+
+					filename = getChunkNametoReqAndroid(refCam, reriCScopy, srcBaseAddr, reqChunkN, pan);
+					//outputFileName << filename << endl;
+					cout << "NewR: " << filename << endl;
+					finish1 = std::chrono::high_resolution_clock::now();
+					elapsed1 = finish1 - start;
+					//************* BW simulation****************//
+		
+					cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+
+					//************* BW simulation****************//
+					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+
+				}
+
+
+			}
+
+		}
+
+	}
+
+	auto playFinishAll = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> playElapsed = playFinishAll - playStart;
+	cout << "FPS:................> " << playElapsed.count() * 1000 / frameCount << endl;
+	cout << "Frist frame Appear Time=..............>" << firstPlayTime << endl;
+		   
+	double aggValue = 0;
+	double value = 0;
+	float min = 1000;
+	float max = 0;
+	float avg = 0;
+	for (int i = 0; i < frameRate4allFrames.size(); i++)
+	{
+		value = srVec[i];
+		aggValue = value + aggValue;
+
+		if (value > max)
+		{
+			max = value;
+		}
+		if (value < min)
+		{
+			min = value;
+		}		
+		avg = aggValue / (srVec.size());
+
+	}
+	ofstream outputSR;
+	outputSR.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/androidCore_FR_SR_all_D_646.txt", std::ios::out | std::ios::app);
+	outputSR << srcBaseAddr << hmdFileName << bwLog << endl;
+	for (int i = 0; i < srRealT.size(); i++)
+	{
+		outputSR << "file:" << srcBaseAddr <<  srRealT[i] << ",srMinRealTime:" << srMinRealT[i]  <<  endl;
+
+	}
+	outputSR.close();
+
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/AndroidCoREallValues.txt", std::ios::out | std::ios::app);
+	outputSR << srcBaseAddr << hmdFileName << bwLog << endl;
+	output << "File," << srcBaseAddr << ",avgSR," << avg << ",minSR," << min<< endl;
+	output.close();
+	cout << "File," << srcBaseAddr << bwLog << nextDlChunkSec << ",avgSR," << avg << ",minSR," << min << endl;
+	
+}
+
+
+void testDownloadVideoHttp4thSecVar(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size)
+{
+	int singleOrVariableVD = 1;
+	int samplingValueCalculate = 1;
+	auto start = std::chrono::high_resolution_clock::now();
+	vector <Mat> conv;	vector <Mat> outputFrame2SAve;	vector<Mat> outputSamplingRate2Save;
+	vector<float> frameRate4allFrames;	vector <float>srVec; vector <float>srVecMin;	vector <float> nonUniformList;
+	vector <int> srRealT;	vector <int> srMinRealT;vector <int> frRealT;
+	struct samplingvar svar; Mat ret1;	Path path1;
+	M33 reriCS;	M33 reriCScopy;
+	int compressionFactor = 5;	int frameStarted = 0;		int chunkN = 0;	int fps = 30;
+	float var[10];	float howManySecondsfor4thSec = extraSec;	int extraFrameN = 5 * extraSec;	int mxChunkN = 14;	int chunkD = 4;//
+	Mat tempP;
+
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	int mahimahiPackSize = 1400;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf30/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		if (extraSec == 1) { KB = KB / 1024.0f * (0.93 * 1.05); }
+		else if (extraSec == 2) { KB = KB / 1024.0f * (0.93 * 1.12); }
+		else if (extraSec == 3) { KB = KB / 1024.0f * (0.83 * 1.17); }
+		else if (extraSec == 6) { KB = KB / 1024.0f * (1 * 1.33); }
+		else { KB = KB / 1024.0f * (0.93 * 1.52); }
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+
+		//cout << name << " " << KB << endl;
+
+	}
+	Size = Size * 1;
+	ifstream  file("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	if (!file)
+	{
+		print("error: can't open file: " << filename << endl);		system("pause");
+	}
+	string line;
+	int ii = 0;
+	while (getline(file, line))
+	{
+		var[ii] = stoi(line);		cout << var[ii] << '\n';		ii++;
+	}
+
+
+	int frameLen = var[0];	int frameWidth = var[1];		float hfov = 90.0f;
+	float corePredictionMargin = 0.6;	int w = frameLen * hfov / 360; 	int h = frameWidth * hfov / 360;
+
+	int ERI_w = frameLen;	int ERI_h = frameWidth;	ERI eri(ERI_w, ERI_h);
+
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	PPC refCam(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+
+	Mat firstScene;	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
 	Mat convPixels(camera2.h, camera2.w, firstScene.type());
 	Mat samplingPixels(camera2.h, camera2.w, firstScene.type());
 	cout << camera2.h << " cam " << camera2.w << endl;
@@ -606,7 +1440,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN + 1);
 	LoadBWTraceData(bwLog);	eri.atanvalue();	eri.xz2LonMap();	eri.xz2LatMap();
 	path1.nonUniformListInit(var);		path1.mapx(var);
-	
+
 
 	cout << "Very first Chunk, no frame yet......" << endl;
 
@@ -641,11 +1475,17 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	STOP;
 	//*/
 
+
+
+	//ofstream outputFileName;
+	//outputFileName.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/reqFileName.txt", std::ios::out | std::ios::app);
+
+	int minFR = 30.0f;
 	cam_index = path1.GetCamIndex(1, fps, cam_index);		VD = path1.cams[cam_index].GetVD();
 	chunkN++;
 	filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkN, VD, tiltAngle);
 	cout << "ReqF=" << filename << endl;
-	
+
 	NextChunkDownloaded = 0;
 
 	auto finish1 = std::chrono::high_resolution_clock::now();	std::chrono::duration<double> elapsed1 = finish1 - start;
@@ -660,21 +1500,32 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			bwIglobal++;
 		}
 		string name = filename;
+		//outputFileName << filename << endl;
 		cout << filename << endl;
 		const char* nameChr = name.c_str();
 		const char* positionMarker = strrchr(nameChr, '/');
 		int start = int(positionMarker - nameChr) + 1;
 		name = name.substr(start, name.size() - start);
-		cout << name <<" "<< chunkName[0]<< endl;
+		
 		int namePos = 0;
-		while((name.compare(chunkName[namePos])))
+		while (namePos<262 && (name.compare(chunkName[namePos])))
 		{
 			namePos++;
 		}
-		cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;	
-		packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
-		bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
-		cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+		if (namePos<262)
+		{
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+			//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+			//packetNeeded = Size * 1024 / 1500;		
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+		}
+		else {
+			packetNeeded = 2000 * 1024 / mahimahiPackSize;
+			filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+		}		
 
 	}
 	//************* BW simulation****************//
@@ -725,7 +1576,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			{
 				if (ChngReriCS == 1)
 				{
-					reriCS = reriCScopy;cout << "reriCS updated............................" << endl;	ChngReriCS = 0;
+					reriCS = reriCScopy; cout << "reriCS updated............................" << endl;	ChngReriCS = 0;
 				}
 			}
 
@@ -734,7 +1585,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			after90Index = -1;
 			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
 			V3 vdTemp = path1.cams[cam_index].GetVD();			//cout<<"longt: "<<eri.GetXYZ2Longitude(vdTemp)<<endl;
-			
+
 			if (samplingValueCalculate == 1)
 			{
 				if (frameCount < 1)
@@ -742,19 +1593,24 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 					auto firstFrame = std::chrono::high_resolution_clock::now();
 					std::chrono::duration<double> elapsedFirst = firstFrame - start; firstPlayTime = elapsedFirst.count() * 1000;
 					playStart = std::chrono::high_resolution_clock::now();
+					tempP = frame.clone();
 
 				}
-				path1.CRERI2ConvOptimizedWithSamplingRateVec(frame, var, eri, reriCS, convPixels, srVec, compressionFactor, path1.cams[cam_index], refCam);
-				frameRate4allFrames.push_back(30);
+				path1.CRERI2ConvOptimizedWithSamplingRateVecMinAvg(frame, var, eri, reriCS, convPixels, srVec, srVecMin, compressionFactor, path1.cams[cam_index], refCam);
+			
 
 			}
 			else {
 				path1.CRERI2ConvOptimized(frame, var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
 
 			}
-
-			displayImage(convPixels);	
+			frameRate4allFrames.push_back(1);
+			
+			//displayImage(convPixels);
 			cout << "SR:........ >" << srVec[srVec.size() - 1] << endl;
+			srRealT.push_back(srVec[srVec.size() - 1]);
+			srMinRealT.push_back(srVecMin[srVecMin.size() - 1]);
+			frRealT.push_back(30);
 			//displayImage33ms();
 			//outputFrame2SAve.push_back(convPixels.clone());
 
@@ -767,6 +1623,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				VD = path1.cams[cam_index].GetVD();
 
 				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+				//outputFileName << filename << endl;
 				cout << "New Req. " << filename << endl;
 				finish1 = std::chrono::high_resolution_clock::now();
 				elapsed1 = finish1 - start;
@@ -783,15 +1640,26 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 					const char* positionMarker = strrchr(nameChr, '/');
 					int start = int(positionMarker - nameChr) + 1;
 					name = name.substr(start, name.size() - start);
+
 					int namePos = 0;
-					while ((name.compare(chunkName[namePos])))
+					while (namePos < 262 && (name.compare(chunkName[namePos])))
 					{
 						namePos++;
 					}
-					cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
-					packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
-					bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+					if (namePos < 262)
+					{
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+						//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+						//packetNeeded = Size * 1024 / 1500;		
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 
+					}
+					else {
+						packetNeeded = 2000 * 1024 / mahimahiPackSize;
+						filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+					}
 					//************* BW simulation****************//
 				}
 
@@ -802,15 +1670,18 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 
 		}
 
-		if (after90Index >=( extraFrameN-1))
+		if (after90Index >= (extraFrameN - 1))
 		{
 			frameCount--;  //reverse framecount here, cause no frame came
+			frRealT.push_back(0);
+			srRealT.push_back(0);
+			srMinRealT.push_back(0);
 			currentChunk = (frameCount) / (fps * chunkD) + 1;
 			//cout << currentChunk<<" currentChunk: Next " <<NextChunkDownloaded<< endl;
 			auto delayStart = std::chrono::high_resolution_clock::now();
 			auto delayEnd = std::chrono::high_resolution_clock::now();;
 			std::chrono::duration<double> delayElapsed = delayEnd - delayStart;
-			int duration=delayElapsed.count()*1000;
+			int duration = delayElapsed.count() * 1000;
 			while (duration < 30)
 			{
 				delayEnd = std::chrono::high_resolution_clock::now();;
@@ -821,7 +1692,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			cout << "delayTotal: " << delayTotal << endl;
 		}
 
-		if (((currentChunk) > NextChunkDownloaded) && currentChunk > 1 && after90Index <extraFrameN-1)
+		if (((currentChunk) > NextChunkDownloaded) && currentChunk > 1 && after90Index < extraFrameN - 1)
 		{
 			after90Index++; //0->
 			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
@@ -829,9 +1700,20 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			int index2 = nonUniformList[after90Index + 1];
 
 			int diffIndex = index2 - index;
+
+			float currentFR = 30.0f / diffIndex;
+			if (currentFR < minFR)
+			{
+				minFR = 30.0f / diffIndex;
+			}
+						
+			cout << "diffIndex: " << diffIndex << "minFR: " << minFR<< endl;
+
+			frameRate4allFrames.push_back(1);
+					   
 			if (diffIndex > 100 || diffIndex < 0)
 			{
-				cout <<"diffIndex: "<< diffIndex << endl;
+				cout << "diffIndex: " << diffIndex << endl;
 				condition = 0;
 				break;
 			}
@@ -847,26 +1729,30 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				//	cout << frameCount << endl;
 				cam_index = path1.GetCamIndex(frameCount - 1, fps, cam_index);
 				Mat frame1;
-				frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1) + after90Index];
+				//frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1) + after90Index];
+				//frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1)];
+				frame1 = tempP;
 				float frameRateTemp = diffIndex;
-				frameRate4allFrames.push_back(30.0f / frameRateTemp);
+				
 				if (samplingValueCalculate == 1)
 				{
 
 					path1.CRERI2ConvOptimizedWithSamplingRateVec(frame1, var, eri, reriCS, convPixels, srVec, compressionFactor, path1.cams[cam_index], refCam);
-					
+
 				}
 				else {
 					path1.CRERI2ConvOptimized(frame1, var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
 
-				}
+				}			
 
-				//cout<<frameQvec[currentChunk - 1].size() << endl;
-
-				displayImage(convPixels);
-				cout <<"SR:........ >"<< srVec[srVec.size() - 1] << endl;
-				//displayImage33ms();
-				//outputFrame2SAve.push_back(convPixels.clone());	
+				//displayImage(convPixels);
+				cout << "SR:........ >" << srVec[srVec.size() - 1] << endl;
+				srRealT.push_back(srVec[srVec.size() - 1]);
+				srMinRealT.push_back(srVecMin[srVecMin.size() - 1]);
+				frRealT.push_back(currentFR);
+				displayImage33ms();
+				
+				
 				if (playIndex == (fps * (chunkD - nextDlChunkSec)))
 				{
 					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
@@ -876,6 +1762,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 					reriCScopy = reriCS;
 
 					filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+					//outputFileName << filename << endl;
 					cout << "NewR: " << filename << endl;
 					finish1 = std::chrono::high_resolution_clock::now();
 					elapsed1 = finish1 - start;
@@ -891,20 +1778,30 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 						const char* nameChr = name.c_str();
 						const char* positionMarker = strrchr(nameChr, '/');
 						int start = int(positionMarker - nameChr) + 1;
-						name = name.substr(start, name.size() - start);
 						int namePos = 0;
-						while ((name.compare(chunkName[namePos])))
+						while (namePos < 262 && (name.compare(chunkName[namePos])))
 						{
 							namePos++;
 						}
-						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
-						packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
-						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						if (namePos < 262)
+						{
+							cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+							packetNeeded = chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+							//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+							//packetNeeded = Size * 1024 / 1500;		
+							bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+						}
+						else {
+							packetNeeded = 1000 * 1024 / mahimahiPackSize;
+							filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+							bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						}
+
 					}
 					cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
 
 					//************* BW simulation****************//
-						//cout << elapsed1.count() << " third " << bwTimeNeeded << endl;
 					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
 
 
@@ -914,7 +1811,7 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			}
 
 		}
-		
+
 	}
 
 	auto playFinishAll = std::chrono::high_resolution_clock::now();
@@ -922,37 +1819,36 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 	cout << "FPS:................> " << playElapsed.count() * 1000 / frameCount << endl;
 	cout << "Frist frame Appear Time=..............>" << firstPlayTime << endl;
 
-
+	//outputFileName.close();
 	if (samplingValueCalculate == 1)
 	{
 
-		float minTemp = 100;
+		
 		float totalTemp = 0;
 		for (int i = 0; i < frameRate4allFrames.size(); i++)
 		{
 			float tempValue = frameRate4allFrames[i];
 			totalTemp = totalTemp + tempValue;
-			if (tempValue < minTemp)
-			{
-				minTemp = tempValue;
-			}
+
 		}
-
-
-
-		float overallMin = 10;
-		float overallMax = 0;
-		float ovrallAvgTotal = 0;
+		
+		
+		float avgFR = 30 * totalTemp / frameCount;
+		if (avgFR>30)
+		{
+			avgFR =30;
+		}
+			
 		double aggValue = 0;
 		double value = 0;
 		float min = 1000;
 		float max = 0;
 		float avg = 0;
-		for (int i = 0; i < srVec.size(); i++)
+		for (int i = 0; i < frameRate4allFrames.size(); i++)
 		{
 			value = srVec[i];
 			aggValue = value + aggValue;
-			
+
 			if (value > max)
 			{
 				max = value;
@@ -961,22 +1857,33 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 			{
 				min = value;
 			}
-			cout << "frame: " << i << " SR avg value: " << value << " min: "<<min<<endl;
+			//cout << "frame: " << i << " SR avg value: " << value << " min: " << min << endl;
 			avg = aggValue / (srVec.size());
 
 		}
+		ofstream outputSR;		
+		outputSR.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/FAtCore_FR_SR_all_D_646.txt", std::ios::out | std::ios::app);
+		outputSR << srcBaseAddr << hmdFileName << bwLog << endl;
+		for (int i = 0; i < srRealT.size(); i++)
+		{
+			outputSR<<"file:" <<srcBaseAddr<<",srAAvgRealTime:"<<srRealT[i]<<",srMinRealTime:"<<srMinRealT[i]<<",frRealTime:" <<frRealT[i]<< endl;
+
+		}		
+		outputSR.close();
+		
 		ofstream output;
-		output.open("./Video/source/srHttpVarTest.txt", std::ios::out | std::ios::app);
-		output << "File: " << srcBaseAddr << " avg: " << avg << " min: " << min << " max:" << max << "MinFR: "<<minTemp<<" avgFR: "<< totalTemp / frameRate4allFrames.size()<< "totDely: "<<delayTotal<< "firstFrame: "<< firstPlayTime <<endl;
+		output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/FatCoREallValues.txt", std::ios::out | std::ios::app);
+		outputSR << srcBaseAddr << hmdFileName << bwLog << endl;
+		output << "File," << srcBaseAddr << ",avgSR," << avg << ",minSR," << min << ",maxSR," << max << ",MinFR," << minFR << ",avgFR," << avgFR << ",totalDely," << delayTotal << endl;
 		output.close();
-		cout << "File: " << srcBaseAddr << " avg: " << avg << " min: " << min << " max:" << max << "MinFR: " << minTemp << " avgFR: " << totalTemp / frameRate4allFrames.size() << "totDely: " << delayTotal << endl;
+		cout << "File," << srcBaseAddr << bwLog << nextDlChunkSec << ",avgSR," << avg << ",minSR," << min << ",MinFR," << minFR << ",avgFR," << avgFR << ",totalDelay," << delayTotal << endl;
 
 	}
 
 	/*
 	int sf = 0;
 	int ef = outputFrame2SAve.size();
-	//cout << "SAving-> sf:ef " << sf << " " << ef << endl;	
+	//cout << "SAving-> sf:ef " << sf << " " << ef << endl;
 	//videowriterhelperx(chunkN, 0, 0, fps, outputFrame2SAve[1].cols, outputFrame2SAve[1].rows, sf, ef, outputFrame2SAve);
 	if (samplingValueCalculate == 1)
 	{
@@ -984,6 +1891,430 @@ void testDownloadVideoHttp4thSecVar(int singleOrVariableVD, int samplingValueCal
 				//100 to differiantitate with regular video
 	} */
 }
+
+void testSrAccrossSpecificFrame(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int extraSec, int Size)
+{
+	int singleOrVariableVD = 1;
+	int samplingValueCalculate = 1;
+	auto start = std::chrono::high_resolution_clock::now();
+	vector <Mat> conv;	vector <Mat> outputFrame2SAve;	vector<Mat> outputSamplingRate2Save;
+	vector<float> frameRate4allFrames;	vector <float>srVec; vector <float>srVecMin;	vector <float> nonUniformList;
+	vector <int> srRealT;	vector <int> srMinRealT; vector <int> frRealT;
+	struct samplingvar svar; Mat ret1;	Path path1;
+	M33 reriCS;	M33 reriCScopy;
+	int compressionFactor = 5;	int frameStarted = 0;		int chunkN = 0;	int fps = 30;
+	float var[10];	float howManySecondsfor4thSec = extraSec;	int extraFrameN = 5 * extraSec;	int mxChunkN = 14;	int chunkD = 4;//
+	Mat tempP;
+
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/4s3s/crf30/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		if (extraSec == 1) { KB = KB / 1024.0f * (0.93 * 1.05); }
+		else if (extraSec == 2) { KB = KB / 1024.0f * (0.93 * 1.12); }
+		else if (extraSec == 3) { KB = KB / 1024.0f * (0.83 * 1.17); }
+		else if (extraSec == 6) { KB = KB / 1024.0f * (0.93 * 1.33); }
+		else { KB = KB / 1024.0f * (0.93 * 1.52); }
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+
+		//cout << name << " " << KB << endl;
+
+	}
+	Size = Size * 1;
+	ifstream  file("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	if (!file)
+	{
+		print("error: can't open file: " << filename << endl);		system("pause");
+	}
+	string line;
+	int ii = 0;
+	while (getline(file, line))
+	{
+		var[ii] = stoi(line);		cout << var[ii] << '\n';		ii++;
+	}
+
+
+	int frameLen = var[0];	int frameWidth = var[1];		float hfov = 90.0f;
+	float corePredictionMargin = 1;	int w = frameLen * hfov / 360; 	int h = frameWidth * hfov / 360;
+
+	int ERI_w = frameLen;	int ERI_h = frameWidth;	ERI eri(ERI_w, ERI_h);
+
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	PPC refCam(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+
+	Mat firstScene;	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+	Mat samplingPixels(camera2.h, camera2.w, firstScene.type());
+	cout << camera2.h << " cam " << camera2.w << endl;
+
+	int firstPlayTime;	int condition = 1;	int cam_index = 0;	int tiltAngle = 20;
+	string filename;
+	V3 VD;
+	int frameCount = 0;	int startIndex = 0;	int after90Index = -1;
+	std::vector<std::future<void>> futures;
+	int delayTotal = 0;
+
+	for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+	{
+		vector <Mat> temp;
+		for (int i = 0; i < (fps * chunkD + extraFrameN); i++)
+		{
+			Mat m;	temp.push_back(m);	m.release();
+		}
+		frameQvec.push_back(temp);
+	}
+
+
+	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrameN + 1);
+	LoadBWTraceData(bwLog);	eri.atanvalue();	eri.xz2LonMap();	eri.xz2LatMap();
+	path1.nonUniformListInit(var);		path1.mapx(var);
+
+
+	cout << "Very first Chunk, no frame yet......" << endl;
+
+	
+	int minFR = 30.0f;
+	cam_index = path1.GetCamIndex(1, fps, cam_index);		VD = path1.cams[cam_index].GetVD();
+	chunkN++;
+	filename = getChunkNametoReqnRefCamOptimized(refCam, reriCS, srcBaseAddr, chunkN, VD, tiltAngle);
+	cout << "ReqF=" << filename << endl;
+
+	NextChunkDownloaded = 0;
+
+	auto finish1 = std::chrono::high_resolution_clock::now();	std::chrono::duration<double> elapsed1 = finish1 - start;
+
+	int bwTimeNeeded = 200; int bwDuration;	int bwIglobal;	int packetNeeded;	int bwShift = 0;
+	//************* BW simulation****************//
+	if (samplingValueCalculate == 1)
+	{
+		bwDuration = elapsed1.count() * 1000 + bwShift;
+		bwIglobal = 0;
+		while (bwDuration > byteVec[bwIglobal]) {
+			bwIglobal++;
+		}
+		string name = filename;
+		//outputFileName << filename << endl;
+		cout << filename << endl;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '/');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+
+		int namePos = 0;
+		while (namePos < 262 && (name.compare(chunkName[namePos])))
+		{
+			namePos++;
+		}
+		if (namePos < 262)
+		{
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
+			//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+			//packetNeeded = Size * 1024 / 1500;		
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+		}
+		else {
+			packetNeeded = 1000 * 1024 / 1500;
+			filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+		}
+
+	}
+	//************* BW simulation****************//
+
+	cout << "First DL req Time:------>" << elapsed1.count() << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	DownLoadChunk4thSecVar(filename, chunkD, fps, extraFrameN, bwTimeNeeded, chunkN);
+
+	while (NextChunkDownloaded == 0)
+	{
+		displayImage(firstScene);
+	}
+
+	frameCount = -1;
+	while (condition)
+	{
+
+		frameCount++; //0->
+		if (frameCount == (fps * chunkD * mxChunkN - 1 + 0)) //add 449 for last 5 second extension
+		{
+			condition = 0;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		if (currentChunk > mxChunkN + 1)
+		{
+			currentChunk = mxChunkN + 1;
+		}
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << " " << NextChunkDownloaded << endl;
+
+		if (playIndex == 30 && currentChunk > 1)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < 2; i++)
+			{
+				Mat m;		temp.push_back(m);	m.release();
+			}
+			frameQvec[currentChunk - 1] = temp;
+			cout << "memory erased..................." << endl;
+		}
+
+
+		if (currentChunk <= NextChunkDownloaded)
+		{
+			if (currentChunk == NextChunkDownloaded && currentChunk > 1)
+			{
+				if (ChngReriCS == 1)
+				{
+					reriCS = reriCScopy; cout << "reriCS updated............................" << endl;	ChngReriCS = 0;
+				}
+			}
+
+			Mat frame;	frame = frameQvec[currentChunk][playIndex];
+
+			after90Index = -1;
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			V3 vdTemp = path1.cams[cam_index].GetVD();			//cout<<"longt: "<<eri.GetXYZ2Longitude(vdTemp)<<endl;
+
+			if (samplingValueCalculate == 1)
+			{
+				if (frameCount < 1)
+				{
+					auto firstFrame = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double> elapsedFirst = firstFrame - start; firstPlayTime = elapsedFirst.count() * 1000;
+					playStart = std::chrono::high_resolution_clock::now();
+					tempP = frame.clone();
+
+				}
+				path1.CRERI2ConvOptimizedWithPerFrameSamplingRateVecMinAvg(frame, var, eri, reriCS, convPixels, srVec, srVecMin, compressionFactor, path1.cams[cam_index], refCam);
+
+
+			}
+			else {
+				path1.CRERI2ConvOptimized(frame, var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
+
+			}
+			
+			displayImage(convPixels);
+			
+
+			if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+			{
+				int reqChunkN = currentChunk + 1;
+				cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+				reriCScopy = reriCS;
+				VD = path1.cams[cam_index].GetVD();
+
+				filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+				//outputFileName << filename << endl;
+				cout << "New Req. " << filename << endl;
+				finish1 = std::chrono::high_resolution_clock::now();
+				elapsed1 = finish1 - start;
+				if (samplingValueCalculate == 1)
+				{
+					//************* BW simulation****************//
+					//bwDuration = elapsed1.count() * 1000+ bwShift; //real time spend
+					bwDuration = frameCount * 33 + firstPlayTime;   //forced assumption that all frame is 33ms play time, even though they are not.
+					while (bwDuration > byteVec[bwIglobal]) {
+						bwIglobal++;
+					}
+					string name = filename;
+					const char* nameChr = name.c_str();
+					const char* positionMarker = strrchr(nameChr, '/');
+					int start = int(positionMarker - nameChr) + 1;
+					name = name.substr(start, name.size() - start);
+
+					int namePos = 0;
+					while (namePos < 262 && (name.compare(chunkName[namePos])))
+					{
+						namePos++;
+					}
+					if (namePos < 262)
+					{
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
+						//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+						//packetNeeded = Size * 1024 / 1500;		
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+					}
+					else {
+						packetNeeded = 1000 * 1024 / 1500;
+						filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+					}
+					//************* BW simulation****************//
+				}
+
+				cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+				futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+			}
+
+		}
+
+		if (after90Index >= (extraFrameN - 1))
+		{
+			frameCount--;  //reverse framecount here, cause no frame came
+			frRealT.push_back(0);
+			srRealT.push_back(0);
+			srMinRealT.push_back(0);
+			currentChunk = (frameCount) / (fps * chunkD) + 1;
+			//cout << currentChunk<<" currentChunk: Next " <<NextChunkDownloaded<< endl;
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			auto delayEnd = std::chrono::high_resolution_clock::now();;
+			std::chrono::duration<double> delayElapsed = delayEnd - delayStart;
+			int duration = delayElapsed.count() * 1000;
+			while (duration < 30)
+			{
+				delayEnd = std::chrono::high_resolution_clock::now();;
+				delayElapsed = delayEnd - delayStart;
+				duration = delayElapsed.count() * 1000;
+			}
+			delayTotal = delayTotal + 30;
+			cout << "delayTotal: " << delayTotal << endl;
+		}
+
+		if (((currentChunk) > NextChunkDownloaded) && currentChunk > 1 && after90Index < extraFrameN - 1)
+		{
+			after90Index++; //0->
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			int index = nonUniformList[after90Index];
+			int index2 = nonUniformList[after90Index + 1];
+
+			int diffIndex = index2 - index;
+
+			float currentFR = 30.0f / diffIndex;
+			if (currentFR < minFR)
+			{
+				minFR = 30.0f / diffIndex;
+			}
+
+			cout << "diffIndex: " << diffIndex << "minFR: " << minFR << endl;
+
+			frameRate4allFrames.push_back(1);
+
+			if (diffIndex > 100 || diffIndex < 0)
+			{
+				cout << "diffIndex: " << diffIndex << endl;
+				condition = 0;
+				break;
+			}
+			cout << "diffIndex: " << diffIndex << endl;
+			for (int i = 0; i < diffIndex; i++)
+			{
+				if (i > 0) {
+					frameCount++;
+				}
+				currentChunk = (frameCount) / (fps * chunkD) + 1; //current chunk 0 theke start, file chunk o 0 theke start krote hobe encoding er somoy
+				playIndex = frameCount - (currentChunk - 1) * (fps * chunkD);
+				cout << "119CuntChunkN=" << currentChunk - 1 << " frmcount=" << frameCount << " plCnt=" << playIndex << " after90indx=" << after90Index << " crntChnk: " << NextChunkDownloaded << endl;
+				//	cout << frameCount << endl;
+				cam_index = path1.GetCamIndex(frameCount - 1, fps, cam_index);
+				Mat frame1;
+				//frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1) + after90Index];
+				//frame1 = frameQvec[currentChunk - 1][(fps * chunkD - 1)];
+				frame1 = tempP;
+				float frameRateTemp = diffIndex;
+
+				if (samplingValueCalculate == 1)
+				{
+
+					path1.CRERI2ConvOptimizedWithPerFrameSamplingRateVecMinAvg(frame1, var, eri, reriCS, convPixels, srVec, srVecMin, compressionFactor, path1.cams[cam_index], refCam);
+				}
+				else {
+					path1.CRERI2ConvOptimized(frame1, var, eri, reriCS, convPixels, compressionFactor, path1.cams[cam_index], refCam);
+
+				}
+
+				displayImage(convPixels);
+				
+
+
+				if (playIndex == (fps * (chunkD - nextDlChunkSec)))
+				{
+					int reqChunkN = currentChunk + 1; //amader chunk 0 theke start hoy but download chunk start hoy 1 theke , apatoto			
+
+					cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+					VD = path1.cams[cam_index].GetVD();
+					reriCScopy = reriCS;
+
+					filename = getChunkNametoReqnRefCamOptimized(refCam, reriCScopy, srcBaseAddr, reqChunkN, VD, tiltAngle);
+					//outputFileName << filename << endl;
+					cout << "NewR: " << filename << endl;
+					finish1 = std::chrono::high_resolution_clock::now();
+					elapsed1 = finish1 - start;
+					//************* BW simulation****************//
+					if (samplingValueCalculate == 1)
+					{
+						//bwDuration = elapsed1.count() * 1000+bwShift;
+						bwDuration = frameCount * 33 + firstPlayTime;   //forced assumption that all frame is 33ms play time, even though they are not.
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+						string name = filename;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						int namePos = 0;
+						while (namePos < 262 && (name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						if (namePos < 262)
+						{
+							cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+							packetNeeded = chunkSizeKB[namePos] * 1024 / 1500;
+							//filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+							//packetNeeded = Size * 1024 / 1500;		
+							bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+
+						}
+						else {
+							packetNeeded = 1000 * 1024 / 1500;
+							filename = "http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving_3_10_40.avi";
+							bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						}
+
+					}
+					cout << "Later DLs req Time:------>" << bwDuration << " bwStartIndx---> " << bwIglobal << " bwEndIndex-->" << bwIglobal + bwTimeNeeded << endl;
+
+					//************* BW simulation****************//
+					futures.push_back(std::async(std::launch::async, DownLoadChunk4thSecVar, filename, chunkD, fps, extraFrameN, bwTimeNeeded, reqChunkN));
+
+
+				}
+
+
+			}
+
+		}
+
+	}
+
+}
+
+
 
 
 void testDownloadVideoHttp(int singleOrVariableVD, int samplingValueCalculate)
@@ -1385,16 +2716,35 @@ void getTilesNumber2req(vector<int> & tileBitMap, PPC camera, ERI & eri, int m, 
 
 
 }
-
-void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+void getTilesNumber2reqFovOnly(vector<int>& tileBitMap, PPC camera, ERI& eri, int m, int n)
 {
+	int pixelI, pixelJ = 0;
+	for (int v = 0; v < camera.h; v++)
+	{
+		for (int u = 0; u < camera.w; u++)
+		{
+			eri.EachPixelConv2ERI(camera, u, v, pixelI, pixelJ);
+			int Xtile = floor(pixelJ * m / eri.w); //m*n col and row
+			int Ytile = floor(pixelI * n / eri.h);
+			int vectorindex = (Ytile)*m + Xtile;
+			tileBitMap.at(vectorindex) = 1;
+		}
+
+	}
+
+}
+
+void testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	float corePredictionMargin =1;
+	int mxChunkN = 55;
 	auto start = std::chrono::high_resolution_clock::now();
 	Path path1;
 	float var[10];
 
 	LoadBWTraceData(bwLog);
 	vector<float> chunkSizeKB; vector<string>chunkName;
-	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/chunkSizes.txt");
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
 	if (!file1)
 	{
 		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
@@ -1414,9 +2764,10 @@ void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* 
 		KB = KB / 1024.0f;
 		chunkSizeKB.push_back(KB);
 		chunkName.push_back(name);
+	//	cout << "kb: " << KB << endl;
 
 	}
-	ifstream  f("./Video/source/4kDivingEncodingVariable.txt");
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
 	string line;
 	int ii = 0;
 	while (std::getline(f, line))
@@ -1429,18 +2780,18 @@ void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* 
 	int frameCol = var[0];
 	int frameRow = var[1];
 	float hfov = 90.0f;
-	float corePredictionMargin = 0.6;
+	
 	int w = frameCol * hfov / 360; 
 	int h = frameRow * hfov / 360; 
 	PPC camera2(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 		
 	path1.LoadHMDTrackingData(hmdFileName, camera2);
-	int mxChunkN = 12;
+	
 	int chunkD = 1;
 	int chunkN = 1;
 	int fps = 30;
 	Mat firstScene;
-	upload_image("./Video/source/startScene.PNG", firstScene);
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
 	Mat endScene;
 	int condition = 1;
 	int cam_index = 0;
@@ -1540,7 +2891,7 @@ void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* 
 				namePos++;
 			}
 			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
-			packetNeeded = 4*chunkSizeKB[namePos] * 1024 / 1500;			
+			packetNeeded = 12*chunkSizeKB[namePos] * 1024 / 1500;			
 			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
 			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
 			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
@@ -1552,7 +2903,7 @@ void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* 
 	int tileRowLen = frameRow / tileRowN;
 	cout << "t: " << tileColLen << " " << tileRowLen << endl;
 	cout << reqTiles[chunkN].size() << endl;
-	vector<int> totalOutSide;
+	vector<int> totalInSide;
 	vector<int>totalChunkReq;
 	int totalTileLoaded = 0;
 	int totalDelay = 0;
@@ -1667,32 +3018,2225 @@ void testDownloadVideoHttpTileMeasurement(char* srcBaseAddr, char* bwLog, char* 
 
 		cout << "just before:: " << currentChunk << " " << reqTiles[currentChunk].size() << endl;
 		
-		eri.ERI2Conv4tiles(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalOutSide);
+		eri.ERI2Conv4tiles(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalInSide);
 		displayImage(convPixels);
 		//displayImage33ms();
 
 	
 	}
-	long sumTotalOutSide;
-	for (int i = 0; i <totalOutSide.size();  i++)
+	long sumtotalInSide;
+	for (int i = 0; i < totalInSide.size(); i++)
 	{
-		cout << i << " " << totalOutSide[i]*100/(camera2.w * camera2.h) << endl;
-		sumTotalOutSide = sumTotalOutSide + totalOutSide[i];
+		cout << i << " " << totalInSide[i] << endl;
+		sumtotalInSide = sumtotalInSide + totalInSide[i];
 	}
 
 	int totalChunk = 0;
-	for (int i = 0; i < totalChunkReq.size()-1; i++)
+	for (int i = 0; i < totalChunkReq.size() - 1; i++)
 	{
 		totalChunk = totalChunk + totalChunkReq[i];
-		cout<<i<<" " << totalChunkReq[i] << endl;
+		cout << i << " " << totalChunkReq[i] << endl;
 	}
 
-	cout << sumTotalOutSide << endl;
+	cout << sumtotalInSide << endl;
+
+	double avgtotalOutSide = 100 - sumtotalInSide / (double)(totalInSide.size());
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tileBlankTotalDataFoVPlus.txt", std::ios::out | std::ios::app);
+	output<< srcBaseAddr << " blank%: " << avgtotalOutSide << "totalChunk2req: " << totalChunk << endl;
+	output.close();
+
+	cout << srcBaseAddr << " blank%: " << avgtotalOutSide << "totalChunk2req: " << totalChunk << endl;
 	
-	double avgTotalOutSide = sumTotalOutSide /(double) (totalOutSide.size()*camera2.w*camera2.h);
-	cout << "blank%: " << avgTotalOutSide <<"Delay: "<<totalDelay<< "totalChunk2req: "<<totalChunk<<endl;
+
 }
 
+void testDownloadVideoHttpTileBlankPixelMeasurementFoV(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	int mxChunkN = 55;
+	float corePredictionMargin = 1;
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		//cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+	
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+	
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+
+	getTilesNumber2reqFovOnly(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+
+
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = 12 * chunkSizeKB[namePos] * 1024 / 1500;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInSide;
+	vector<int>totalChunkReq;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 1))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+			getTilesNumber2reqFovOnly(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			int reqChunkN = currentChunk + 1;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = 4 * chunkSizeKB[namePos] * 1024 / 1500;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+					}
+				}
+			}
+
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (frameCount == (fps * chunkD - 1))
+		{
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			while (NextChunkDownloaded < reqTiles[currentChunk + 1].size() - 1)
+			{
+				timePassed = timePassed + 30.0f;
+				displayImage33ms();
+				totalDelay = totalDelay + 33;
+			}
+			currentChunk = currentChunk + 1;
+			auto delayFinish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> delayElapsed = delayFinish - delayStart;
+
+
+			cout << "Delay Added.................: " << totalDelay << endl;
+		}
+
+		cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+		
+		eri.ERI2Conv4tiles(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalInSide);
+		//displayImage(convPixels);
+		displayImage33ms();
+
+
+	}
+	long sumtotalInSide;
+	for (int i = 0; i < totalInSide.size(); i++)
+	{
+		cout << i << " " << totalInSide[i] << endl;
+		sumtotalInSide = sumtotalInSide + totalInSide[i];
+	}
+
+	int totalChunk = 0;
+	for (int i = 0; i < totalChunkReq.size() - 1; i++)
+	{
+		totalChunk = totalChunk + totalChunkReq[i];
+		cout << i << " " << totalChunkReq[i] << endl;
+	}
+
+	cout << sumtotalInSide << endl;
+
+	double avgtotalOutSide = 100-sumtotalInSide/ (double)(totalInSide.size());
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tileBlankTotalDataFoV.txt", std::ios::out | std::ios::app);
+	output << srcBaseAddr << " blank%: " << avgtotalOutSide << "totalChunk2req: " << totalChunk << endl;
+	output.close();
+	
+	cout <<srcBaseAddr<< " blank%: " <<avgtotalOutSide << "totalChunk2req: " << totalChunk << endl;
+}
+
+
+void testDownloadVideoHttpTileDelayMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	int fovPlusOrno = 1;   //1 for fovPlus, 0 for fov
+	float corePredictionMargin = 0.7;
+	int mxChunkN = 56;
+
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	int mahimahiPackSize = 1400;
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		//cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+	
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+	
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+	int chunkBwDivider = 12;
+
+	if (fovPlusOrno==0)
+	{
+		chunkBwDivider = 5;
+	}
+	
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+	if (fovPlusOrno==0)
+	{
+		getTilesNumber2reqFovOnly(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+	
+	else
+	{
+		getTilesNumber2req(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+	
+
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInSide;
+	vector<float>blankPixels; 
+	vector<float>frameRate;
+	vector<float> samplingRateAvg;
+	vector<float> samplingRateMin;
+	vector<int>totalChunkReq;
+	vector<int>T;
+	float tileProcessT = 0;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	long totalProcessT=0;
+	
+	auto chunkStarT = std::chrono::high_resolution_clock::now();
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while(0)// (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+
+	auto delayMeasureStart = std::chrono::high_resolution_clock::now();
+	auto reqSend = std::chrono::high_resolution_clock::now();
+	int maxDelay = 0;
+
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 2))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+		cout << frameCount;
+		if (playIndex==1)
+		{
+			chunkStarT = std::chrono::high_resolution_clock::now();
+
+		}
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+
+			if (fovPlusOrno == 0)
+			{
+				getTilesNumber2reqFovOnly(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+
+			else
+			{
+				getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+
+
+			//getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			int reqChunkN = currentChunk + 1;
+			NextChunkDownloaded = 0;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{					
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						//cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime+totalDelay;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded =chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						if (maxDelay<bwTimeNeeded)
+						{
+							maxDelay = bwTimeNeeded;
+						}
+						reqSend = std::chrono::high_resolution_clock::now();
+						//futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded);
+					}
+					
+				}
+			}
+			float totalDlTime = maxDelay;
+			float tpTime = reqTiles[reqChunkN].size() * 49;
+			tileProcessT = totalDlTime + tpTime;
+			totalProcessT = totalProcessT + tileProcessT/100.0f;
+			maxDelay = 0;
+			cout << "tileProcessT: ---------------------------------------->" << tileProcessT << endl;
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (playIndex == (fps * chunkD - 1))
+		{			
+			if(33*chunkD*fps<tileProcessT)
+			{
+				int f = abs(33 * chunkD * fps - tileProcessT) / 33; 
+				totalDelay = totalDelay + 33*f;
+				for (int i = 0; i < f; i++)
+				{
+					//blankPixels.push_back(1);
+					frameRate.push_back(0);
+					samplingRateMin.push_back(0);
+					samplingRateAvg.push_back(0);
+
+				}
+
+				cout << "Delay Added........................................................................: " << totalDelay <<",tileProcesT:"<<tileProcessT<<",added Now:"<<33*f<< endl;
+
+			}
+			
+		}
+
+		cam_index = path1.GetCamIndex(frameCount, fps, cam_index);	
+		//eri.ERI2Conv4tilesDoNothing(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalOutSide);
+		float blankP, srmiN, sravG = 0;
+		eri.ERI2Conv4tilesWithSrFrDelay(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, blankP, sravG, srmiN);
+		//displayImage(convPixels);
+		blankPixels.push_back(blankP);
+		frameRate.push_back(30);
+		samplingRateAvg.push_back(sravG);
+		samplingRateMin.push_back(srmiN);
+		displayImage33ms();
+
+
+	}
+	auto delayMeasurementTimeEnd = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsedDelay = delayMeasurementTimeEnd-delayMeasureStart;
+	
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tile_Diving_BP_FR_SRminFovP_D_646_mainFile.txt", std::ios::out | std::ios::app);
+	output << hmdFileName << "," << bwLog << endl;
+	int totalbP = 0;
+	int totalFR = 0;
+	for (int i = 0; i < blankPixels.size(); i++)
+	{
+		totalbP = totalbP + blankPixels[i];
+		output << filename << ","<< "blankP:" << blankPixels[i] << ",frameR:" << frameRate[i] << ", srAvg:" << samplingRateAvg[i] << ",srMin:" << samplingRateMin[i] << endl;
+		
+		totalFR = totalFR + frameRate[i];
+	}
+	float avgFR = 30*totalFR / frameRate.size();
+	float bp = totalbP / blankPixels.size();
+	output.close();
+
+	int totalTile = 0;
+	for (int i = 0; i <totalChunkReq.size(); i++)
+	{
+		totalTile = totalChunkReq[i] + totalTile;
+	}
+
+	ofstream output1;
+	output1.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tileFoVPlus.txt", std::ios::out | std::ios::app);
+	cout<< "Delay OldWay: " << totalDelay <<",bp:"<<bp<<endl;
+	
+	output1 <<srcBaseAddr<<bwLog<<hmdFileName<<": "<< "Delay: " << totalDelay << ",bp:" << bp<<", totalTileChunk:"<<totalTile<<" Fravg:"<<avgFR<< endl;
+	output1.close();
+}
+
+void testDownloadVideoHttpTileDelayMeasurementFoVOnlyAndroid(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	int fovPlusOrno = 0;   //1 for fovPlus, 0 for fov
+	float corePredictionMargin = 0.7;
+	int mxChunkN = 56;
+
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	int mahimahiPackSize = 1400;
+	vector<float> chunkSizeKB; vector<string>chunkName;  vector <int> panVec;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		//cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+	PPC refCam(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	//path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+	/*android hmd loaded*/
+
+	ifstream  filex(hmdFileName);
+	if (!filex)
+	{
+		print("error: can't open file: " << hmdFileName << endl);
+		system("pause");
+	}
+	string   line2;
+	while (getline(filex, line2))
+	{
+		stringstream  linestream(line2);
+		int byte;
+		linestream >> byte;
+		panVec.push_back(byte);
+		//cout << byte << endl;
+	}
+
+	/* android hmd loaded done*/
+
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+	int chunkBwDivider = 12;
+
+	if (fovPlusOrno == 0)
+	{
+		chunkBwDivider = 5;
+	}
+
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	PPC camex=refCam;
+	camex.Pan(panVec[frameCount]);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+	if (fovPlusOrno == 0)
+	{
+		getTilesNumber2reqFovOnly(tileBitMap, camex, eri, tileColN, tileRowN);
+	}
+
+	else
+	{
+		getTilesNumber2req(tileBitMap, camex, eri, tileColN, tileRowN);
+	}
+
+
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInSide;
+	vector<float>blankPixels;
+	vector<float>frameRate;
+	vector<float> samplingRateAvg;
+	vector<float> samplingRateMin;
+	vector<int>totalChunkReq;
+	vector<int>T;
+	float tileProcessT = 0;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	long totalProcessT = 0;
+
+	auto chunkStarT = std::chrono::high_resolution_clock::now();
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while (0)// (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+
+	auto delayMeasureStart = std::chrono::high_resolution_clock::now();
+	auto reqSend = std::chrono::high_resolution_clock::now();
+	int maxDelay = 0;
+
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 2))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+		cout << frameCount;
+		if (playIndex == 1)
+		{
+			chunkStarT = std::chrono::high_resolution_clock::now();
+
+		}
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			PPC camex = refCam;
+			camex.Pan(panVec[frameCount]);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+
+			if (fovPlusOrno == 0)
+			{
+				getTilesNumber2reqFovOnly(tileBitMap2, camex, eri, tileColN, tileRowN);
+			}
+
+			else
+			{
+				getTilesNumber2req(tileBitMap2, camex, eri, tileColN, tileRowN);
+			}
+			
+			int reqChunkN = currentChunk + 1;
+			NextChunkDownloaded = 0;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						//cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime + totalDelay;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						if (maxDelay < bwTimeNeeded)
+						{
+							maxDelay = bwTimeNeeded;
+						}
+						reqSend = std::chrono::high_resolution_clock::now();
+						//futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded);
+					}
+
+				}
+			}
+			float totalDlTime = maxDelay;
+			float tpTime = reqTiles[reqChunkN].size() * 49;
+			tileProcessT = totalDlTime + tpTime;
+			totalProcessT = totalProcessT + tileProcessT / 100.0f;
+			maxDelay = 0;
+			cout << "tileProcessT: ---------------------------------------->" << tileProcessT << endl;
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (playIndex == (fps * chunkD - 1))
+		{
+			if (33 * chunkD * fps < tileProcessT)
+			{
+				int f = abs(33 * chunkD * fps - tileProcessT) / 33;
+				totalDelay = totalDelay + 33 * f;
+				for (int i = 0; i < f; i++)
+				{
+					//blankPixels.push_back(100);
+					//frameRate.push_back(0);
+					samplingRateMin.push_back(0);
+					samplingRateAvg.push_back(0);
+
+				}
+
+				cout << "Delay Added........................................................................: " << totalDelay << ",tileProcesT:" << tileProcessT << ",added Now:" << 33 * f << endl;
+
+			}
+		
+		}
+		PPC camex = refCam;
+		camex.Pan(panVec[frameCount]);
+		//eri.ERI2Conv4tilesDoNothing(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalOutSide);
+		float blankP, srmiN, sravG = 0;
+		eri.ERI2Conv4tilesWithSrFrDelay(convPixels, frameQvecTiles, reqTiles[currentChunk], camex, tileColN, tileRowN, currentChunk, playIndex, blankP, sravG, srmiN);
+		displayImage(convPixels);
+		blankPixels.push_back(blankP);
+		frameRate.push_back(30);
+		samplingRateAvg.push_back(sravG);
+		samplingRateMin.push_back(srmiN);
+		displayImage33ms();
+
+
+	}
+	auto delayMeasurementTimeEnd = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsedDelay = delayMeasurementTimeEnd - delayMeasureStart;
+
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/android_tile_Diving_BP_FR_SRminFov_D_646_FoVonly.txt", std::ios::out | std::ios::app);
+	output << hmdFileName << "," << bwLog << endl;
+	int totalbP = 0;
+	
+	int totalFR = 0;
+	for (int i = 0; i < blankPixels.size(); i++)
+	{
+		totalbP = totalbP + blankPixels[i];
+		output << filename << "," << "blankP:" << blankPixels[i] << ",frameR:" << frameRate[i] << ", srAvg:" << samplingRateAvg[i] << ",srMin:" << samplingRateMin[i] << endl;
+		totalFR = totalFR + frameRate[i];
+	}
+	float avgFR = 30 * totalFR / frameRate.size();
+	float bp = totalbP / blankPixels.size();
+	output.close();
+
+	int totalTile = 0;
+	for (int i = 0; i < totalChunkReq.size(); i++)
+	{
+		totalTile = totalChunkReq[i] + totalTile;
+	}
+
+	ofstream output1;
+	output1.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/AndroidTileFoVonly.txt", std::ios::out | std::ios::app);
+	cout << "Delay OldWay: " << totalDelay << ",bp:" << bp << endl;
+
+	output1 << srcBaseAddr << bwLog << hmdFileName << ": " << "Delay: " << totalDelay << ",bp:" << bp << ", totalTileChunk:" << totalTile << " Fravg:" << avgFR << endl;
+	output1.close();
+
+}
+
+
+void testDownloadVideoHttpTileDelayMeasurementFoVOnly(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	int fovPlusOrno = 0;   //1 for fovPlus, 0 for fov
+	float corePredictionMargin = 0.6;
+	int mxChunkN = 56;
+
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	int mahimahiPackSize = 1400;
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		//cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+	int chunkBwDivider = 12;
+
+	if (fovPlusOrno == 0)
+	{
+		chunkBwDivider = 5;
+	}
+
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+	if (fovPlusOrno == 0)
+	{
+		getTilesNumber2reqFovOnly(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+
+	else
+	{
+		getTilesNumber2req(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+
+
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInSide;
+	vector<float>blankPixels;
+	vector<float>frameRate;
+	vector<float> samplingRateAvg;
+	vector<float> samplingRateMin;
+	vector<int>totalChunkReq;
+	vector<int>T;
+	float tileProcessT = 0;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	long totalProcessT = 0;
+
+	auto chunkStarT = std::chrono::high_resolution_clock::now();
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while (0)// (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+
+	auto delayMeasureStart = std::chrono::high_resolution_clock::now();
+	auto reqSend = std::chrono::high_resolution_clock::now();
+	int maxDelay = 0;
+
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 2))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+		cout << frameCount;
+		if (playIndex == 1)
+		{
+			chunkStarT = std::chrono::high_resolution_clock::now();
+
+		}
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+
+			if (fovPlusOrno == 0)
+			{
+				getTilesNumber2reqFovOnly(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+
+			else
+			{
+				getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+
+
+			//getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			int reqChunkN = currentChunk + 1;
+			NextChunkDownloaded = 0;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						//cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime + totalDelay;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = chunkBwDivider * chunkSizeKB[namePos] * 1024 / mahimahiPackSize;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						if (maxDelay < bwTimeNeeded)
+						{
+							maxDelay = bwTimeNeeded;
+						}
+						reqSend = std::chrono::high_resolution_clock::now();
+						//futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded);
+					}
+
+				}
+			}
+			float totalDlTime = maxDelay;
+			float tpTime = reqTiles[reqChunkN].size() * 49;
+			tileProcessT = totalDlTime + tpTime;
+			totalProcessT = totalProcessT + tileProcessT / 100.0f;
+			maxDelay = 0;
+			cout << "tileProcessT: ---------------------------------------->" << tileProcessT << endl;
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (playIndex == (fps * chunkD - 1))
+		{
+			if (33 * chunkD * fps < tileProcessT)
+			{
+				int f = abs(33 * chunkD * fps - tileProcessT) / 33;
+				totalDelay = totalDelay + 33 * f;
+				for (int i = 0; i < f; i++)
+				{
+					//blankPixels.push_back(100);
+					//frameRate.push_back(0);
+					samplingRateMin.push_back(0);
+					samplingRateAvg.push_back(0);
+
+				}
+
+				cout << "Delay Added........................................................................: " << totalDelay << ",tileProcesT:" << tileProcessT << ",added Now:" << 33 * f << endl;
+
+			}
+			/*/
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			auto chunkEnd = delayStart;
+			std::chrono::duration<double> delayElapsed = delayStart-reqSend;
+			while (delayElapsed.count()*1000 < bwTimeNeeded)
+			{
+				timePassed = timePassed + 33.0f;
+				displayImage33ms();
+				totalDelay = totalDelay + 33;
+				delayStart = std::chrono::high_resolution_clock::now();
+				delayElapsed = delayStart - reqSend;
+				cout << "TimePassed: " << delayElapsed.count() * 1000 << " bwTimeNeeded: " << bwTimeNeeded << endl;
+			}
+			currentChunk = currentChunk;
+			cout << "Delay Added.................: " << totalDelay << endl; */
+		}
+
+		cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+		//eri.ERI2Conv4tilesDoNothing(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalOutSide);
+		float blankP, srmiN, sravG = 0;
+		eri.ERI2Conv4tilesWithSrFrDelay(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, blankP, sravG, srmiN);
+		//displayImage(convPixels);
+		blankPixels.push_back(blankP);
+		frameRate.push_back(30);
+		samplingRateAvg.push_back(sravG);
+		samplingRateMin.push_back(srmiN);
+		displayImage33ms();
+
+
+	}
+	auto delayMeasurementTimeEnd = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsedDelay = delayMeasurementTimeEnd - delayMeasureStart;
+
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tile_allframe_alldata12dec.txt", std::ios::out | std::ios::app);
+	output << hmdFileName << "," << bwLog << endl;
+	int totalbP = 0;
+
+	int totalFR = 0;
+	for (int i = 0; i < blankPixels.size(); i++)
+	{
+		totalbP = totalbP + blankPixels[i];
+		output << filename << "," << "blankP:" << blankPixels[i] << ",frameR:" << frameRate[i] << ", srAvg:" << samplingRateAvg[i] << ",srMin:" << samplingRateMin[i] << endl;
+		totalFR = totalFR + frameRate[i];
+	}
+	float avgFR = 30 * totalFR / frameRate.size();
+	float bp = totalbP / blankPixels.size();
+	output.close();
+
+	int totalTile = 0;
+	for (int i = 0; i < totalChunkReq.size(); i++)
+	{
+		totalTile = totalChunkReq[i] + totalTile;
+	}
+
+	ofstream output1;
+	output1.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tile_allframe_avgdata12dec", std::ios::out | std::ios::app);
+	cout << "Delay OldWay: " << totalDelay << ",bp:" << bp << endl;
+
+	output1 << srcBaseAddr << bwLog << hmdFileName << ": " << "Delay: " << totalDelay << ",bp:" << bp << ", totalTileChunk:" << totalTile << " Fravg:" << avgFR << endl;
+	output1.close();
+
+}
+
+
+
+
+void testDownloadVideoHttpTileDelayMeasurementFoV(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+
+	int mxChunkN = 55;
+	float corePredictionMargin = 0.7;
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+	
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+	Mat convPixels(camera2.h, camera2.w, firstScene.type());
+
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+
+	getTilesNumber2reqFovOnly(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+
+
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = 12 * chunkSizeKB[namePos] * 1024 / 1500;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			//futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalInSide;
+	vector<int>totalChunkReq;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while (0)// (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+
+	auto delayMeasureStart = std::chrono::high_resolution_clock::now();
+	auto reqSend = std::chrono::high_resolution_clock::now();
+	int maxDelay = 0;
+
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 2))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		//cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+		cout << frameCount;
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+			getTilesNumber2reqFovOnly(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			int reqChunkN = currentChunk + 1;
+			NextChunkDownloaded = 0;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						//cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = 12 * chunkSizeKB[namePos] * 1024 / 1500;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						if (maxDelay < bwTimeNeeded)
+						{
+							maxDelay = bwTimeNeeded;
+						}
+						reqSend = std::chrono::high_resolution_clock::now();
+						//futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						//std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded);
+					}
+				}
+			}
+
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (playIndex == (fps * chunkD - 1))
+		{
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> delayElapsed = delayStart - reqSend;
+			while (delayElapsed.count() * 1000 < bwTimeNeeded)
+			{
+				timePassed = timePassed + 33.0f;
+				displayImage33ms();
+				totalDelay = totalDelay + 33;
+				delayStart = std::chrono::high_resolution_clock::now();
+				delayElapsed = delayStart - reqSend;
+				cout << "TimePassed: " << delayElapsed.count() * 1000 << " bwTimeNeeded: " << bwTimeNeeded << endl;
+			}
+			currentChunk = currentChunk;
+			cout << "Delay Added.................: " << totalDelay << endl;
+		}
+
+		cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+
+		//eri.ERI2Conv4tilesDoNothing(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex, totalOutSide);
+		//displayImage(convPixels);
+		displayImage33ms();
+
+
+	}
+	auto delayMeasurementTimeEnd = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsedDelay = delayMeasurementTimeEnd - delayMeasureStart;
+
+	ofstream output;
+	output.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/tileDelayFoVPlus.txt", std::ios::out | std::ios::app);
+	output << srcBaseAddr << " ,Delay: " << (elapsedDelay.count() * 1000) - 33 * frameCount << endl;
+	output.close();
+
+
+	cout << "Extra Time needed/delay: " << (elapsedDelay.count() * 1000) - 33 * frameCount << endl;
+	cout << "Delay OldWay: " << totalDelay << endl;
+}
+
+void testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
+{
+	int fovOnly = 1;
+	int mxChunkN = 59;
+	float corePredictionMargin = 1;
+
+	auto start = std::chrono::high_resolution_clock::now();
+	Path path1;
+	float var[10];
+
+	LoadBWTraceData(bwLog);
+	vector<float> chunkSizeKB; vector<string>chunkName;
+	ifstream  file1("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/crf30/1s/chunkSizes.txt");
+	if (!file1)
+	{
+		print("error: can't open file: " << "chunkSizes" << endl);		system("pause");
+	}
+	string line1;	int i = 0;
+	while (getline(file1, line1))
+	{
+		string name;
+		stringstream linestream(line1);
+		linestream >> name;
+		const char* nameChr = name.c_str();
+		const char* positionMarker = strrchr(nameChr, '\\');
+		int start = int(positionMarker - nameChr) + 1;
+		name = name.substr(start, name.size() - start);
+		float KB;
+		linestream >> KB;
+		KB = KB / 1024.0f;
+		chunkSizeKB.push_back(KB);
+		chunkName.push_back(name);
+		//cout << "kb: " << KB << endl;
+
+	}
+	ifstream  f("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/4kDivingEncodingVariable.txt");
+	string line;
+	int ii = 0;
+	while (std::getline(f, line))
+	{
+		var[ii] = stoi(line);
+		cout << var[ii] << '\n';
+		ii++;
+	}
+
+	int frameCol = var[0];
+	int frameRow = var[1];
+	float hfov = 90.0f;
+
+	int w = frameCol * hfov / 360;
+	int h = frameRow * hfov / 360;
+	PPC camera2(hfov * corePredictionMargin, w * corePredictionMargin, h * corePredictionMargin);
+
+	path1.LoadHMDTrackingData(hmdFileName, camera2);
+
+	int chunkD = 1;
+	int chunkN = 1;
+	int fps = 30;
+	Mat firstScene;
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", firstScene);
+	Mat endScene;
+	int condition = 1;
+	int cam_index = 0;
+	int tiltAngle = 20;
+	string filename;
+	int frameCount = 0;
+	std::vector<std::future<void>> futures;
+
+	int ERI_w = frameCol;
+	int ERI_h = frameRow;
+	ERI eri(ERI_w, ERI_h);
+	int tilesRow = 4;
+	int tilesCol = 6;
+
+	for (int i = 0; i < tilesCol * tilesRow; i++)
+	{
+		vector<vector <Mat>> temp1;
+		for (int chunk = 0; chunk <= mxChunkN + 1; chunk++)
+		{
+			vector <Mat> temp;
+			for (int i = 0; i < (fps * chunkD); i++)
+			{
+				Mat m;
+				temp.push_back(m);
+				m.release();
+			}
+			temp1.push_back(temp);
+		}
+		frameQvecTiles.push_back(temp1);
+	}
+	int bwTimeNeeded = 200;
+	int bwDuration;
+	int bwIglobal;
+	int packetNeeded;
+
+	Mat blankCanvas(frameRow, frameCol, firstScene.type());
+
+	vector<vector <int>> reqTiles;
+	for (int i = 0; i <= mxChunkN; i++)
+	{
+
+		vector<int> temp;
+		int x = 0;
+		temp.push_back(x);
+		reqTiles.push_back(temp);
+	}
+	int tileDlSum = 0;
+	int tileCond = 1;
+	int tileRowN = rowM;
+	int tileColN = colN;
+
+
+	cout << "Very first Chunk, no frame yet.....More than once is red flag." << endl;
+
+	cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+	vector <int> tileBitMap, tileBitMapCopy;
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMap.push_back(0);
+	}
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		tileBitMapCopy.push_back(0);
+	}
+
+	if (fovOnly==1)
+	{
+		getTilesNumber2reqFovOnly(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+	else {
+		getTilesNumber2req(tileBitMap, path1.cams[cam_index], eri, tileColN, tileRowN);
+	}
+
+	auto playStart = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < tileRowN * tileColN; i++)
+	{
+		cout << i << "--" << tileBitMap[i] << endl;
+		if (tileBitMap[i] == 1)
+		{
+			filename = getChunkNametoReq4mTiles(srcBaseAddr, chunkN, i);
+			cout << filename << endl;
+			reqTiles[chunkN].push_back(i);
+			auto finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed1 = finish1 - start;
+			bwDuration = elapsed1.count() * 1000;
+			bwIglobal = 0;
+			while (bwDuration > byteVec[bwIglobal]) {
+				bwIglobal++;
+			}
+
+			string name = filename;
+			cout << filename << endl;
+			const char* nameChr = name.c_str();
+			const char* positionMarker = strrchr(nameChr, '/');
+			int start = int(positionMarker - nameChr) + 1;
+			name = name.substr(start, name.size() - start);
+			cout << name << " " << chunkName[0] << endl;
+			int namePos = 0;
+			while ((name.compare(chunkName[namePos])))
+			{
+				namePos++;
+			}
+			cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+			packetNeeded = 12 * chunkSizeKB[namePos] * 1024 / 1500;
+			bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+			cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+			futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, chunkN, chunkD, i, fps, bwTimeNeeded));
+		}
+	}
+
+	Mat tileFrame;
+	int tileColLen = frameCol / tileColN;
+	int tileRowLen = frameRow / tileRowN;
+	cout << "t: " << tileColLen << " " << tileRowLen << endl;
+	cout << reqTiles[chunkN].size() << endl;
+	vector<int> totalQualBorder, totalQualPopescu;
+
+	vector<int>totalChunkReq;
+	int totalTileLoaded = 0;
+	int totalDelay = 0;
+	totalChunkReq.push_back(reqTiles[chunkN].size());
+	while (NextChunkDownloaded < reqTiles[chunkN].size() - 1)
+	{
+		displayImage33ms();
+		//displayImage(firstScene);
+		timePassed = timePassed + 30.0f;
+		waitKey(20);
+		cout << "in first while" << endl;
+	}
+
+	totalTileLoaded = totalTileLoaded + NextChunkDownloaded;
+	NextChunkDownloaded = 0;
+	cout << tileDlSum << endl;
+
+	int playStartTime = 0;
+	int tileCondition = 1;
+	frameCount = -1;
+	int totalBorderingPixel = 0; int totalCount = 0;
+
+	auto delayMeasureStart = std::chrono::high_resolution_clock::now();
+	PPC tempCam = path1.cams[cam_index];
+
+	ofstream outputFrameSR;
+	outputFrameSR.open("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/TileQualPerFrameBorderingPixel.txt", std::ios::out | std::ios::app);
+
+	while (tileCondition)
+	{
+		frameCount++;
+		timePassed = timePassed + 30.0f;
+
+		if (frameCount == (fps * chunkD * mxChunkN - 2))
+		{
+			tileCondition = 0;
+		}
+		if (frameCount == 0)
+		{
+			auto firstFrame = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsedFirst = firstFrame - playStart;
+			playStartTime = elapsedFirst.count() * 1000;
+		}
+
+		int currentChunk = (frameCount) / (fps * chunkD) + 1;
+		int playIndex = frameCount - (currentChunk - 1) * (fps * chunkD); //0-(fps*chunkD-1)
+		cout << " CurrentChunkN=" << currentChunk << " frmcount=" << frameCount << " plCnt=" << playIndex << "passedTime: ->" << timePassed << endl;
+
+		if ((playIndex) == fps * (chunkD - nextDlChunkSec))
+		{
+			cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+			vector <int> tileBitMap2;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				tileBitMap2.push_back(0);
+			}
+
+			if (fovOnly==1)
+			{
+				getTilesNumber2reqFovOnly(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+			else
+			{
+				getTilesNumber2req(tileBitMap2, path1.cams[cam_index], eri, tileColN, tileRowN);
+			}
+			
+			int reqChunkN = currentChunk + 1;
+			NextChunkDownloaded = 0;
+			for (int i = 0; i < tileRowN * tileColN; i++)
+			{
+				//cout << i << "--" << tileBitMap2[i] << endl;
+
+				if (reqChunkN <= mxChunkN)
+				{
+					if (tileBitMap2[i] == 1)
+					{
+						filename = getChunkNametoReq4mTiles(srcBaseAddr, reqChunkN, i);
+						//cout << filename << endl;
+						reqTiles[reqChunkN].push_back(i);
+						auto finish1 = std::chrono::high_resolution_clock::now();
+						bwDuration = bwDuration = frameCount * 33 + playStartTime;
+						bwIglobal = 0;
+						while (bwDuration > byteVec[bwIglobal]) {
+							bwIglobal++;
+						}
+
+						string name = filename;
+						cout << filename << endl;
+						const char* nameChr = name.c_str();
+						const char* positionMarker = strrchr(nameChr, '/');
+						int start = int(positionMarker - nameChr) + 1;
+						name = name.substr(start, name.size() - start);
+						int namePos = 0;
+						while ((name.compare(chunkName[namePos])))
+						{
+							namePos++;
+						}
+						cout << namePos << " " << chunkName[namePos] << " " << chunkSizeKB[namePos] << endl;
+						packetNeeded = 12 * chunkSizeKB[namePos] * 1024 / 1500;
+
+						bwTimeNeeded = byteVec[bwIglobal + packetNeeded] - byteVec[bwIglobal]; //in ms
+						timePassed = 0;
+						cout << "time: " << bwDuration << " Index4Time= " << bwIglobal << " reqTime=" << bwTimeNeeded << endl;
+						futures.push_back(std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded));
+						//std::async(std::launch::async, DownLoadTilesChunk, filename, reqChunkN, chunkD, i, fps, bwTimeNeeded);
+					}
+				}
+			}
+
+			totalChunkReq.push_back(reqTiles[reqChunkN].size());
+		}
+
+		if (playIndex == (fps * chunkD - 1))
+		{
+			auto delayStart = std::chrono::high_resolution_clock::now();
+			while (NextChunkDownloaded < reqTiles[currentChunk + 1].size() - 1)
+			{
+				timePassed = timePassed + 30.0f;
+				displayImage33ms();
+				totalDelay = totalDelay + 33;
+			}
+			currentChunk = currentChunk + 1;
+			auto delayFinish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> delayElapsed = delayFinish - delayStart;
+
+
+			cout << "Delay Added.................: " << totalDelay << endl;
+		}
+
+		cam_index = path1.GetCamIndex(frameCount, fps, cam_index);
+
+		
+		vector<vector<float>> dummyVec;
+		for (int i = 0; i < camera2.h+1; i++)
+		{
+			vector<float> dummyDummy;
+			for (int ii = 0; ii < camera2.w+1; ii++)
+			{
+				dummyDummy.push_back(100);
+			}
+			dummyVec.push_back(dummyDummy);
+		}
+		Mat convPixels(camera2.h, camera2.w, firstScene.type());
+		Mat convPixels1(camera2.h, camera2.w, firstScene.type());
+		int borderingPixel=eri.ERI2Conv4tilesTotalPixelBorderingQualChange(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex,dummyVec);
+		//int borderingPixel=eri.ERI2Conv4tiles(convPixels, frameQvecTiles, reqTiles[currentChunk], path1.cams[cam_index], tileColN, tileRowN, currentChunk, playIndex,totalQualPopescu);
+		totalBorderingPixel = totalBorderingPixel + borderingPixel;
+		outputFrameSR << srcBaseAddr << "," << hmdFileName << ",BorderingPixel," <<borderingPixel<< endl;
+		totalCount++;
+		//displayImage(convPixels);
+		convPixels.release();
+		
+		
+	}		
+	float borderingPixelAvg = totalBorderingPixel / totalCount;
+	//outputFrameSR << srcBaseAddr << "," << hmdFileName << ",BorderingPixel," << borderingPixelAvg << endl;	
+	outputFrameSR.close();
+
+}
 
 void testDownloadVideoHttpTile(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN)
 {
@@ -2356,11 +5900,11 @@ int testViewDirectionAvgRotation()
 int Writeh264VideoUptoNframes() {
 
 	Path path1;
-	int lastframe = 900;
+	int lastframe = 1800;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
-	path1.WriteH264("./Video/source/roller.mkv", lastframe, codec);
-	path1.WriteH264("./Video/source/rhino.WEBM", lastframe, codec);
-	path1.WriteH264("./Video/source/diving.mkv", lastframe, codec);
+	path1.WriteH264("./Video/source/roller.avi", lastframe, codec);
+	//path1.WriteH264("./Video/source/rhino.avi", lastframe, codec);
+	//path1.WriteH264("./Video/source/diving.avi", lastframe, codec);
 
 	return 0;
 }
@@ -2370,18 +5914,12 @@ int Writeh264VideoUptoNframes() {
 int testWriteh264tiles() {
 	Path path1;
 	int codec = VideoWriter::fourcc('H', '2', '6', '4');
+
 	for (int i = 1; i < 60; i++)
 	{
-		path1.WriteH264tiles("./Video/source/diving.AVI", i, 6, 4, codec);
+		path1.WriteH264tiles("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/roller.AVI", i, 6, 4, codec);
 	}
-	for (int i = 1; i < 60; i++)
-	{
-		path1.WriteH264tiles("./Video/source/roller.AVI", i, 6, 4, codec);
-	}
-	for (int i = 1; i < 60; i++)
-	{
-		path1.WriteH264tiles("./Video/source/rhino.AVI", i, 6, 4, codec);
-	}
+
 	
 	return 0;
 
@@ -2442,7 +5980,7 @@ void testEncodingDecoding()
 	Mat frame;
 	Mat retencode;
 	Mat retdecode;
-	upload_image("./Image/eri_4k.jpg", frame);
+	upload_image("./Image/ERI.png", frame);
 
 	
 	float hfov = 90.0f;
@@ -2884,155 +6422,186 @@ void testBugInSR(int singleOrVariableVD, int samplingValueCalculate, char* srcBa
 
 }
 
-void GenerateEncoding4sVarSpecificPanTiltChunk()
+void GenerateEncoding4sVarSpecificPanTiltChunk(int pan, int tilt, int chunkN)
 {	
+	Path path1;
+	float var[10];
+	ifstream  f("./Video/source/4kDivingEncodingVariable.txt");
+	std::string line;
+	int i = 0;	
+	while (std::getline(f, line))
+	{
+		var[i] = stoi(line);
+		cout << var[i] << '\n';
+		i++;
+	}
+
+	ERI eri(var[0], var[1]);
+	eri.atanvalue();	eri.xz2LonMap();	eri.xz2LatMap();
+	path1.EncodingNonUniformListInit(var); //palasx
+	path1.mapxEncoding(var);
+	
+	int extraFrame=30;
+	int extraSec=6;	
+	char* fileNamex = "./Video/source/diving.AVI";
+	
+			
+	cout << fileNamex << endl;
+					
+	EncodeVideoWithExtensionSpecificPanTiltChunkN(fileNamex, extraSec, pan, tilt, chunkN, extraFrame, extraSec);
+
+			
 	
 	
-float tilt = 10;
-float pan = 40;
-string fileName;
-string chunkN;
-ifstream  file("./Video/source/AllChunKname.txt");
-if (!file)
-{
-	print("error: can't open file: " << filename << endl);
-	system("pause");
 }
-string   line;
-while (getline(file, line))
+
+void GenerateEncoding4sVarSpecificPanTiltChunk4mFileName()
 {
-	stringstream  linestream(line);
-
-	string lString, lString2;
-
-	linestream >> lString;
-
-	ostringstream oss2;
-	oss2 << "http://127.0.0.5:80/3xid2crf3trace/1s/4s1s/" << lString << endl;
-	lString = oss2.str();
-	lString2 = lString;
-	cout << lString << endl;
-	
-	
-
-	unsigned first = lString.find("1s/");
-	unsigned last = lString.find("_");
-	string strNew = lString.substr(first, last - first);
-	first = strNew.find("1s/");
-	last = strNew.find("CR");
-	strNew = strNew.substr(first, last - first);
-	first = strNew.find("1s/");
-	last = strNew.find("_");
-	strNew = strNew.substr(first, last - first);
-	strNew = (strNew.substr(8, strNew.length() - 8)).c_str();
-
-	ostringstream oss1;
-	oss1 << "\"" << "./Video/source/" << strNew << ".AVI" << "\"" << endl;
-	cout << oss1.str() << endl;
-	fileName = oss1.str();
-
-	string strTilt;
-	first = lString2.find("_");
-	last = lString2.find(".");
-	strTilt = lString2.substr(first, last - first);
-	first = strTilt.find("_");
-	last = strTilt.find(".");
-	strTilt = strTilt.substr(first, last - first);
-
-
-	if (strTilt[0] == '_')
+	float tilt = 10;
+	float pan = 40;
+	string fileName;
+	string chunkN;
+	ifstream  file("./Video/source/AllChunKname.txt");
+	if (!file)
 	{
-		strTilt.erase(0, 1);
+		print("error: can't open file: " << filename << endl);
+		system("pause");
 	}
-	chunkN = strTilt.substr(0, 3);
-	first = chunkN.find("_");
-	chunkN = chunkN.substr(0, first);
-	cout << chunkN << endl;
-	strTilt = strTilt.erase(0, 2);
-	if (strTilt[0] == '_')
+	string   line;
+	while (getline(file, line))
 	{
-		strTilt.erase(0, 1);
-	}
-	first = strTilt.find("_");
+		stringstream  linestream(line);
 
-	string newTilt = strTilt.substr(0, first);
-	string newPan = strTilt.substr(first + 1, strTilt.length() - first - 1);
-	cout << strTilt << " " << newTilt << " " << newPan << endl;
+		string lString, lString2;
 
-	pan = stoi(newPan);
-	tilt = stoi(newTilt);
+		linestream >> lString;
 
-	//.............
+		ostringstream oss2;
+		oss2 << "http://127.0.0.5:80/3xid2crf3trace/1s/4s1s/" << lString << endl;
+		lString = oss2.str();
+		lString2 = lString;
+		cout << lString << endl;
+
+
+
+		unsigned first = lString.find("1s/");
+		unsigned last = lString.find("_");
+		string strNew = lString.substr(first, last - first);
+		first = strNew.find("1s/");
+		last = strNew.find("CR");
+		strNew = strNew.substr(first, last - first);
+		first = strNew.find("1s/");
+		last = strNew.find("_");
+		strNew = strNew.substr(first, last - first);
+		strNew = (strNew.substr(8, strNew.length() - 8)).c_str();
+
+		ostringstream oss1;
+		oss1 << "\"" << "./Video/source/" << strNew << ".AVI" << "\"" << endl;
+		cout << oss1.str() << endl;
+		fileName = oss1.str();
+
+		string strTilt;
+		first = lString2.find("_");
+		last = lString2.find(".");
+		strTilt = lString2.substr(first, last - first);
+		first = strTilt.find("_");
+		last = strTilt.find(".");
+		strTilt = strTilt.substr(first, last - first);
+
+
+		if (strTilt[0] == '_')
+		{
+			strTilt.erase(0, 1);
+		}
+		chunkN = strTilt.substr(0, 3);
+		first = chunkN.find("_");
+		chunkN = chunkN.substr(0, first);
+		cout << chunkN << endl;
+		strTilt = strTilt.erase(0, 2);
+		if (strTilt[0] == '_')
+		{
+			strTilt.erase(0, 1);
+		}
+		first = strTilt.find("_");
+
+		string newTilt = strTilt.substr(0, first);
+		string newPan = strTilt.substr(first + 1, strTilt.length() - first - 1);
+		cout << strTilt << " " << newTilt << " " << newPan << endl;
+
+		pan = stoi(newPan);
+		tilt = stoi(newTilt);
+
+		//.............
 
 		char* fileName4s = "./Video/source/4sBase/rhino";
 		char* fileName1s = "./Video/source/extraSec/rhino.AVI6";
 		char* fileName2s = "./Video/source/extraSec/rhino.AVI8";
-		char* fileName3s = "./Video/source/extraSec/rhino.AVI10"; 
-		std::ostringstream oss11,oss22,oss3,oss4;
-		
+		char* fileName3s = "./Video/source/extraSec/rhino.AVI10";
+		std::ostringstream oss11, oss22, oss3, oss4;
+
 
 		oss11 << fileName4s << "_" << chunkN << "_" << tilt << "_" << pan << ".avi";
 		oss22 << fileName1s << "_" << chunkN << "_" << tilt << "_" << pan << ".avi";
 		oss3 << fileName2s << "_" << chunkN << "_" << tilt << "_" << pan << ".avi";
-		oss4 << fileName3s << "_" << chunkN << "_" << tilt << "_" << pan << ".avi";	
+		oss4 << fileName3s << "_" << chunkN << "_" << tilt << "_" << pan << ".avi";
 		string tmp1 = oss11.str(); const char* Fn1 = tmp1.c_str();
 		string tmp2 = oss22.str(); const char* Fn2 = tmp2.c_str();
 		string tmp3 = oss3.str(); const char* Fn3 = tmp3.c_str();
 		string tmp4 = oss4.str(); const char* Fn4 = tmp4.c_str();
 
-	video4sBaseAndExtraSec((char*)Fn1, (char*)Fn2, (char*)Fn3, (char*)Fn4);
+		video4sBaseAndExtraSec((char*)Fn1, (char*)Fn2, (char*)Fn3, (char*)Fn4);
 
 
 
 
-	///--------
-	/*
-		const char* c = fileName.c_str();
-	
-		int extraFrame;
-		int extraSec;
-	
-		char* fileNamex = "./Video/source/diving.AVI";
-		if (strchr(fileName.c_str(), 'v'))
-		{
-			fileNamex = "./Video/source/diving.AVI";
-		
-		}
-		else if (strchr(fileName.c_str(), 'l'))
-		{
-			fileNamex = "./Video/source/roller.MKV";
-		
-		}
-		else {
-			fileNamex = "./Video/source/rhino.AVI";
-		
-		}
-			for (int i = 0; i < 3; i++)
+		///--------
+		/*
+			const char* c = fileName.c_str();
+
+			int extraFrame;
+			int extraSec;
+
+			char* fileNamex = "./Video/source/diving.AVI";
+			if (strchr(fileName.c_str(), 'v'))
 			{
-				if (i == 0)
-				{
-					extraFrame = 30;
-					extraSec = 6;
-				}
-				if (i == 1)
-				{
-					extraFrame = 40;
-					extraSec = 8;
-				}
-				if (i == 2)
-				{
-					extraFrame = 50;
-					extraSec = 10;
+				fileNamex = "./Video/source/diving.AVI";
 
-				}
-			
-				cout << fileNamex << endl;
-					
-				makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileNamex, extraSec, pan, tilt, stoi(chunkN), extraFrame, extraSec);
 			}
-			*/
-	
-	}	
+			else if (strchr(fileName.c_str(), 'l'))
+			{
+				fileNamex = "./Video/source/roller.MKV";
+
+			}
+			else {
+				fileNamex = "./Video/source/rhino.AVI";
+
+			}
+				for (int i = 0; i < 3; i++)
+				{
+					if (i == 0)
+					{
+						extraFrame = 30;
+						extraSec = 6;
+					}
+					if (i == 1)
+					{
+						extraFrame = 40;
+						extraSec = 8;
+					}
+					if (i == 2)
+					{
+						extraFrame = 50;
+						extraSec = 10;
+
+					}
+
+					cout << fileNamex << endl;
+
+					makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(fileNamex, extraSec, pan, tilt, stoi(chunkN), extraFrame, extraSec);
+				}
+				*/
+
+	}
 }
 
 
@@ -3226,19 +6795,12 @@ void makeVideoRegularSpecificPanTiltChunkN(string fileName, float pan, float til
 	struct var encodevar;
 	Path path1;
 	float hfov = 90.0f;
-	float corePredictionMargin = 1.2;
+	float corePredictionMargin = 1.4;
 	int w = 960;
 	int h = 512;
 	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
 	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	int cf = 5;
-	VideoCapture cap(fileName);
-
-	if (!cap.isOpened())
-	{
-		cout << "Cannot open the video file: " << fileName<<endl;
-		STOP;
-	}
 	int fps = 30;
 	int segi = 0;
 	Mat ret;
@@ -3246,8 +6808,17 @@ void makeVideoRegularSpecificPanTiltChunkN(string fileName, float pan, float til
 	int chunDurationsec = 4;
 	Mat frame;
 	int discard = beginFrame;
+	   
+	VideoCapture cap(fileName);
 
-	for (int fi = 0; fi < (chunkN)*fps*chunDurationsec + discard; fi++)
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video file: " << fileName<<endl;
+		STOP;
+	}
+
+
+	for (int fi = 0; fi < (chunkN)*fps*chunDurationsec +discard; fi++)
 	{
 		//cout << "loop:->" << endl;
 		cap >> frame;
@@ -3257,11 +6828,11 @@ void makeVideoRegularSpecificPanTiltChunkN(string fileName, float pan, float til
 			cout << "Can not read video frame: " << endl;
 			break;
 		}
-		if (fi >= (chunkN - 1)*chunDurationsec*fps + discard && fi < (discard + chunkN * chunDurationsec*fps))
+		if (fi >= (chunkN - 1) * chunDurationsec * fps + discard && fi < (discard + chunkN * chunDurationsec * fps))
 		{
 			print("enFi: " << fi << endl);
-			//2displayImage(frame);
 			downloadedFrame.push_back(frame);
+								
 		}
 		frame.release();
 	}
@@ -3277,10 +6848,10 @@ void makeVideoRegularSpecificPanTiltChunkN(string fileName, float pan, float til
 		cout << " fi: " << fi << endl;
 
 		frame = downloadedFrame[fi];
-		ret = path1.EncodeNewNonLinV2(frame, &encodevar, core1PPC, encodeRefPPC, cf); //for all possible angle encodinig
-		bufferedFrame.push_back(ret);
-	//	displayImage(ret);
-		ret.release();
+		//ret = path1.EncodeNewNonLinV2(frame, &encodevar, core1PPC, encodeRefPPC, cf); //for all possible angle encodinig
+		bufferedFrame.push_back(frame.clone());
+		
+		
 		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)
 		{			
 			cout << chunkN << endl;
@@ -3288,32 +6859,38 @@ void makeVideoRegularSpecificPanTiltChunkN(string fileName, float pan, float til
 			int ef = bufferedFrame.size();
 			cout << "SAving-> sf:ef " << sf << " " << ef << endl;
 			char *fn;
+			if (discard == 0)
+			{
+				fn = "C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/rollerFrame4s2_";
+
+			}
 			if (discard==400)
 			{
-				fn = "./Video/source/diving_";
+				fn = "C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/divingFrame4s_";
 
 			}
-			if (discard == 1)
-			{
-				fn = "./Video/source/roller_";
-
-			}
+			
 			if (discard == 100)
 			{
-				fn = "./Video/source/rhino_";
+				fn = "C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/rhinoFrame4s_";
 
 			}
-
-
 			
-			//cout << fps << ret.cols << ret.rows << " sf: " << sf << " ef: " << ef << endl;
-			//videowriterhelperx(chunkN, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
 			videowriterhelperxWithFileName(fn, chunkN, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
 
 		}
 
 		
 	}
+	for (int i = 0; i < downloadedFrame.size(); i++)
+	{
+		Mat m;
+		downloadedFrame[i] = m;
+		bufferedFrame[i] = m;
+	}
+
+	downloadedFrame.clear();
+	bufferedFrame.clear();
 	
 }
 
@@ -3419,7 +6996,7 @@ void makeVideo4thSecVarSpecificPanTiltChunkN(char* fileName,float pan, float til
 	output.close();
 }
 
-void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec)
+void EncodeVideoWithExtensionSpecificPanTiltChunkN(char* fileName, int extraSec, float pan, float tilt, int chunkN, int extraFrame, int howManySecondsfor4thSec)
 {
 	vector<Mat> downloadedFrame;
 	vector <Mat> bufferedFrame;
@@ -3429,7 +7006,7 @@ void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, 
 	float corePredictionMargin = 1.2;
 	int w = 960;
 	int h = 512;
-	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
+	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt  //if you change it must update the MapxEncoding Function
 	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	int cf = 5;
 	VideoCapture cap(fileName);
@@ -3437,21 +7014,7 @@ void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, 
 	temp_calc(nonUniformList, howManySecondsfor4thSec, extraFrame);
 	int extraAdd4Diving = 0;
 	cout << fileName << endl;
-	if (strchr(fileName, 'g'))
-	{
-		extraAdd4Diving =400;
-		cout << "extra 400" << endl;
-	}
-	else if (strchr(fileName, 'l'))
-	{
-		extraAdd4Diving = 1;
-		cout << "extra 1" << endl;
-	}
-	else
-	{
-		extraAdd4Diving = 100;
-		cout << "extra 100" << endl;
-	}
+
 
 	if (!cap.isOpened())
 	{
@@ -3464,57 +7027,44 @@ void makeVideo4thSecVarSpecificPanTiltChunkNvariableLastSection(char* fileName, 
 	float var[10];
 	int chunDurationsec = 4;
 	Mat frame;
+	int extraIndex = 0;
+	core1PPC.Pan(pan);
+	core1PPC.Tilt(tilt);
 	for (int fi = 0; fi < (chunkN)*fps*chunDurationsec + nonUniformList[extraFrame - 1]+extraAdd4Diving; fi++)
 	{
-		//cout << "loop" << endl;
 		cap >> frame;
 		if (frame.empty())
 		{
-
 			cout << "Can not read video frame: " << endl;
 			break;
 		}
-		if (fi >= (chunkN - 1)*chunDurationsec*fps+extraAdd4Diving && fi < (extraAdd4Diving+chunkN*chunDurationsec*fps + nonUniformList[extraFrame - 1]))
+		if (fi >= (chunkN - 1)*chunDurationsec*fps && fi < (chunkN*chunDurationsec*fps))
 		{
-			//print("enFi: " << fi << endl);
-			//displayImage(frame);
-			downloadedFrame.push_back(frame);
+			cout <<"fi: "<< fi << endl;
+			ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf);
+			bufferedFrame.push_back(ret.clone());
+			displayImage(ret);
 		}
-		//frame.release();
+
+		if (fi >= chunkN * chunDurationsec * fps && fi< chunkN * chunDurationsec * fps+ (int)nonUniformList[extraFrame - 1])
+		{
+			if (fi= chunkN * chunDurationsec * fps+ nonUniformList[extraIndex])
+			{
+				cout << "fi: " << fi << endl;
+				ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf);
+				bufferedFrame.push_back(ret.clone());
+				//displayImage(ret);
+				extraIndex++;
+			}
+		}
+
 	}
 	
-	cout << "in between" << endl;
-
-	float addI;
-	core1PPC.Pan(pan);
-	core1PPC.Tilt(tilt);
-
-	for (int fi = 0; fi < chunDurationsec*fps; fi++)
-	{
-		//cout << " fi: " << fi << endl;
-
-		if ((fi + 1) % (chunDurationsec*fps) == 0 && fi > 0)
-		{
-			for (int i = 1; i < extraFrame + 1; i++)
-			{
-				addI = fi + (int)nonUniformList[i - 1];
-				ret = path1.EncodeNewNonLinV2(downloadedFrame[addI], &encodevar, core1PPC, encodeRefPPC, cf);
-				bufferedFrame.push_back(ret);
-				//displayImage(ret);
-				//ret.release();
-				
-				cout << "; fi-" << fi << " addI-" << addI << endl;
-			}
-			cout << chunkN << endl;
-			int sf = bufferedFrame.size() - (extraFrame);
-			int ef = bufferedFrame.size();
-			cout << "SAving-> sf:ef " << sf << " " << ef << endl;			
-			videowriterhelperxWithFileNameWithExtraSec(fileName, chunkN, extraSec, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
-
-		}
-
-
-	}
+	int sf = 0;
+	int ef = bufferedFrame.size()-1;
+	cout << "SAving-> sf:ef " << sf << " " << ef << endl;			
+	videowriterhelperxWithFileNameWithExtraSec(fileName, chunkN, extraSec, (int)pan, (int)tilt, fps, bufferedFrame[1].cols, bufferedFrame[1].rows, sf, ef, bufferedFrame);
+	   	
 
 }
 
@@ -3556,7 +7106,7 @@ void run10simulations()
 		int reqTime =1;
 
 		//bwLog = "./bwLogs/bw1962kB.txt";
-		testDownloadVideoHttp4thSecVar(1,1,videoFile, bwLog, hmdTrace, reqTime, extraSec); //ch
+		testDownloadVideoHttp4thSecVar(videoFile, bwLog, hmdTrace, reqTime, extraSec,10000); //ch
 
 
 	}
@@ -3645,8 +7195,7 @@ void testCPUtime(string fileName)
 		if (frame.empty())
 		{
 			cout << fi << endl;
-			cout << "Can not read video frame: " << endl;
-			STOP;
+			cout << "Can not read video frame: " << endl;			
 		}
 		creriFrames.push_back(frame);	
 
@@ -3811,24 +7360,22 @@ void GenerateEncoding4AllDirection()
 {
 	int tiltseperaton = 20;
 	int chunkDurationsec = 4;
-	for (int tilt = -90; tilt <= 90; tilt=tilt+tiltseperaton)//
+	for (int chunkN = 1; chunkN < 16; chunkN++)
 	{
-		
-		int panAngle = (int)abs((20) / (cos(3.1416*tilt/180)));   //argument in radian
-		if (panAngle % 2 != 0)
+		for (int tilt = -90; tilt <= 90; tilt = tilt + tiltseperaton)//
 		{
-			panAngle += 1;
-		}
-		for (int pan = -180; pan <= 180; pan=pan+panAngle)
-		{	
-			cout << "tilt: " << tilt << " pan: " << pan <<" angle: "<< panAngle<< endl;
-			//testvideoEncodeNew4s(chunkDurationsec, pan, tilt);			
-			makeVideo4thSecVar(pan, tilt);			
-			//STOP;
+			int panAngle = (int)abs((20) / (cos(3.1416 * tilt / 180)));   //argument in radian
+			if (panAngle % 2 != 0)
+			{
+				panAngle += 1;
+			}
+			for (int pan = -180; pan <= 180; pan = pan + panAngle)
+			{
+				cout << "tilt: " << tilt << " pan: " << pan << "chunkN: " << chunkN << endl;
+				GenerateEncoding4sVarSpecificPanTiltChunk(pan, tilt, chunkN);
+			}
 		}
 	}
-	cout << "came" << endl;
-	STOP;
 }
 
 void GenerateEncoding4AllDirectiontemp()
@@ -3856,7 +7403,7 @@ void temp_calc(vector <float>& nonUniformList, float n, int extraFrame)
 		float x=col;
 		float a = float((finalValue-finalIndex*b)/(finalIndex*finalIndex));
 		int u_x = a * x*x+b*x;
-		cout<<"Nonuniform list->" <<"after90Index= "<< x << "  NonuniformIndex=" << u_x<<endl;
+		//cout<<"Nonuniform list->" <<"after90Index= "<< x << "  NonuniformIndex=" << u_x<<endl;
 		nonUniformList.push_back(u_x);
 
 	}
@@ -3869,13 +7416,13 @@ void makeVideo4thSecVar(float pan, float tilt)
 	struct var encodevar;
 	Path path1;
 	float hfov = 90.0f;
-	float corePredictionMargin = 1.2;
+	float corePredictionMargin = 1.4;
 	int w = 960;
 	int h = 512;	
 	PPC encodeRefPPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);  //always next to corePPC before pan or tilt
 	PPC core1PPC(hfov*corePredictionMargin, w*corePredictionMargin, h*corePredictionMargin);
 	int cf = 5;
-	VideoCapture cap("./Video/roller.MKV");
+	VideoCapture cap("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi");
 
 	if (!cap.isOpened())
 	{
@@ -3883,7 +7430,7 @@ void makeVideo4thSecVar(float pan, float tilt)
 		waitKey(100000);
 	}
 	int fps = 30;
-	int lastframe = 910;
+	int lastframe = 120;
 	int segi = 0;
 	Mat ret;
 	float var[10];
@@ -3909,7 +7456,16 @@ void makeVideo4thSecVar(float pan, float tilt)
 		encoded.push_back(ret);
 		frame.release();
 		ret.release();
-		
+		var[0] = encodevar.colN;
+		var[1] = encodevar.rowN;
+		var[2] = encodevar.We;
+		var[3] = encodevar.Het;
+		ofstream output("./Video/source/Roller_encoding_variable.txt");
+		output << var[0] << endl;
+		output << var[1] << endl;
+		output << var[2] << endl;
+		output << var[3] << endl;
+		output.close();
 	}
 
 
@@ -4230,11 +7786,12 @@ void videowriterhelperxWithFileNameWithExtraSec(char* filename, int extraSec, in
 void testrotationxyframe()
 {
 	Mat frame;
-	upload_image("./Image/360_equirectangular_800_400.JPG", frame);
+	//upload_image("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Image/360_equirectangular_800_400.JPG", frame);
 	//upload_image("http://127.0.0.5:80/1.JPG", frame);
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", frame);
 	if (!frame.data)                              // Check for invalid input
 	{
-		cout << "Could not open or find the image" << std::endl;
+		cout << "Testoratationxyframe:Could not open or find the image" << std::endl;
 		return;
 	}
 
@@ -4322,7 +7879,7 @@ int upload_image(string path, Mat &image) {
 	image_temp = imread(path_temp.c_str(), IMREAD_COLOR);
 	if (!image_temp.data)                              // Check for invalid input
 	{
-		cout << "Could not open or find the image" << std::endl;
+		cout << "upload: Could not open or find the image" << std::endl;
 		return -1;
 	}
 
@@ -4831,10 +8388,10 @@ int testvideoencodedecode() {
 void testRotationxy()
 {
 	Mat eriPixels;
-	upload_image("./Image/360_equirectangular_800_400.JPG", eriPixels);
+	upload_image("C:/inetpub/wwwroot/3vid2crf3trace/360_equirectangular_800_400.JPG", eriPixels);
 	if (!eriPixels.data)                              // Check for invalid input
 	{
-		cout << "Could not open or find the image" << std::endl;
+		cout << "textrotationxy:Could not open or find the image" << std::endl;
 		return;
 	}
 
