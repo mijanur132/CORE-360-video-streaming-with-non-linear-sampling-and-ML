@@ -28,6 +28,8 @@ float samplingRate[2500][4000];//ch
 
 float colMapEncoding[3840][2048];
 float rowMapEncoding[3840][2048];
+int EncodingLon2PixGetXYZ2Lon[3840][2048];
+int EncodingLat2PixGetXYZ2Lat[3840][2048];
 float pxl; float pxr; float pxu; float pxd;
 //for encoding part
 vector <float> nonuniformD;
@@ -548,11 +550,8 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 
 }//mainloop of End of Encoding
 
-Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor)
-{
-	float compressionfactorY = (float)compressionfactor;
-	float compressionfactorX = (float)compressionfactor;
-
+Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor, int fi)
+{	
 	auto start = std::chrono::high_resolution_clock::now();
 
 	if (frame.empty())
@@ -562,15 +561,10 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 
 	}
 
+	float compressionfactorY = (float)compressionfactor;
+	float compressionfactorX = (float)compressionfactor;
 
-	// build local coordinate system of RERI
-	V3 xaxis = camera1.a.UnitVector();
-	V3 yaxis = camera1.b.UnitVector() * -1.0f;
-	V3 zaxis = xaxis ^ yaxis;
-	M33 reriCS;
-	reriCS[0] = xaxis;
-	reriCS[1] = yaxis;
-	reriCS[2] = zaxis;
+
 
 	ERI oERI(frame.cols, frame.rows);
 	//cout << "time before rotate:................: " << endl;
@@ -578,10 +572,36 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 
 	Mat midcorrectedmat(frame.rows, frame.cols, frame.type());
 	//RotateXYaxisERI2RERI(frame, midcorrectedmat, pb, pa, reriCS);
-	//img_write("./Image/temp/midcorrected.PNG", midcorrectedmat);
 
-	//cout << "time to rotate:................: " << endl;
-	//timeInterval(start);
+	if (fi==0)
+	{
+		// build local coordinate system of RERI
+		V3 xaxis = camera1.a.UnitVector();
+		V3 yaxis = camera1.b.UnitVector() * -1.0f;
+		V3 zaxis = xaxis ^ yaxis;
+		M33 reriCS;
+		reriCS[0] = xaxis;
+		reriCS[1] = yaxis;
+		reriCS[2] = zaxis;
+		cout << "fi:..........." << fi << endl;
+		for (int i = 0; i < frame.rows; i++)
+		{
+			for (int j = 0; j < frame.cols; j++)
+			{
+				V3 q = oERI.Unproject(i, j);
+				q = reriCS.Inverted() * q;
+
+				int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
+				int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+				EncodingLon2PixGetXYZ2Lon[j][i] = u;
+				EncodingLat2PixGetXYZ2Lat[j][i] = v;
+
+			}
+		}
+	
+	}
+
+	
 
 	
 	//DrawBoundinigBoxframe(midcorrectedmat, encodeRefPPC, pxl, pxr, pxu, pxd);
@@ -621,14 +641,11 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
 
-			int j = Dy;
-			int i = Dx;
+			int i = Dy;
+			int j = Dx;
 
-			V3 q = oERI.Unproject(j, i);
-			q = reriCS.Inverted() * q;
-
-			int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
-			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+			int u =EncodingLon2PixGetXYZ2Lon[j][i];
+			int v =EncodingLat2PixGetXYZ2Lat[j][i];
 			//cout<<"row:" << row <<"col: "<< col <<"Dy: "<< Dy <<"Dx: "<< Dx <<"u: "<< u <<"v: "<< v << endl;
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 			//int a[] = {row,col};
@@ -637,6 +654,9 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 			
 		}
 	}
+
+
+
 
 
 	//print("loop3" << endl);
@@ -649,14 +669,11 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
 
-			int j = Dy;
-			int i = Dx;
+			int i = Dy;
+			int j = Dx;		
 
-			V3 q = oERI.Unproject(j, i);
-			q = reriCS.Inverted() * q;
-
-			int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
-			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+			int u = EncodingLon2PixGetXYZ2Lon[j][i];
+			int v = EncodingLat2PixGetXYZ2Lat[j][i];
 
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 			
@@ -672,14 +689,11 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
 
-			int j = Dy;
-			int i = Dx;
+			int i = Dy;
+			int j = Dx;
 
-			V3 q = oERI.Unproject(j, i);
-			q = reriCS.Inverted() * q;
-
-			int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
-			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+			int u = EncodingLon2PixGetXYZ2Lon[j][i];
+			int v = EncodingLat2PixGetXYZ2Lat[j][i];
 
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 			
@@ -695,14 +709,10 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
 
-			int j = Dy;
-			int i = Dx;
-
-			V3 q = oERI.Unproject(j, i);
-			q = reriCS.Inverted() * q;
-
-			int u = oERI.Lon2PixJ(oERI.GetXYZ2Longitude(q));
-			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+			int i = Dy;
+			int j = Dx;
+			int u = EncodingLon2PixGetXYZ2Lon[j][i];
+			int v = EncodingLat2PixGetXYZ2Lat[j][i];
 
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 
@@ -714,14 +724,10 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 		for (int col = We; col < We + R0R4; col++)
 		{	
 
-			int j = Het * (compressionfactor-1)+row; //already j started from 1 het;
-			int i = We * (compressionfactor-1)+col;
-
-			V3 q = oERI.Unproject(j, i);
-			q = reriCS.Inverted() * q;
-			//q = q.UnitVector();
-			int u = oERI.Lon2PixJ(oERI.GetXYZ2LongitudeOptimized(q));
-			int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
+			int i = Het * (compressionfactor-1)+row; //already j started from 1 het;
+			int j = We * (compressionfactor-1)+col;
+			int u = EncodingLon2PixGetXYZ2Lon[j][i];
+			int v = EncodingLat2PixGetXYZ2Lat[j][i];
 
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 

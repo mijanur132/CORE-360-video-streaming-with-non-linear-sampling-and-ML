@@ -7041,7 +7041,7 @@ void EncodeVideoWithExtensionSpecificPanTiltChunkN(char* fileName, int extraSec,
 		if (fi >= (chunkN - 1)*chunDurationsec*fps && fi < (chunkN*chunDurationsec*fps))
 		{
 			cout <<"fi: "<< fi << endl;
-			ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf);
+			ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf,(fi- (chunkN - 1) * chunDurationsec * fps));
 			bufferedFrame.push_back(ret.clone());
 			displayImage(ret);
 		}
@@ -7051,7 +7051,7 @@ void EncodeVideoWithExtensionSpecificPanTiltChunkN(char* fileName, int extraSec,
 			if (fi= chunkN * chunDurationsec * fps+ nonUniformList[extraIndex])
 			{
 				cout << "fi: " << fi << endl;
-				ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf);
+				ret = path1.EncodeNewNonLinV2Optimized(frame, &encodevar, core1PPC, encodeRefPPC, cf, (fi - (chunkN - 1) * chunDurationsec * fps));
 				bufferedFrame.push_back(ret.clone());
 				//displayImage(ret);
 				extraIndex++;

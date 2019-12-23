@@ -45,7 +45,7 @@ public:
 	void RotateXaxisERI2RERI(cv::Mat originERI, cv::Mat& newERI, PPC camera1);
 	void DrawBoundinigBoxframe(cv::Mat & frame, PPC camera, float& pXl, float& pxr, float&pxu, float &pxd);
 	cv::Mat EncodeNewNonLinV2(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
-	cv::Mat EncodeNewNonLinV2Optimized(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor);
+	cv::Mat EncodeNewNonLinV2Optimized(cv::Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor, int fi);
 	cv::Mat DecodeNewNonLinV2(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1);
 	cv::Mat CRERI2Conv(cv::Mat CRERI, float var[10], int compressionfactor, PPC camera1, PPC refcam, cv::Mat& qual, struct samplingvar * var1);
 	void CRERI2ConvOptimized(cv::Mat CRERI, float var[10], ERI & eri, M33 & reriCS, cv::Mat & convPixels, int compressionfactor, PPC camera1, PPC refcam);
