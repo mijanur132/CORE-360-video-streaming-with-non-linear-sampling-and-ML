@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	
 	STOP;
 		*/																															   //makeVideoRegularSpecificPanTiltChunkN("./Video/source/diving.avi", 10, 0, 1, 0); //reqtime=chunkN, avgSize=initial skip
-//	GenerateEncoding4AllDirection();
+	//GenerateEncoding4AllDirection();
 	//testvideodecodeNqual();
 	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
 
@@ -95,29 +95,21 @@ int main(int argc, char* argv[])
 	//testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/rollerD.txt", 1, 4, 6);
 
 	//testDownloadVideoHttp4thSecVarAndroid("http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/android.txt", 2, 6,1500);
-	
+
+	//testDownloadVideoHttp4thSecVar("http://127.0.0.5:80/3vid2crf3trace/4s6s/mobisys/crf30/diving/30_diving.AVI6", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingD.txt", 0, 6,1500);  //nextDlChunkSec 0 means variable, else value corresponds request time.
+
 	//testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "./bwLogs/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/rollerD.txt", 1, 4, 6);
 	//STOP;
 	//Tiles:FoV
 	//testCPUtimeTiles("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/diving.avi");
-	//testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingD.txt", 1, 4, 6);
+	//testDownloadVideoHttpTileDelayMeasurementFoVMobisysBoth("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingS.txt", 1, 4, 6,0,100);
+
 	
 	GenerateEncoding4AllDirection();
 	
 	STOP;
 
 
-	/*
-	testDownloadVideoHttpTileBlankPixelMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "./bwLogs/bw646kB.txt", "./Video/source/diving.txt", 1, 4, 6);
-	testDownloadVideoHttpTileDelayMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/rhino.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/rhino.txt",  1, 4, 6);
-	testDownloadVideoHttpTileQualChngLineMeasurementFoV("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/roller.txt", 1, 4, 6);
-	
-	//FovPlus
-	testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/diving.AVI", "./bwLogs/bw646kB.txt", "./Video/source/diving.txt", 1, 4, 6);
-	testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/rhino.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/rhino.txt", 1, 4, 6);
-	testDownloadVideoHttpTileQualChngLineMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/roller.txt", 1, 4, 6);
-	*/
-	
 	
 	string videoFile(argv[1]);
 	const char* videoF = videoFile.c_str();
@@ -165,19 +157,16 @@ int main(int argc, char* argv[])
 	}
 	else if (functionSelect == 7)  //final
 	{
-		testDownloadVideoHttpTileDelayMeasurementFoVOnly((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
-	}
-	
+		//testDownloadVideoHttpTileDelayMeasurementFoVOnly((char*)videoF, (char*)bwF, (char*)dvF, 1, 4, 6);
+	}	
 	else if (functionSelect == 11) 
 	{		
 		//testDownloadVideoHttp4thSecVarDelayFRmeasurement((char*)videoF, (char*)bwF, (char*)dvF, reqTime, 3,100);
 	}
-
 	else if (functionSelect == 12) //final
 	{
 		testDownloadVideoHttp4thSecVar((char*)videoF, (char*)bwF, (char*)dvF, reqTime, 6,avgSize);
 	}
-
 	else if (functionSelect == 13) {	
 		cout << "this one selected" << endl;
 		

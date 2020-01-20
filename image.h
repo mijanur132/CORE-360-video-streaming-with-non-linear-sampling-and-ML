@@ -77,12 +77,12 @@ void testvideoEncodeNew4stemp(int chunDurationsec, float pan, float tilt, int ch
 int out_video_file();
 void makeVideo4thSecVar(float pan, float tilt);
 void temp_calc(vector <float> &nonUniformList, float n, int extraFrame);
-void video4sBaseAndExtraSec(char* fileName4s, char* fileName1s, char* fileName2s, char* fileName3s);
+void video4sBaseAndExtraSec(char* fileName4s, char* fileName1s);
 void createSmallTilesFromLongTiles(char* fileName);
 void testDownloadVideoHttpTile(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
 
 void testDownloadVideoHttpTileBlankPixelMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
-void testDownloadVideoHttpTileDelayMeasurementFoVOnly(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
+void testDownloadVideoHttpTileDelayMeasurementFoVMobisysBoth(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN, int fovOnly, int accuracy);
 void testDownloadVideoHttpTileDelayMeasurementFoVOnlyAndroid(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);
 
 void testDownloadVideoHttpTileDelayMeasurementFoVPlus(char* srcBaseAddr, char* bwLog, char* hmdFileName, int nextDlChunkSec, int rowM, int colN);

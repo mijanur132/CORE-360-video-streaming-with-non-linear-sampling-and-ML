@@ -545,7 +545,7 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 	(var1)->We = We;
 	(var1)->Het = Het;//*/
 
-	//print(We<<","<< R0x<<","<< Het<<" "<< Heb<<" "<< R0y<<endl);
+	print(We<<","<< R0x<<","<< Het<<" "<< Heb<<" "<< R0y<<endl);
 	return distortedframemat;
 
 }//mainloop of End of Encoding
@@ -553,29 +553,15 @@ Mat Path::EncodeNewNonLinV2(Mat frame, struct var * var1, PPC camera1, PPC encod
 Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, PPC encodeRefPPC, int compressionfactor, int fi)
 {	
 	auto start = std::chrono::high_resolution_clock::now();
-
 	if (frame.empty())
 	{
 		cout << "Error loading image" << endl;
 		exit(0);
-
 	}
-
-	float compressionfactorY = (float)compressionfactor;
-	float compressionfactorX = (float)compressionfactor;
-
-
-
-	ERI oERI(frame.cols, frame.rows);
-	//cout << "time before rotate:................: " << endl;
-	//timeInterval(start);
-
-	Mat midcorrectedmat(frame.rows, frame.cols, frame.type());
-	//RotateXYaxisERI2RERI(frame, midcorrectedmat, pb, pa, reriCS);
-
+	   	 
 	if (fi==0)
 	{
-		// build local coordinate system of RERI
+		ERI oERI(frame.cols, frame.rows);		
 		V3 xaxis = camera1.a.UnitVector();
 		V3 yaxis = camera1.b.UnitVector() * -1.0f;
 		V3 zaxis = xaxis ^ yaxis;
@@ -595,127 +581,81 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 				int v = oERI.Lat2PixI(oERI.GetXYZ2Latitude(q));
 				EncodingLon2PixGetXYZ2Lon[j][i] = u;
 				EncodingLat2PixGetXYZ2Lat[j][i] = v;
-
 			}
-		}
-	
-	}
+		}	
+	}	
 
-	
-
-	
-	//DrawBoundinigBoxframe(midcorrectedmat, encodeRefPPC, pxl, pxr, pxu, pxd);
-	//img_write("./Image/temp/midcorrected.PNG", midcorrectedmat);
 	float PxL = pxl;
 	float PxR = pxr;
 	float PxU = pxu;
 	float PxD = pxd;
-
-	//cout << "time to BB:................: " << endl;
-	//timeInterval(start);
-
-	//cout << PxL <<" "<<PxR<<" "<<PxU<<" "<<PxD<< endl;
-
 	int R0R1 = PxD - PxU;
 	int R0R4 = PxR - PxL;
 
-	int We = (frame.cols - R0R4) / (2 * compressionfactorX);
-	int Het = (frame.rows - R0R1) / (2 * compressionfactorY);
+	int We = (frame.cols - R0R4) / (2 * compressionfactor);
+	int Het = (frame.rows - R0R1) / (2 * compressionfactor);
 
-	R0R4 = frame.cols - 2 * We * compressionfactor;
+	R0R4 = frame.cols - 2 * We * compressionfactor;  //required
 	R0R1 = frame.rows - 2 * Het * compressionfactor;
+	//print("ror1: " << R0R1 << " ror4:" << R0R4 << " we:" << We <<" het:" << Het);	
+	Mat distortedframemat = Mat::zeros((2*Het + R0R1), (2 * We + R0R4), frame.type());	
 
-	//print("ror1: " << R0R1 << " ror4:" << R0R4 << " we:" << We <<" het:" << Het);
-	
-	Mat distortedframemat = Mat::zeros((2*Het + R0R1), (2 * We + R0R4), frame.type());
-	
-
-
-	float Dy, Dx;
-	//for (int col = 0; col < We; col++)
+	float Dy, Dx;	
 	for (int row = 0; row < distortedframemat.rows - 1; row++)
-	{
-		//for (int row = 0; row < distortedframemat.rows-1; row++)
+	{		
 		for (int col = 0; col < We; col++)
 		{			
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
-
 			int i = Dy;
 			int j = Dx;
-
 			int u =EncodingLon2PixGetXYZ2Lon[j][i];
 			int v =EncodingLat2PixGetXYZ2Lat[j][i];
-			//cout<<"row:" << row <<"col: "<< col <<"Dy: "<< Dy <<"Dx: "<< Dx <<"u: "<< u <<"v: "<< v << endl;
-			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
-			//int a[] = {row,col};
-			//SaveAtRandomText(2,a);
-				//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);
-			
+			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);			
+			//bilinearinterpolation(distortedframemat, midcorrectedmat, row, col, Dy, Dx);			
 		}
 	}
 
-
-
-
-
-	//print("loop3" << endl);
-	for (int row = 0; row < distortedframemat.rows - 1; row++)
-	//for (int col = We + R0R4; col < distortedframemat.cols-1; col++)
-	{
-		//for (int row = 0; row < distortedframemat.rows-1; row++)
+	for (int row = 0; row < distortedframemat.rows - 1; row++)	
+	{		
 		for (int col = We + R0R4; col < distortedframemat.cols - 1; col++)
 		{
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
-
 			int i = Dy;
 			int j = Dx;		
-
 			int u = EncodingLon2PixGetXYZ2Lon[j][i];
 			int v = EncodingLat2PixGetXYZ2Lat[j][i];
-
-			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
-			
+			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);			
 		}
 
 	}
-
-		
+			
 	for (int row = 0; row < Het; row++)
 	{
 		for (int col = 0; col < distortedframemat.cols-1; col++)
 		{
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
-
 			int i = Dy;
 			int j = Dx;
-
 			int u = EncodingLon2PixGetXYZ2Lon[j][i];
 			int v = EncodingLat2PixGetXYZ2Lat[j][i];
-
-			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
-			
+			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);			
 		}
 	}
 
-
-	//print("loop4" << endl);
 	for (int row = Het + R0R1; row < distortedframemat.rows-1; row++)
 	{
 		for (int col = 0; col < distortedframemat.cols-1; col++)
 		{
 			Dy = rowMapEncoding[row][col];
 			Dx = colMapEncoding[row][col];
-
 			int i = Dy;
 			int j = Dx;
 			int u = EncodingLon2PixGetXYZ2Lon[j][i];
 			int v = EncodingLat2PixGetXYZ2Lat[j][i];
-
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
-
 		}
 	}
 
@@ -723,23 +663,16 @@ Mat Path::EncodeNewNonLinV2Optimized(Mat frame, struct var* var1, PPC camera1, P
 	{
 		for (int col = We; col < We + R0R4; col++)
 		{	
-
 			int i = Het * (compressionfactor-1)+row; //already j started from 1 het;
 			int j = We * (compressionfactor-1)+col;
 			int u = EncodingLon2PixGetXYZ2Lon[j][i];
 			int v = EncodingLat2PixGetXYZ2Lat[j][i];
-
 			distortedframemat.at<Vec3b>(row, col) = frame.at<Vec3b>(v, u);
 
 		}
 	}
-
-	//print("loop4" << endl);
-
-
+	
 	cout << "time to End:................: "; timeInterval(start);
-
-	//STOP;
 	return distortedframemat;
 
 }//mainloop of End of Encoding
@@ -2265,7 +2198,6 @@ void Path::bilinearinterpolation(Mat &output, Mat &source, int Orow, int Ocol, f
 {
 	if (vf < (source.cols - 1.5) && vf> 0.5 &&  uf > 0.5 && uf < (source.rows - 1.5))
 	{
-
 		int u0 = (int)(uf - 0.5f);
 		int v0 = (int)(vf - 0.5f);
 		float dx = vf - 0.5f - v0;
@@ -2273,7 +2205,6 @@ void Path::bilinearinterpolation(Mat &output, Mat &source, int Orow, int Ocol, f
 
 		Vec3b color = (1 - dx)*(1 - dy)* source.at<Vec3b>(u0, v0) + (dx)*(1 - dy)*source.at<Vec3b>(u0, v0 + 1) +
 			dx * dy*source.at<Vec3b>(u0 + 1, v0 + 1) + (1 - dx)*dy*source.at<Vec3b>(u0 + 1, v0);
-
 		output.at<Vec3b>(Orow, Ocol) = color;
 	}
 	else
