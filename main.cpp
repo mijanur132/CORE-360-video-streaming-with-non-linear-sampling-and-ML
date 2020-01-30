@@ -51,14 +51,8 @@ int main(int argc, char* argv[])
 	//testWriteh264tiles();
 	//STOP;
 	//makeVideo4thSecVar(10, 0); //reqtime=chunkN, avgSize=initial skip
-	/*
-	for (int i = 1; i < 5; i++)
-	{
-		makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/rhino.webm", 10, 0, i, 100); //reqtime=chunkN, avgSize=initial skip //0 for 1s, 10 for 4s
-	}
-	
-	STOP;
-		*/																															   //makeVideoRegularSpecificPanTiltChunkN("./Video/source/diving.avi", 10, 0, 1, 0); //reqtime=chunkN, avgSize=initial skip
+
+	//makeVideoRegularSpecificPanTiltChunkN("./Video/source/diving.avi", 10, 0, 1, 0); //reqtime=chunkN, avgSize=initial skip
 	//GenerateEncoding4AllDirection();
 	//testvideodecodeNqual();
 	//testDownloadVideoHttp(1,1);  //same conditions for the parameters as with the 4th sec var parameters
@@ -73,12 +67,7 @@ int main(int argc, char* argv[])
 	/*
 
 	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 4, 400); //reqtime=chunkN, avgSize=initial skip
-	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 5, 400); //reqtime=chunkN, avgSize=initial skip
-	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 6, 400); //reqtime=chunkN, avgSize=initial skip
-	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 7, 400); //reqtime=chunkN, avgSize=initial skip
-	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 8, 400); //reqtime=chunkN, avgSize=initial skip
-	makeVideoRegularSpecificPanTiltChunkN("C:/Users/pmija/OneDrive - purdue.edu/lab129/EdgeVR/Code/Video/source/diving.avi", 10, 0, 9, 400); //reqtime=chunkN, avgSize=initial skip
-	
+
 	*/
 
 
@@ -96,18 +85,18 @@ int main(int argc, char* argv[])
 
 	//testDownloadVideoHttp4thSecVarAndroid("http://127.0.0.5:80/3vid2crf3trace/4s3s/crf30/diving", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/android.txt", 2, 6,1500);
 
-	//testDownloadVideoHttp4thSecVar("http://127.0.0.5:80/3vid2crf3trace/4s6s/mobisys/crf30/diving/30_diving.AVI6", "C:/inetpub/wwwroot/3vid2crf3trace/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingD.txt", 0, 6,1500);  //nextDlChunkSec 0 means variable, else value corresponds request time.
+	testDownloadVideoHttp4thSecVarWithFatCoRE("http://127.0.0.5:80/3vid2crf3trace/4s6s/mobisys/crf30/4s6s/crf30/30_diving.AVI6", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingD.txt", 0, 6, "C:/inetpub/wwwroot/3vid2crf3trace/4s6s/mobisys/crf30/4s6s/crf30/chunkSizes.txt",1,100);  //nextDlChunkSec 0 means variable, else value corresponds request time.
 
 	//testDownloadVideoHttpTileDelayMeasurementFoVPlus("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "./bwLogs/bw646kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/rollerD.txt", 1, 4, 6);
-	//STOP;
+	STOP;
 	//Tiles:FoV
 	//testCPUtimeTiles("C:/inetpub/wwwroot/3vid2crf3trace/Tiles/diving.avi");
 	//testDownloadVideoHttpTileDelayMeasurementFoVMobisysBoth("http://127.0.0.5:80/3vid2crf3trace/Tiles/crf30/1s/roller.AVI", "C:/inetpub/wwwroot/3vid2crf3trace/bw1962kB.txt", "C:/inetpub/wwwroot/3vid2crf3trace/hmdTraceFinal/stableNdynamicTraces/divingS.txt", 1, 4, 6,0,100);
 
 	
-	GenerateEncoding4AllDirection();
+	//GenerateEncoding4AllDirection();
 	
-	STOP;
+	//STOP;
 
 
 	
@@ -121,9 +110,15 @@ int main(int argc, char* argv[])
 	int functionSelect = stoi(argv4);
 	string argv5(argv[5]);
 	int reqTime = stoi(argv5);
-
 	string argv6(argv[6]);
-	int avgSize = stoi(argv6);
+	int extraSec = stoi(argv6);
+	string chunk(argv[7]);
+	const char* chunkSizes = chunk.c_str();	
+	string fatCoRe(argv[8]);
+	int fatCoRE = stoi(fatCoRe);
+
+	string accu(argv[9]);
+	int accuracy = stoi(accu);
 
 	
 
@@ -165,12 +160,16 @@ int main(int argc, char* argv[])
 	}
 	else if (functionSelect == 12) //final
 	{
-		testDownloadVideoHttp4thSecVar((char*)videoF, (char*)bwF, (char*)dvF, reqTime, 6,avgSize);
+		testDownloadVideoHttp4thSecVar((char*)videoF, (char*)bwF, (char*)dvF, reqTime,1500, 9);
+	}
+	else if (functionSelect == 121) //final
+	{
+		testDownloadVideoHttp4thSecVarWithFatCoRE((char*)videoF, (char*)bwF, (char*)dvF, reqTime, extraSec, (char*)chunkSizes, fatCoRE, accuracy);
 	}
 	else if (functionSelect == 13) {	
 		cout << "this one selected" << endl;
 		
-		makeVideoRegularSpecificPanTiltChunkN((char*)videoF, -180,10, 1, avgSize); //reqtime=chunkN, avgSize=initial skip
+		makeVideoRegularSpecificPanTiltChunkN((char*)videoF, -180,10, 1500,1); //reqtime=chunkN, avgSize=initial skip
 	}
 
 
