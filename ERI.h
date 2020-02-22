@@ -6,10 +6,6 @@
 #include <C:\opencv\build\include\opencv2\highgui\highgui.hpp>
 
 
-//       pan means camera long increase by
-//		tilt means camera lat reduces by. 
-
-
 //using namespace cv;
 
 class ERI 
@@ -31,9 +27,7 @@ public:
 	float GetLatitude(int i);
 	
 	float GetXYZ2Latitude(V3 p);      // this will take a 3d point XYZ and convert to latiturde 
-	float GetXYZ2LatitudeOptimized(float x);
 	float GetXYZ2Longitude(V3 p);  //this will take a 3d point and convert to longitude 
-	float GetXYZ2LongitudeOptimized(V3 p);
 	float TestXYZ2LatLong(V3 p);
 	int Lat2PixI(float lat);
 	int Lon2PixJ(float lon);
@@ -48,15 +42,11 @@ public:
 	void getERIPixelsCount(cv::Mat &erivis, PPC *ppc, uint64 &totalEriPixel);
 	int EachPixelConv2ERItemp(PPC camera1, int u, int v, int &pixelI, int &pixelJ);
 	int ERI2Convtemp(cv::Mat &source_image_mat, cv::Mat &output_image_mat, PPC camera1);
+	float GetXYZ2LatitudeOptimized(float p1);
+	float GetXYZ2LongitudeOptimized(V3 p);
 	void atanvalue();
-	void xz2LonMap();
 	void xz2LatMap();
-	void LatLon2RowColMap();
-	int ERI2Conv4tiles(cv::Mat &output_image_mat, vector<vector<vector <cv::Mat>>> & frameQvecTiles, vector <int> & reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec);
-	int ERI2Conv4tilesTotalPixelBorderingQualChange(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<vector<float>>& totalInsideVec);
-	int ERI2Conv4tilesWithSrFrDelay(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, float& blankP, float& sRavG, float& sRmiN);
-	int ERI2Conv4tilesDoNothing(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec);
-	int ERI2Conv4tilesQualChngLine(cv::Mat& output_image_mat, vector<vector<vector <cv::Mat>>>& frameQvecTiles, vector <int>& reqTiles, PPC camera1, int m, int n, int chunkN, int fi, vector<int>& totalInsideVec, vector<int>& totalQualPopescuVec);
+	void xz2LonMap();
 };
 
 

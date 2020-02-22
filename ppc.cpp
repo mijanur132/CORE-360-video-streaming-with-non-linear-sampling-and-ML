@@ -1,10 +1,11 @@
 
 #include "ppc.h"
 #include "m33.h"
-#include"Image.h"
+#include"image.h"
 #include<math.h>
 #include<string.h>
-#include"config.h"
+
+
 /*
 #include <C:\opencv\build\include\opencv2\opencv.hpp>
 #include <C:\opencv\build\include\opencv2\core\core.hpp>

@@ -1,4 +1,5 @@
 
+#include <math.h>
 #include "m33.h"
 
 V3& M33::operator[](int i) {
