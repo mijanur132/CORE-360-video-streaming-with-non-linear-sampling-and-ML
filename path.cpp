@@ -22,6 +22,9 @@ float colMap[3850][3850];//ch
 float rowMap[3850][3850];//ch
 ERI eri(3840, 2048);
 M33 reriCS;
+int predictMargin=1;
+float wee=268.9;
+float hett=122.3;
 
 Path::Path() {
 	print("One Path created" << endl);
@@ -31,7 +34,7 @@ void Path::updateReriCs(int baseAngle){
 	int frameLen = 3840;
 	int frameWidth = 2048;
 	float hfov = 90.0f;
-	float corePredictionMargin = 0.8;
+	float corePredictionMargin =  predictMargin;
 	int compressionFactor = 5;
 	int w = frameLen * hfov / 360;
 	int h = frameWidth * hfov / 360;
@@ -51,8 +54,8 @@ void Path::nonUniformListInit()
 {
     cout << "................. "<< endl;
     int compressionfactor = 5;
-    float R0x = 268 * 5;
-    float R0y =122* 5;
+    float R0x = wee * 5;
+    float R0y =hett* 5;
     //cout << var[2] << " " << var[3] << endl;
     for (int col = 0; col <R0x; col++)
     {
@@ -82,8 +85,8 @@ void Path::mapx()
 	int compressionfactor = 5;
 	int ERI_w = 3840;
 	int ERI_h = 2048;
-	float We = 268;
-	float Het = 122;
+	float We = wee;
+	float Het = hett;
 	float Heb = Het;
 	float R0R4 = ERI_w - 2 * We*compressionfactor;
 	float R0R1 = ERI_h - 2 * Het*compressionfactor;
@@ -95,9 +98,9 @@ void Path::mapx()
 	cout << "mapx....start..........................." <<ERI_w<<" "<<ERI_h<< endl;
 
 
-	for (int row = 0; row < ERI_h; row++)
+	for (int row = 0; row <= ERI_h; row++)
 	{
-		for (int col = 0; col < ERI_w; col++)
+		for (int col = 0; col <= ERI_w; col++)
 		{
 
 			if ((row > R0y && row < R0y + R0R1) && (col > R0x && col < R0x + R0R4))
@@ -116,7 +119,7 @@ void Path::mapx()
 				{
 					float x1 = col * (float)R0y / (float)R0x;
 					float x2 = mxrow - (float)col*(mxrow - (R0y + R0R1)) / (float)R0x;
-					if ((row > x1) && (row < x2))
+					if ((row >= x1) && (row <= x2))
 					{
 						float dx = col;
 						float dy = row;
@@ -135,7 +138,7 @@ void Path::mapx()
 				} //end region 1
 
 				//region 3
-				if (col > R0x + R0R4)
+				if (col >= R0x + R0R4)
 				{
 					float d = col - (R0x + R0R4);
 					float dx = col;
@@ -145,7 +148,7 @@ void Path::mapx()
 					float y1 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
 					float y2 = mxrow + (float)(col - mxcol)*(mxrow - (R0y + R0R1)) / (float)(mxcol - (R0x + R0R4));
 
-					if ((row > y1) && (row < y2))
+					if ((row >= y1) && (row <= y2))
 					{
 						float dy = row;
 						float Cx = Dx;
@@ -163,7 +166,7 @@ void Path::mapx()
 					}
 				}  //end region 3
 
-				if (row < R0y)
+				if (row <= R0y)
 				{
 					float d = R0y - row;
 					float dy = row;
@@ -175,7 +178,7 @@ void Path::mapx()
 					float y1 = col * (float)R0y / (float)R0x;
 					float y2 = (float)R0y*(mxcol - col) / (float)(mxcol - R0x - R0R4);
 
-					if ((row < y1) && (row < y2))
+					if ((row <= y1) && (row <= y2))
 					{
 						float dx = col;
 						float Cy = Dy;
@@ -194,7 +197,7 @@ void Path::mapx()
 				}  //end region 2
 
 				//region 4: bottom
-				if (row > R0y + R0R1)
+				if (row >= R0y + R0R1)
 				{
 					float d = row - (R0y + R0R1);
 					//cout << d << " " << nonuniformDrev[d] << endl;
@@ -202,7 +205,7 @@ void Path::mapx()
 					float x1 = (mxrow - row)*(float)R0x / (mxrow - (R0y + R0R1));
 					float x2 = mxcol + (row - mxrow)*(float)(mxcol - (R0x + R0R4)) / (mxrow - (R0y + R0R1));
 
-					if ((col > x1) && (col < x2))
+					if ((col >= x1) && (col <= x2))
 					{
 						float dx = col;
 						float dy = row;
@@ -235,8 +238,8 @@ void Path::CRERI2convOptimized(Mat & CRERI, Mat & convPixels,  PPC camera1, int 
 {
 	int ERI_w = 3840;
 	int ERI_h = 2048;
-	float We = 268;
-	float Het = 122;
+	float We = wee;
+	float Het = hett;
 	float Heb = Het;
 	float R0R4 = ERI_w - 2 * We*5;
 	float R0R1 = ERI_h - 2 * Het*5;
@@ -300,8 +303,8 @@ Mat Path::CRERI2Conv(Mat & CRERI, int compressionfactor, PPC camera1, PPC refcam
 	float compressionfactorY = (float)compressionfactor / (float)1;
 	int ERI_w = 3840;
 	int ERI_h = 2048;
-	float We = 268;
-	float Het = 122;
+	float We = wee;
+	float Het = hett;
 	float Heb = Het;
 	float R0R4 = ERI_w - 2 * We*compressionfactorX;
 	float R0R1 = ERI_h - 2 * Het*compressionfactorY;
